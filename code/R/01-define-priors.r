@@ -42,10 +42,11 @@
     reproductive_cycle = 1 # fixed at 1
     selex_l50 = 150 # 150 - 180
     selex_slope = 15 # 0.1 - 1
-
-    target_average_weight = 100
     selexNZ_l50 = 205
     selexNZ_slope = 0.3
+
+    target_average_weight = 100 # fixed
+
 
     # sim Rmax
     sim_rmax(id, max_age, M_ref, L1, L2, vbk, age1, age2, cv_len, maturity_a, l50, weight_a, weight_b,sex_ratio,reproductive_cycle)
