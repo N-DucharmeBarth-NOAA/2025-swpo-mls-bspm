@@ -81,5 +81,5 @@ sim_rmax = function(id, max_age, M_ref, L1, L2, vbk, age1, age2, cv_len, maturit
             inflection_point = 0.633 - 0.187*log(generation_time*rmax) # Fowler 1988
         }
         
-        return(data.table(rmax=round(rmax,digits=4),spr=round(spr,digits=4),alpha=round(alpha,digits=4),h=round(h,digits=4),generation_time=round(generation_time,digits=4),inflection_point=round(inflection_point,digits=4),amat50=amat50,max_age=max_age))
+        return(data.table(id=id,rmax=round(rmax,digits=4),epr_unfished=round(spr,digits=4),alpha=round(alpha,digits=4),h=round(h,digits=4),generation_time=round(generation_time,digits=4),inflection_point=round(inflection_point,digits=4),amat50=amat50,max_age=max_age))
 }
