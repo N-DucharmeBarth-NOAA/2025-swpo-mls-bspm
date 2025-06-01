@@ -9,10 +9,9 @@
 # Copyright (c) 2025 Nicholas Ducharme-Barth
 # You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-sim_rmax = function(id, cv_age, A_max, M_ref, L1, L2, vbk, age1, age2, cv_len, maturity_a, l50, weight_a, weight_b,sex_ratio,reproductive_cycle){
+sim_rmax = function(id, max_age, M_ref, L1, L2, vbk, age1, age2, cv_len, maturity_a, l50, weight_a, weight_b,sex_ratio,reproductive_cycle){
         require(data.table)
         set.seed(id)
-        max_age = round(exp(rnorm(1,log(A_max),cv_age)))
 
         age_vector = 1:max_age
 

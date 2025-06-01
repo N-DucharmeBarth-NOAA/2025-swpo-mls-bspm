@@ -12,7 +12,6 @@
 # load packages
 	library(data.table)
 	library(magrittr)
-    library(r4ss)
 
 #_____________________________________________________________________________________________________________________________
 # define paths
@@ -26,21 +25,18 @@
 #_____________________________________________________________________________________________________________________________
 # ...    
 
-
-
-
     id = 1
     cv_age = 0.15
-    A_max = 15
-    M_ref = 0.3
-    L1 = 60
-    L2 = 210
-    vbk = 0.8
+    A_max = 15 # Farley et al. 2021
+    M_ref = 0.3 # 2024 assessment
+    L1 = 60 # CAAL
+    L2 = 210 # CAAL
+    vbk = 0.8 # CAAL
     age1 = 0
     age2 = 10
     cv_len = 0.15
     maturity_a = -20
-    l50 = (0.862069*214) # convert from LJFL; L50 for females from Farley et al. 2021
+    l50 = (0.862069*214) # convert from LJFL to EOFL; L50 for females from Farley et al. 2021
     weight_a = 5.39942e-07 # 2024 assessment
     weight_b = 3.58378 # 2024 assessment
     sex_ratio = 0.5
