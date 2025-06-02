@@ -21,7 +21,7 @@ generate_random_params = function(n_samples = 1000, seed = NULL) {
     # Based on fisheries literature, weight_a and weight_b are typically negatively correlated
     weight_a_mean = log(5.39942e-07)
     weight_b_mean = 3.58378
-    weight_a_cv = 0.3  # CV for weight_a
+    weight_a_cv = 0.05  # CV for weight_a
     weight_b_cv = 0.05 # CV for weight_b (keeping this parameter tight)
     correlation = -0.5  # negative correlation typical in L-W relationships
     
@@ -44,6 +44,9 @@ generate_random_params = function(n_samples = 1000, seed = NULL) {
     # Initialize data.table to store samples
     param_samples = data.table(
         sample_id = 1:n_samples,
+
+        # Carrying capacity logK
+        logK = log(rlnorm(n_samples,log(10e5),0.5)),
         
         # Variable parameters with specified ranges
         max_age = round(runif(n_samples, min = 10, max = 20)),  # 15 +/- 5yrs
@@ -52,7 +55,7 @@ generate_random_params = function(n_samples = 1000, seed = NULL) {
         # von Bertalanffy parameters (Francis parameterization - low correlation, treat as independent)
         L1 = rlnorm(n_samples, meanlog = log(60), sdlog = 0.2), # CV = 0.2, log-normal for positive values
         L2 = rlnorm(n_samples, meanlog = log(210), sdlog = 0.2), # CV = 0.2, log-normal for positive values
-        vbk = rlnorm(n_samples, meanlog = log(0.7), sdlog = 0.2), # CV ≈ 0.2 for log-normal
+        vbk = rbeta(n_samples,shape1=6.5,shape2=3.5), # Beta distribution with mean ≈ 0.65 and reasonable variance
         
         cv_len = runif(n_samples, min = 0.05, max = 0.25),       # 0.1 to 0.25
         maturity_a = rnorm(n_samples, mean = -20, sd = abs(-20) * 0.2), # CV = 0.2 (keep normal for negative values)

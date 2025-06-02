@@ -67,5 +67,14 @@ calc_spr = function(id, max_age, M_ref, L1, L2, vbk, age1, age2, cv_len, maturit
             epr_fished = sum(reproduction_at_age*survival_at_age_fished)
             spr = epr_fished/epr_unfished
 
-        return(data.table(id=id,spr=spr,epr_fished=round(epr_fished,digits=4),epr_unfished=round(epr_unfished,digits=4)))
+            s_unfished = sum(survival_at_age_unfished*maturity_at_age)
+            s_fished = sum(survival_at_age_fished*maturity_at_age)
+            dep = s_fished/s_unfished
+
+            sb_unfished = sum(survival_at_age_unfished*maturity_at_age*weight_at_age)
+            sb_fished = sum(survival_at_age_fished*maturity_at_age*weight_at_age)
+            dep_sb = sb_fished/sb_unfished
+
+
+        return(data.table(id=id,spr=round(spr,digits=4),dep=round(dep,digits=4),dep_sb=round(dep_sb,digits=4),epr_fished=round(epr_fished,digits=4),epr_unfished=round(epr_unfished,digits=4)))
 }

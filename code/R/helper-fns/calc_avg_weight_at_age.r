@@ -80,6 +80,9 @@ calc_avg_capture_weight_at_age_unfished = function( max_age, L1, L2, vbk, age1, 
   len_lower = seq(from=0, to=ceiling(max(length_at_age*(1+cv_len))), by=1)
   len_upper = len_lower + 1
   length_vec = len_lower + 0.5
+
+  pla_LA = pla_function(length(length_vec), length(age_vector), age_vector, 
+                        len_lower, len_upper, L1, L2, vbk, age1, age2, cv_len)
   
   # natural mortality
   mortality_at_age = M_ref * (max_age / age_vector)^(-1)
