@@ -280,3 +280,89 @@ saveRDS(final_dt, rds_file)
 cat("Results also saved as RDS to:", rds_file, "\n")
 
 cat("Total processing time:", round(as.numeric(processing_time, units = "mins"), 2), "minutes\n")
+
+#_____________________________________________________________________________________________________________________________
+# Filter data for successful runs (rmax > 0) and calculate shape parameter
+cat("\nFiltering data for successful runs (rmax > 0)...\n")
+
+# Read in the generated data (in case it needs to be reloaded)
+# Uncomment the next two lines if you need to reload the data
+# final_dt = fread(output_file)
+# # or: final_dt = readRDS(rds_file)
+
+# Filter for successful runs where rmax > 0
+rmax_filter = final_dt[!is.na(rmax) & rmax > 0]
+
+cat("Original dataset:", nrow(final_dt), "rows\n")
+cat("Filtered dataset (rmax > 0):", nrow(rmax_filter), "rows\n")
+cat("Proportion of successful runs:", round(nrow(rmax_filter)/nrow(final_dt), 3), "\n")
+
+#_____________________________________________________________________________________________________________________________
+# Calculate shape parameter based on inflection point
+
+# Define helper functions for shape parameter calculation
+tmp_fn = function(par, target){
+    n = exp(par)
+    phi = (1/n)^(1/(n-1))
+    return((target - phi)^2)
+}
+
+wrap_fn = function(input_target){
+    return(exp(optim(log(2), tmp_fn, target = input_target, method = "Brent", 
+                     lower = -10, upper = 10)$par))
+}
+
+cat("Calculating shape parameters...\n")
+start_time_shape = Sys.time()
+
+# Calculate shape parameter for each inflection point
+rmax_filter[, shape := sapply(inflection_point, wrap_fn)]
+
+end_time_shape = Sys.time()
+shape_time = end_time_shape - start_time_shape
+cat("Shape parameter calculation completed in:", round(as.numeric(shape_time, units = "secs"), 2), "seconds\n")
+
+#_____________________________________________________________________________________________________________________________
+# Summary statistics for filtered dataset
+cat("\nSummary statistics for filtered dataset:\n")
+
+# Summary statistics for key outputs including shape
+summary_cols_filtered = c("rmax", "h", "generation_time", "avg_weight_unfished", 
+                         "F_est", "spr", "dep", "inflection_point", "shape")
+
+for(col in summary_cols_filtered) {
+    if(col %in% names(rmax_filter)) {
+        cat("\n", col, ":\n")
+        print(summary(rmax_filter[[col]], na.rm = TRUE))
+    }
+}
+
+#_____________________________________________________________________________________________________________________________
+# Save filtered results
+output_file_filtered = file.path(proj_dir, "data", "output", "bspm_parameter_priors_filtered.csv")
+fwrite(rmax_filter, output_file_filtered)
+cat("\nFiltered results saved to:", output_file_filtered, "\n")
+
+# Also save as RDS for faster loading in R
+rds_file_filtered = file.path(proj_dir, "data", "output", "bspm_parameter_priors_filtered.rds")
+saveRDS(rmax_filter, rds_file_filtered)
+cat("Filtered results also saved as RDS to:", rds_file_filtered, "\n")
+
+#_____________________________________________________________________________________________________________________________
+# Final summary
+cat("\n" , rep("=", 60), "\n", sep = "")
+cat("FINAL SUMMARY\n")
+cat(rep("=", 60), "\n", sep = "")
+cat("Total original samples:", nrow(final_dt), "\n")
+cat("Successful runs (rmax > 0):", nrow(rmax_filter), "\n")
+cat("Success rate:", round(nrow(rmax_filter)/nrow(final_dt) * 100, 1), "%\n")
+cat("Total processing time:", round(as.numeric(processing_time, units = "mins"), 2), "minutes\n")
+cat("Shape calculation time:", round(as.numeric(shape_time, units = "secs"), 2), "seconds\n")
+
+# Check for any issues with shape calculation
+shape_issues = rmax_filter[is.na(shape) | !is.finite(shape), .N]
+if(shape_issues > 0) {
+    cat("WARNING: ", shape_issues, " rows had issues with shape parameter calculation\n")
+}
+
+cat("Processing complete!\n")
