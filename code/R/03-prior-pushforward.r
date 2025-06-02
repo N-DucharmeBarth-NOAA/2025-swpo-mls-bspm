@@ -13,7 +13,7 @@
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # read in biological parameter results
-    bio_params_dt = fread("./data/output/bspm_parameter_priors_parallel.csv")
+    bio_params_dt = fread("./data/output/bspm_parameter_priors_filtered.csv")
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # read catch data
@@ -66,7 +66,7 @@
                          logK = bio_params_dt$logK[sample_indices],
                          r = bio_params_dt$rmax[sample_indices],
                          sigmap = rep(0, nsim),
-                         init_dep = bio_params_dt$dep[sample_indices])
+                         init_dep = runif(nsim,0.95,1.05))
 
     sim_dt.list = as.list(rep(NA, nsim))
     for(i in 1:nsim)
