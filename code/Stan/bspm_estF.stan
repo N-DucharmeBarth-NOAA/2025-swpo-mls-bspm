@@ -34,7 +34,6 @@ parameters {
     // keeps searched parameter space on a similar scale
     real raw_logK;
     real raw_logr;
-    real raw_logx0;
     real raw_logsigmap;
     real<lower=0> raw_sigmao_add;
     real raw_epsp[T];
@@ -46,7 +45,6 @@ transformed parameters {
     // leading parameters
     real logK;
     real r;
-    real x0;
     real dev[T]; // recruitment deviates
     real epsp[T]; // process error (multiplicative)
     real sigmap;
@@ -67,6 +65,8 @@ transformed parameters {
     sigmao_add = raw_sigmao_add*PriorSD_sigmao_add;
     sigmao_sc = sigmao_input + sigmao_add;
     for(i in 1:T){
+        dev[i] = raw_epsp[i]*sigmap;
+        epsp[i] = exp(dev[i]-sigmap2/2);
         for(j in 1:I){
             sigmao[i,j] = sigmao_mat[i,j] * sigmao_sc;
         }
@@ -78,8 +78,6 @@ transformed parameters {
     shape = exp(raw_logshape*PriorSD_logshape + PriorMean_logshape); // lognormal prior
     sigmaf = raw_sigmaf*PriorSD_sigmaf;
     for(t in 1:Tm1){
-        dev[t] = raw_epsp[t]*sigmap;
-        epsp[t] = exp(dev[t]-sigmap2/2);
         F[t] = raw_F[t]*sigmaf; 
     }
     
@@ -110,6 +108,12 @@ transformed parameters {
                 x[t] = ((x[t-1] + g * m * x[t-1] * (1 - pow(x[t-1],(n-1)))))*epsp[t]*(exp(-F[t-1]));
                 removals[t-1] = ((x[t-1] + g * m * x[t-1] * (1 - pow(x[t-1],(n-1)))))*epsp[t]*(1-exp(-F[t-1]))*exp(logK);
             } 
+            // // Add safety checks and debugging
+            // if(t >= T-5) {  // Debug last few time steps
+            //     print("t = ", t, ", x[t-1] = ", x[t-1], ", x[t] = ", x[t]);
+            //     print("  epsp[t] = ", epsp[t], ", F[t-1] = ", F[t-1]);
+            //     print("  removals[t-1] = ", removals[t-1]);
+            // }
         }
 
     // compute mpd catchability assuming 
@@ -158,6 +162,7 @@ model {
                 for(t in 1:T){
                     if(index[t,i]>0.0 && x[t]>0.0 && q[i]>0.0) {
                         mu_index = log(q[i]*x[t]) - sigmao2[t,i]/2;
+                        // print("Location param value (index): ", mu_index,"; t = ",t);
                         target += lognormal_lpdf(index[t,i] | mu_index,sigmao[t,i]);
                     }
                 }
@@ -167,6 +172,8 @@ model {
         real mu_catch;
         for(t in 1:Tm1){
             mu_catch = log(removals[t]) - 0.5*sigmac^2;
+            // print("log(removals[t]): ", log(removals[t]),"; t = ",t);
+            // print("Location param value (catch): ", mu_catch,"; t = ",t);
             target += lognormal_lpdf(obs_removals[t]|mu_catch,sigmac);
         }
 }
