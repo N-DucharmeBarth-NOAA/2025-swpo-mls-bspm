@@ -1,1 +1,3 @@
 data/input/nz-all-sport-club-weights.csv
+data/output/bspm_parameter_priors_parallel.rds
+data/output/bspm_parameter_priors_parallel.csv
