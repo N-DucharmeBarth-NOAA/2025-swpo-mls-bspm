@@ -18,6 +18,8 @@
     dir_helper_fns = file.path(proj_dir,"code","R","helper-fns")
     plot_dir = file.path(proj_dir, "plots", "pushforward")
     dir.create(plot_dir, recursive = TRUE)
+    model_run_dir = file.path(proj_dir, "data", "output")
+    dir.create(model_run_dir, recursive = TRUE)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # read in biological parameter results
@@ -173,3 +175,100 @@
     ggsave(filename=paste0("prior_push.sim_n.png"), plot =p, device = "png", path = plot_dir,
   			scale = 1, width = 12, height = 6, units = c("in"),
   			dpi = 300, limitsize = TRUE)
+
+    # Create filtered datasets based on the three filter states
+    sim_unfiltered_dt = sim_dt  # All simulations
+    prior_unfiltered_dt = prior_dt
+
+    sim_filtered_dt = sim_dt[seed %in% seed_surv]  # Survival filter
+    prior_filtered_dt = prior_dt[seed %in% seed_surv]
+
+    sim_extreme_dt = sim_dt[seed %in% seed_flat]  # Survival + stability filter  
+    prior_extreme_dt = prior_dt[seed %in% seed_flat]
+
+    # Define new filtered priors
+    # logK
+    logK_fn_filtered = function(par){-sum(dnorm(prior_filtered_dt$logK, mean = par[1], sd = par[2], log = TRUE))}
+    logK_pars_filtered = nlminb(c(16.5, 0.4), logK_fn_filtered)$par
+    write.csv(logK_pars_filtered, file = file.path(model_run_dir, "logK_pars_filtered.csv"))
+
+    logK_fn_extreme = function(par){-sum(dnorm(prior_extreme_dt$logK, mean = par[1], sd = par[2], log = TRUE))}
+    logK_pars_extreme = nlminb(c(16.5, 0.4), logK_fn_extreme)$par
+    write.csv(logK_pars_extreme, file = file.path(model_run_dir, "logK_pars_extreme.csv"))
+
+    # Plot logK priors
+    png(filename = file.path(plot_dir, "prior.logK.png"), width = 6, height = 6, units = "in", bg = "white", res = 300)
+    par(mfrow=c(3,1))
+
+    # Filtered (survival only)
+    hist(prior_filtered_dt$logK, freq=FALSE, breaks=50, xlab="logK", main="Prior: LogK - Filtered (Survival)")
+    plot_x = seq(from=min(prior_filtered_dt$logK), to=max(prior_filtered_dt$logK), length.out=1000)
+    plot_y = dnorm(plot_x, logK_pars_filtered[1], logK_pars_filtered[2])
+    lines(plot_x, plot_y, col="red")
+    legend("topright", c("Update prior: Filtered"), col=c("red"), lwd=3, bty="n")
+
+    # Extreme (survival + stability)
+    hist(prior_extreme_dt$logK, freq=FALSE, breaks=50, xlab="logK", main="Prior: LogK - Extreme (Survival + Stability)")
+    plot_x2 = seq(from=min(prior_extreme_dt$logK), to=max(prior_extreme_dt$logK), length.out=1000)
+    plot_y2 = dnorm(plot_x2, logK_pars_extreme[1], logK_pars_extreme[2])
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    legend("topright", c("Update prior: Extreme"), col=c("red"), lwd=3, lty=3, bty="n")
+
+    # Comparison plot
+    plot(plot_x, plot_y, col="red", type="l", xlab="logK", ylab="Density", 
+        xlim=range(c(plot_x, plot_x2)), ylim=c(0, max(c(plot_y, plot_y2))*1.2))
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    lines(density(prior_unfiltered_dt$logK), col="blue")
+    legend("topright", c("Original prior", "Update prior: Filtered", "Update prior: Extreme"), 
+        col=c("blue", "red", "red"), lty=c(1, 1, 3), lwd=3, bty="n")
+    dev.off()
+
+    # r (rmax)
+    rmax_fn_filtered = function(par){-sum(dnorm(log(prior_filtered_dt$r), mean = par[1], sd = par[2], log = TRUE))}
+    rmax_pars_filtered = nlminb(c(log(0.1), 0.4), rmax_fn_filtered)$par
+    write.csv(rmax_pars_filtered, file = file.path(model_run_dir, "rmax_pars_filtered.csv"))
+
+    rmax_fn_extreme = function(par){-sum(dnorm(log(prior_extreme_dt$r), mean = par[1], sd = par[2], log = TRUE))}
+    rmax_pars_extreme = nlminb(c(log(0.1), 0.4), rmax_fn_extreme)$par
+    write.csv(rmax_pars_extreme, file = file.path(model_run_dir, "rmax_pars_extreme.csv"))
+
+    # Plot rmax priors
+    png(filename = file.path(plot_dir, "prior.rmax.png"), width = 6, height = 6, units = "in", bg = "white", res = 300)
+    par(mfrow=c(3,1))
+
+    # Filtered (survival only)
+    plot_x = seq(from=0, to=max(prior_filtered_dt$r), length.out=1000)
+    hist(prior_filtered_dt$r, freq=FALSE, breaks=50, xlab="Rmax", main="Prior: Rmax - Filtered (Survival)", xlim=range(plot_x))
+    plot_y = dlnorm(plot_x, rmax_pars_filtered[1], rmax_pars_filtered[2])
+    lines(plot_x, plot_y, col="red")
+    legend("topright", c("Update prior: Filtered"), col=c("red"), lwd=3, bty="n")
+
+    # Extreme (survival + stability)
+    plot_x2 = seq(from=0, to=max(prior_extreme_dt$r), length.out=1000)
+    hist(prior_extreme_dt$r, freq=FALSE, breaks=50, xlab="Rmax", main="Prior: Rmax - Extreme (Survival + Stability)", xlim=range(plot_x))
+    plot_y2 = dlnorm(plot_x2, rmax_pars_extreme[1], rmax_pars_extreme[2])
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    legend("topright", c("Update prior: Extreme"), col=c("red"), lwd=3, lty=3, bty="n")
+
+    # Comparison plot
+    plot(plot_x, plot_y, col="red", type="l", xlab="Rmax", ylab="Density", 
+        xlim=range(c(plot_x, plot_x2)), ylim=c(0, max(c(plot_y, plot_y2))*1.2))
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    lines(density(prior_unfiltered_dt$r), col="blue")
+    legend("topright", c("Original prior", "Update prior: Filtered", "Update prior: Extreme"), 
+        col=c("blue", "red", "red"), lty=c(1, 1, 3), lwd=3, bty="n")
+    dev.off()
+
+    # Print summary statistics
+    cat("Summary of filtered priors:\n")
+    cat("=========================\n")
+    cat("LogK parameters:\n")
+    cat("Filtered (mean, sd):", round(logK_pars_filtered, 3), "\n")
+    cat("Extreme (mean, sd):", round(logK_pars_extreme, 3), "\n")
+    cat("\nRmax parameters:\n")
+    cat("Filtered (log mean, log sd):", round(rmax_pars_filtered, 3), "\n")
+    cat("Extreme (log mean, log sd):", round(rmax_pars_extreme, 3), "\n")
+    cat("\nNumber of simulations retained:\n")
+    cat("Original:", nrow(prior_unfiltered_dt), "\n")
+    cat("Filtered:", nrow(prior_filtered_dt), "\n")
+    cat("Extreme:", nrow(prior_extreme_dt), "\n")
