@@ -24,8 +24,13 @@ calc_avg_capture_weight_at_age_fished = function(F_value,
   len_upper = len_lower + 1
   length_vec = len_lower + 0.5
   
-  # natural mortality
-  mortality_at_age = M_ref * (max_age / age_vector)^(-1)
+    # Natural mortality at length (Lorenzen)
+        mortality_at_length = M_ref * (length_vec / L2)^(-1)
+        
+    # Convert mortality at length to mortality at age using PLA
+        pla_LA = pla_function(length(length_vec), length(age_vector), age_vector, 
+                        len_lower, len_upper, L1, L2, vbk, age1, age2, cv_len)
+        mortality_at_age = as.vector(matrix(mortality_at_length, nrow=1, ncol=length(length_vec)) %*% pla_LA)
   
   # selectivity
   selex_length = 1 / (1 + exp(-selex_slope*(length_vec - selex_l50)))
@@ -34,8 +39,7 @@ calc_avg_capture_weight_at_age_fished = function(F_value,
   # fishing mortality
   f_at_length = F_value * selex_length
   
-  pla_LA = pla_function(length(length_vec), length(age_vector), age_vector, 
-                        len_lower, len_upper, L1, L2, vbk, age1, age2, cv_len)
+  
   f_at_age = as.vector(matrix(f_at_length, nrow=1, ncol=length(length_vec)) %*% pla_LA)
   selex_at_age = as.vector(matrix(selex_length, nrow=1, ncol=length(length_vec)) %*% pla_LA)
   selexNZ_at_age = as.vector(matrix(selexNZ_length, nrow=1, ncol=length(length_vec)) %*% pla_LA)
@@ -84,8 +88,11 @@ calc_avg_capture_weight_at_age_unfished = function( max_age, L1, L2, vbk, age1, 
   pla_LA = pla_function(length(length_vec), length(age_vector), age_vector, 
                         len_lower, len_upper, L1, L2, vbk, age1, age2, cv_len)
   
-  # natural mortality
-  mortality_at_age = M_ref * (max_age / age_vector)^(-1)
+    # Natural mortality at length (Lorenzen)
+        mortality_at_length = M_ref * (length_vec / L2)^(-1)
+        
+    # Convert mortality at length to mortality at age using PLA
+        mortality_at_age = as.vector(matrix(mortality_at_length, nrow=1, ncol=length(length_vec)) %*% pla_LA)
   
   # selectivity
   selex_length = 1 / (1 + exp(-selex_slope*(length_vec - selex_l50)))

@@ -15,16 +15,6 @@ sim_rmax = function(id, max_age, M_ref, L1, L2, vbk, age1, age2, cv_len, maturit
 
         age_vector = 1:max_age
 
-        # natural morality
-            mortality_at_age = M_ref * (max_age / age_vector)^(-1)
-        
-        # survival
-            survival_at_age = rep(NA,max_age)
-            survival_at_age[1] = exp(-mortality_at_age[1])
-            for(i in 2:length(age_vector)){
-                survival_at_age[i] = survival_at_age[i-1]*exp(-mortality_at_age[i])
-            }
-
         # length
             length_at_age = L1 + (L2 - L1) * (1.0 - exp(-vbk * (age_vector - age1))) / (1.0 - exp(-vbk * (age2 - age1))) 
 
@@ -38,6 +28,19 @@ sim_rmax = function(id, max_age, M_ref, L1, L2, vbk, age1, age2, cv_len, maturit
             # calc maturity at age using PLA
                 pla_LA = pla_function(length(length_vec), length(age_vector), age_vector, len_lower, len_upper, L1, L2, vbk, age1, age2, cv_len)
                 maturity_at_age = as.vector(matrix(maturity_at_length,nrow=1,ncol=length(length_vec)) %*% pla_LA)
+        
+        # Natural mortality at length (Lorenzen)
+        mortality_at_length = M_ref * (length_vec / L2)^(-1)
+        
+        # Convert mortality at length to mortality at age using PLA
+        mortality_at_age = as.vector(matrix(mortality_at_length, nrow=1, ncol=length(length_vec)) %*% pla_LA)
+        
+        # survival
+            survival_at_age = rep(NA,max_age)
+            survival_at_age[1] = exp(-mortality_at_age[1])
+            for(i in 2:length(age_vector)){
+                survival_at_age[i] = survival_at_age[i-1]*exp(-mortality_at_age[i])
+            }
         
         # weight
             weight_at_length = weight_a * length_vec ^ weight_b
