@@ -46,7 +46,7 @@ clusterEvalQ(cl, {
 
 #_____________________________________________________________________________________________________________________________
 # Generate parameter sets
-n_samples = 100000
+n_samples = 400000
 cat("Generating", n_samples, "parameter sets...\n")
 param_dt = generate_random_params(n_samples = n_samples, seed = 123)
 
