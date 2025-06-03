@@ -3,3 +3,4 @@ data/output/bspm_parameter_priors_parallel.rds
 data/output/bspm_parameter_priors_parallel.csv
 data/output/bspm_parameter_priors_filtered.rds
 data/output/bspm_parameter_priors_filtered.csv
+data/output/model_runs/*
