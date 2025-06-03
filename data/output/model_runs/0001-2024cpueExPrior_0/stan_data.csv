@@ -362,10 +362,10 @@ run_id,type,name,row,col,value
 0001-2024cpueExPrior_0-bspm_estF,Data,obs_removals,71,,17770
 0001-2024cpueExPrior_0-bspm_estF,Data,sigmac,,,1
 0001-2024cpueExPrior_0-bspm_estF,PriorSD,sigmaf,,,0.025
-0001-2024cpueExPrior_0-bspm_estF,PriorMean,logK,,,14.5712050410575
-0001-2024cpueExPrior_0-bspm_estF,PriorSD,logK,,,0.34712601203631
-0001-2024cpueExPrior_0-bspm_estF,PriorMean,logr,,,-3.08067973755679
-0001-2024cpueExPrior_0-bspm_estF,PriorSD,logr,,,0.391773527563909
+0001-2024cpueExPrior_0-bspm_estF,PriorMean,logK,,,13.8633826342304
+0001-2024cpueExPrior_0-bspm_estF,PriorSD,logK,,,0.456389088374683
+0001-2024cpueExPrior_0-bspm_estF,PriorMean,logr,,,-0.673608682971451
+0001-2024cpueExPrior_0-bspm_estF,PriorSD,logr,,,0.457669490048041
 0001-2024cpueExPrior_0-bspm_estF,PriorMean,logsigmap,,,-2.9311037
 0001-2024cpueExPrior_0-bspm_estF,PriorSD,logsigmap,,,0.2661089
 0001-2024cpueExPrior_0-bspm_estF,PriorMean,logshape,,,0.693147180559945

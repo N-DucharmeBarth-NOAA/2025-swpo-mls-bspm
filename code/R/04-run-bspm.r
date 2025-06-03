@@ -31,7 +31,7 @@
     cpue_dt = fread(file.path(proj_dir,"data","input","cpue.csv"))
     logK_pars = read.csv(file.path(proj_dir,"data","output","logK_pars_extreme.csv"))
     rmax_pars = read.csv(file.path(proj_dir,"data","output","rmax_pars_extreme.csv"))
-    
+    shape_pars = read.csv(file.path(proj_dir,"data","output","shape_pars_extreme.csv"))
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # prepare data matrices
     catch_annual = catch_dt[,.(total_catch = sum(Obs * 1000)), by = .(year = floor(Time))]
@@ -72,8 +72,8 @@
         PriorSD_logr = rmax_pars$x[2],
         PriorMean_logsigmap = -2.9311037,
         PriorSD_logsigmap =  0.2661089,
-        PriorMean_logshape = log(2.0),
-        PriorSD_logshape = 0.1)
+        PriorMean_logshape = log(2.0), # PriorMean_logshape = shape_pars$x[1]
+        PriorSD_logshape = 0.1) # PriorSD_logshape = shape_pars$x[2]
 
         tmp_data = list(T=as.integer(n_years),
                         I = as.integer(ncol(index_mat)),

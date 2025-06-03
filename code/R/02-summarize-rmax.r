@@ -28,7 +28,7 @@ sapply(file.path(dir_helper_fns,(list.files(dir_helper_fns))),source)
 rmax_dt = readRDS(file.path(proj_dir, "data", "output", "bspm_parameter_priors_parallel.rds"))
 
 # Filter out failed runs for plotting
-rmax_clean = rmax_dt[!is.na(rmax) & !is.na(F_est) & !is.na(spr)]
+rmax_clean = rmax_dt[!is.na(rmax)]
 cat("Plotting", nrow(rmax_clean), "successful runs out of", nrow(rmax_dt), "total\n")
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
@@ -55,15 +55,14 @@ ggsave(filename = "rmax_prior.dens.all.png", plot = p, device = "png", path = pl
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # 2. Input parameter distributions
 p = rmax_clean %>% 
-    .[, .(sample_id, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len, 
-          selex_l50, selex_slope)] %>%
+    .[, .(sample_id, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len,weight_a,weight_b,h)] %>%
     melt(., id.vars = "sample_id") %>%
     ggplot() +
     facet_wrap(~variable, scales = "free") +
     ylim(0, NA) +
     xlab("Input") +
     ylab("Count") +
-    geom_histogram(aes(x = value, fill = variable), bins = 100, alpha = 0.5) +
+    geom_density(aes(x = value, fill = variable), alpha = 0.5) +
     geom_hline(yintercept = 0) +
     viridis::scale_color_viridis("Input\nvariable", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
     viridis::scale_fill_viridis("Input\nvariable", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
@@ -80,8 +79,8 @@ ggsave(filename = "rmax_prior.main.inputs.png", plot = p, device = "png", path =
 # 3. Rmax density comparing all vs viable populations
 p1 = rmax_clean[, .(rmax)] %>%
     .[, distribution := "all"]
-p2 = rmax_clean[rmax > 0, .(rmax)] %>%
-    .[, distribution := "survival"]
+p2 = rmax_clean[rmax > 0 & rmax<1.5, .(rmax)] %>%
+    .[, distribution := "plausible"]
 
 p = rbind(p1, p2) %>%
     ggplot() +
@@ -104,13 +103,13 @@ ggsave(filename = "rmax_prior.dens.filter.png", plot = p, device = "png", path =
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # 4. Input parameters comparing all vs viable populations
-p1 = rmax_clean[, .(sample_id, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len)] %>%
+p1 = rmax_clean[, .(sample_id, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len,weight_a,weight_b,h)] %>%
     .[, distribution := "all"] %>%
     melt(., id.vars = c("sample_id", "distribution")) 
 
-p2 = rmax_clean[rmax > 0] %>%
-    .[, .(sample_id, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len)] %>%
-    .[, distribution := "survival"] %>%
+p2 = rmax_clean[rmax > 0 & rmax<1.5] %>%
+    .[, .(sample_id, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len,weight_a,weight_b,h)] %>%
+    .[, distribution := "plausible"] %>%
     melt(., id.vars = c("sample_id", "distribution"))
 
 p = rbind(p1, p2) %>% 
@@ -119,8 +118,7 @@ p = rbind(p1, p2) %>%
     ylim(0, NA) +
     xlab("Input") +
     ylab("Relative count") +
-    geom_histogram(aes(x = value, y = after_stat(ncount), fill = distribution), 
-                   position = "dodge", bins = 100, alpha = 0.5) +
+    geom_density(aes(x = value, fill = distribution), alpha = 0.5) +
     geom_hline(yintercept = 0) +
     viridis::scale_color_viridis("Distribution", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
     viridis::scale_fill_viridis("Distribution", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
@@ -138,10 +136,10 @@ ggsave(filename = "rmax_prior.main.inputs.filter.png", plot = p, device = "png",
 set.seed(123)
 sample_size = min(10000, nrow(rmax_clean))
 
-p = rmax_clean[, .(rmax, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len)] %>%
+p = rmax_clean[, .(rmax, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len,weight_a,weight_b,h)] %>%
     .[sample(1:.N, sample_size)] %>%
-    .[, Outcome := "Extinction"] %>%
-    .[rmax > 0, Outcome := "Survival"] %>%
+    .[, Outcome := "All"] %>%
+    .[rmax > 0 & rmax<1.5, Outcome := "Plausible"] %>%
     .[, Outcome := as.factor(Outcome)] %>%
     ggpairs(., columns = 1:9, aes(color = Outcome, alpha = 0.4)) +
     viridis::scale_color_viridis("Outcome", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
@@ -155,32 +153,13 @@ p = rmax_clean[, .(rmax, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len)] %
 ggsave(filename = "rmax_prior.pairs.continuous_inputs.outcomes.png", plot = p, device = "png", path = plot_dir,
        scale = 1, width = 16, height = 12, units = "in", dpi = 300, limitsize = TRUE)
 
-#________________________________________________________________________________________________________________________________________________________________________________________________________
-# 6. Pairs plot - weight and selectivity parameters
-p = rmax_clean[, .(rmax, weight_a, weight_b, selex_l50, selex_slope, selexNZ_l50, selexNZ_slope)] %>%
-    .[sample(1:.N, sample_size)] %>%
-    .[, Outcome := "Extinction"] %>%
-    .[rmax > 0, Outcome := "Survival"] %>%
-    .[, Outcome := as.factor(Outcome)] %>%
-    .[, weight_a := log(weight_a)] %>%  # Log transform for better visualization
-    ggpairs(., columns = 1:7, aes(color = Outcome, alpha = 0.4)) +
-    viridis::scale_color_viridis("Outcome", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
-    viridis::scale_fill_viridis("Outcome", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
-    theme(panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
-          panel.grid.major = element_line(color = 'gray70', linetype = "dotted"), 
-          panel.grid.minor = element_line(color = 'gray70', linetype = "dotted"),
-          strip.background = element_rect(fill = "white"),
-          legend.key = element_rect(fill = "white"))
-
-ggsave(filename = "rmax_prior.pairs.weight_selex_inputs.outcomes.png", plot = p, device = "png", path = plot_dir,
-       scale = 1, width = 16, height = 12, units = "in", dpi = 300, limitsize = TRUE)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
-# 7. Pairs plot - derived quantities with outcomes
-p = rmax_clean[, .(rmax, spr, alpha, h, generation_time, F_est)] %>%
+# 6. Pairs plot - derived quantities with outcomes
+p = rmax_clean[, .(rmax, alpha, h, generation_time, inflection_point)] %>%
     .[sample(1:.N, sample_size)] %>%
-    .[, Outcome := "Extinction"] %>%
-    .[rmax > 0, Outcome := "Survival"] %>%
+    .[, Outcome := "All"] %>%
+    .[rmax > 0 & rmax<1.5, Outcome := "Plausible"] %>%
     .[, Outcome := as.factor(Outcome)] %>%
     ggpairs(., columns = 1:6, aes(color = Outcome, alpha = 0.4)) +
     viridis::scale_color_viridis("Outcome", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
@@ -195,10 +174,10 @@ ggsave(filename = "rmax_prior.pairs.derived_quants.outcomes.png", plot = p, devi
        scale = 1, width = 16, height = 12, units = "in", dpi = 300, limitsize = TRUE)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
-# 8. Pairs plot - derived quantities for viable populations only
-p = rmax_clean[, .(rmax, spr, alpha, h, generation_time, inflection_point)] %>%
+# 7. Pairs plot - derived quantities for viable populations only
+p = rmax_clean[, .(rmax, alpha, h, generation_time, inflection_point)] %>%
     .[sample(1:.N, sample_size)] %>%
-    .[rmax > 0 & !is.na(inflection_point)] %>%
+    .[rmax > 0 & rmax<1.5 & !is.na(inflection_point)] %>%
     ggpairs(., columns = 1:6, aes(color = "blue", alpha = 0.4)) +
     viridis::scale_color_viridis("Outcome", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
     viridis::scale_fill_viridis("Outcome", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
@@ -210,54 +189,6 @@ p = rmax_clean[, .(rmax, spr, alpha, h, generation_time, inflection_point)] %>%
 
 ggsave(filename = "rmax_prior.pairs.derived_quants.survival.png", plot = p, device = "png", path = plot_dir,
        scale = 1, width = 16, height = 12, units = "in", dpi = 300, limitsize = TRUE)
-
-#________________________________________________________________________________________________________________________________________________________________________________________________________
-# 9. Additional plot - Depletion metrics
-p = rmax_clean[, .(rmax,inflection_point,dep, dep_sb, spr, F_est)] %>%
-    .[sample(1:.N, sample_size)] %>%
-    .[rmax > 0 & !is.na(inflection_point)] %>%
-    .[,rmax:=NULL] %>%
-    .[,inflection_point:=NULL] %>%
-    melt(., id.vars = NULL) %>%
-    ggplot() +
-    facet_wrap(~variable, scales = "free") +
-    ylim(0, NA) +
-    xlab("Value") +
-    ylab("Count") +
-    geom_histogram(aes(x = value, fill = variable), bins = 100, alpha = 0.5) +
-    geom_hline(yintercept = 0) +
-    viridis::scale_color_viridis("Metric", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
-    viridis::scale_fill_viridis("Metric", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
-    theme(panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
-          panel.grid.major = element_line(color = 'gray70', linetype = "dotted"), 
-          panel.grid.minor = element_line(color = 'gray70', linetype = "dotted"),
-          strip.background = element_rect(fill = "white"),
-          legend.key = element_rect(fill = "white"))
-
-ggsave(filename = "rmax_prior.depletion_metrics.survival.png", plot = p, device = "png", path = plot_dir,
-       scale = 1, width = 10, height = 8, units = "in", dpi = 300, limitsize = TRUE)
-
-#________________________________________________________________________________________________________________________________________________________________________________________________________
-# 10. Weight data comparison plot
-p = rmax_clean %>%
-    .[, .(rmax,inflection_point,avg_weight_unfished, target_average_weight, sample_id)] %>%
-    .[sample(1:.N, sample_size)] %>%
-    .[rmax > 0 & !is.na(inflection_point)&avg_weight_unfished<250] %>%
-    .[,rmax:=NULL] %>%
-    .[,inflection_point:=NULL] %>%
-    ggplot() +
-    geom_point(aes(x = avg_weight_unfished, y = target_average_weight), alpha = 0.3) +
-    geom_abline(slope = 1, intercept = 0, color = "red", linetype = "dashed") +
-    xlab("Average Weight (Unfished)") +
-    ylab("Target Average Weight") +
-    theme(panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
-          panel.grid.major = element_line(color = 'gray70', linetype = "dotted"), 
-          panel.grid.minor = element_line(color = 'gray70', linetype = "dotted"),
-          strip.background = element_rect(fill = "white"),
-          legend.key = element_rect(fill = "white"))
-
-ggsave(filename = "rmax_prior.weight_comparison.survival.png", plot = p, device = "png", path = plot_dir,
-       scale = 1, width = 8, height = 6, units = "in", dpi = 300, limitsize = TRUE)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # 11. NEW: Multi-facet biological relationships plot by outcome
@@ -277,10 +208,6 @@ calc_biological_relationships = function(param_row) {
     l50 = param_row$l50
     weight_a = param_row$weight_a
     weight_b = param_row$weight_b
-    selex_l50 = param_row$selex_l50
-    selex_slope = param_row$selex_slope
-    selexNZ_l50 = param_row$selexNZ_l50
-    selexNZ_slope = param_row$selexNZ_slope
     
     # Age vector
     age_vector = 1:max_age
@@ -306,10 +233,6 @@ calc_biological_relationships = function(param_row) {
     # Maturity at length
     maturity_b = -maturity_a/l50
     maturity_at_length = (exp(maturity_a + maturity_b*length_vec)) / (1 + exp(maturity_a + maturity_b*length_vec))
-    
-    # Selectivity curves
-    selex_length = 1 / (1 + exp(-selex_slope*(length_vec - selex_l50)))
-    selexNZ_length = 1 / (1 + exp(-selexNZ_slope*(length_vec - selexNZ_l50)))
     
     # Combine results
     results = list(
@@ -352,27 +275,7 @@ calc_biological_relationships = function(param_row) {
             variable = "Natural Mortality at Age",
             x_var = age_vector,
             y_var = mortality_at_age
-        ),
-        
-        # Fishing selectivity data
-        selex_data = data.table(
-            sample_id = param_row$sample_id,
-            length = length_vec,
-            selectivity = selex_length,
-            variable = "Fishing Selectivity",
-            x_var = length_vec,
-            y_var = selex_length
-        )[length <= max(length_at_age) * 1.2],
-        
-        # NZ selectivity data
-        selexNZ_data = data.table(
-            sample_id = param_row$sample_id,
-            length = length_vec,
-            selectivity = selexNZ_length,
-            variable = "NZ Selectivity",
-            x_var = length_vec,
-            y_var = selexNZ_length
-        )[length <= max(length_at_age) * 1.2]
+        )
     )
     
     return(results)
@@ -385,15 +288,13 @@ plot_sample_size = min(500, nrow(rmax_clean))  # Limit to avoid overplotting
 
 # Stratified sampling to ensure representation across outcomes
 rmax_sample = rbind(
-    rmax_clean[rmax <= 0][sample(min(.N, plot_sample_size/3))],  # Extinction
-    rmax_clean[rmax > 0][sample(min(.N, plot_sample_size/3))],  # Survival (all)
-    rmax_clean[rmax > 0 & !is.na(avg_weight_unfished) & avg_weight_unfished >= 100 & avg_weight_unfished <= 150][sample(min(.N, plot_sample_size/3))]  # Survival in weight range
+    rmax_clean[sample(min(.N, plot_sample_size/3))],  # All
+    rmax_clean[rmax > 0 & rmax<1.5][sample(min(.N, plot_sample_size/3))]  # Plausible
 )
 
 # Add outcome categories
-rmax_sample[, outcome := "Extinction"]
-rmax_sample[rmax > 0, outcome := "Survival"]
-rmax_sample[rmax > 0 & !is.na(avg_weight_unfished) & avg_weight_unfished >= 100 & avg_weight_unfished <= 150, outcome := "Survival (100-150kg)"]
+rmax_sample[, outcome := "All"]
+rmax_sample[rmax > 0 & rmax<1.5, outcome := "Plausible"]
 
 # Calculate biological relationships for each parameter set
 bio_relationships_list = list()
@@ -408,9 +309,7 @@ for(i in 1:nrow(rmax_sample)) {
         bio_data$length_age_data[, .(sample_id, variable, x_var, y_var, outcome = param_row$outcome)],
         bio_data$weight_length_data[, .(sample_id, variable, x_var, y_var, outcome = param_row$outcome)],
         bio_data$maturity_length_data[, .(sample_id, variable, x_var, y_var, outcome = param_row$outcome)],
-        bio_data$mortality_age_data[, .(sample_id, variable, x_var, y_var, outcome = param_row$outcome)],
-        bio_data$selex_data[, .(sample_id, variable, x_var, y_var, outcome = param_row$outcome)],
-        bio_data$selexNZ_data[, .(sample_id, variable, x_var, y_var, outcome = param_row$outcome)]
+        bio_data$mortality_age_data[, .(sample_id, variable, x_var, y_var, outcome = param_row$outcome)]
     ), fill = TRUE)
     
     bio_relationships_list[[i]] = combined_data
@@ -422,13 +321,13 @@ all_bio_data = rbindlist(bio_relationships_list, fill = TRUE)
 # Create labels for facets with appropriate units
 all_bio_data[, variable_label := factor(variable, 
     levels = c("Length at Age", "Weight at Length", "Maturity at Length", 
-               "Natural Mortality at Age", "Fishing Selectivity", "NZ Selectivity"),
+               "Natural Mortality at Age"),
     labels = c("Length at Age (cm)", "Weight at Length (kg)", "Maturity at Length", 
-               "Natural Mortality at Age (yr⁻¹)", "Fishing Selectivity", "NZ Selectivity"))]
+               "Natural Mortality at Age (yr⁻¹)"))]
 
 all_bio_data[, outcome := factor(outcome, 
-    levels = c("Extinction", "Survival", "Survival (100-150kg)"),
-    labels = c("Extinction", "Survival", "Survival (100-150kg)"))]
+    levels = c("All", "Plausible"),
+    labels = c("All", "Plausible"))]
 
 # Create the multi-facet plot
 p = all_bio_data %>%
@@ -441,7 +340,7 @@ p = all_bio_data %>%
         color = "Outcome",
         title = "Biological Relationships by Population Outcome"
     ) +
-    scale_color_manual("Outcome", values = c("Extinction" = "blue", "Survival" = "orange", "Survival (100-150kg)" = "gray60")) +
+    scale_color_manual("Outcome", values = c("All" = "blue", "Plausible" = "orange")) +
     theme(panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
           panel.grid.major = element_line(color = 'gray70', linetype = "dotted"), 
           panel.grid.minor = element_line(color = 'gray70', linetype = "dotted"),
@@ -462,18 +361,8 @@ cat("Successful runs:", nrow(rmax_clean), "\n")
 cat("Proportion successful:", round(nrow(rmax_clean)/nrow(rmax_dt), 3), "\n")
 cat("Viable populations (Rmax > 0):", nrow(rmax_clean[rmax > 0]), "\n")
 cat("Proportion viable:", round(nrow(rmax_clean[rmax > 0])/nrow(rmax_clean), 3), "\n")
-cat("Viable populations with avg weight 100-150kg:", nrow(rmax_clean[rmax > 0 & !is.na(avg_weight_unfished) & avg_weight_unfished >= 100 & avg_weight_unfished <= 150]), "\n")
 
 cat("\n=== RMAX SUMMARY ===\n")
 print(summary(rmax_clean$rmax))
-
-cat("\n=== SPR SUMMARY ===\n")
-print(summary(rmax_clean$spr))
-
-cat("\n=== F ESTIMATE SUMMARY ===\n")
-print(summary(rmax_clean$F_est))
-
-cat("\n=== AVERAGE WEIGHT SUMMARY ===\n")
-print(summary(rmax_clean$avg_weight_unfished))
 
 cat("\nPlots saved to:", plot_dir, "\n")

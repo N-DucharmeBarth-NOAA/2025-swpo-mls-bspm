@@ -73,8 +73,8 @@
     sample_indices = sample(1:nrow(bio_params_dt), nsim, replace = FALSE)
 
     prior_dt = data.table(seed = 1:nsim,
-                         n = rep(2, nsim),
-                         logK = log(rlnorm(nsim,log(10e5),0.5)),
+                         n = bio_params_dt$shape[sample_indices],
+                         logK = bio_params_dt$logK[sample_indices],
                          r = bio_params_dt$rmax[sample_indices],
                          sigmap = rep(0, nsim),
                          init_dep = rep(1, nsim))
@@ -115,8 +115,8 @@
 
     # define filters
     # survival
-        seed_surv = sim_dt[time==2022&dep>0.02&n>15000]$seed
-        seed_flat = sim_dt[time==2022&dep>0.02&n>15000&pct_change_n > -5]$seed
+        seed_surv = sim_dt[time==2022&dep>0.02&n>15000&rmax<1]$seed
+        seed_flat = sim_dt[time==2022&dep>0.02&n>15000&rmax<1&pct_change_n > -5 & pct_change_n < 10]$seed
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # plot
@@ -259,6 +259,42 @@
         col=c("blue", "red", "red"), lty=c(1, 1, 3), lwd=3, bty="n")
     dev.off()
 
+    # Shape parameter (n)
+    shape_fn_filtered = function(par){-sum(dnorm(prior_filtered_dt$n, mean = par[1], sd = par[2], log = TRUE))}
+    shape_pars_filtered = nlminb(c(mean(prior_filtered_dt$n), sd(prior_filtered_dt$n)), shape_fn_filtered)$par
+    write.csv(shape_pars_filtered, file = file.path(model_run_dir, "shape_pars_filtered.csv"))
+
+    shape_fn_extreme = function(par){-sum(dnorm(prior_extreme_dt$n, mean = par[1], sd = par[2], log = TRUE))}
+    shape_pars_extreme = nlminb(c(mean(prior_extreme_dt$n), sd(prior_extreme_dt$n)), shape_fn_extreme)$par
+    write.csv(shape_pars_extreme, file = file.path(model_run_dir, "shape_pars_extreme.csv"))
+
+    # Plot shape parameter priors
+    png(filename = file.path(plot_dir, "prior.shape.png"), width = 6, height = 6, units = "in", bg = "white", res = 300)
+    par(mfrow=c(3,1))
+
+    # Filtered (survival only)
+    hist(prior_filtered_dt$n, freq=FALSE, breaks=50, xlab="Shape", main="Prior: Shape Parameter - Filtered (Survival)")
+    plot_x = seq(from=min(prior_filtered_dt$n), to=max(prior_filtered_dt$n), length.out=1000)
+    plot_y = dnorm(plot_x, shape_pars_filtered[1], shape_pars_filtered[2])
+    lines(plot_x, plot_y, col="red")
+    legend("topright", c("Update prior: Filtered"), col=c("red"), lwd=3, bty="n")
+
+    # Extreme (survival + stability)
+    hist(prior_extreme_dt$n, freq=FALSE, breaks=50, xlab="Shape", main="Prior: Shape Parameter - Extreme (Survival + Stability)")
+    plot_x2 = seq(from=min(prior_extreme_dt$n), to=max(prior_extreme_dt$n), length.out=1000)
+    plot_y2 = dnorm(plot_x2, shape_pars_extreme[1], shape_pars_extreme[2])
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    legend("topright", c("Update prior: Extreme"), col=c("red"), lwd=3, lty=3, bty="n")
+
+    # Comparison plot
+    plot(plot_x, plot_y, col="red", type="l", xlab="Shape", ylab="Density", 
+        xlim=range(c(plot_x, plot_x2)), ylim=c(0, max(c(plot_y, plot_y2))*1.2))
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    lines(density(prior_unfiltered_dt$n), col="blue")
+    legend("topright", c("Original prior", "Update prior: Filtered", "Update prior: Extreme"), 
+        col=c("blue", "red", "red"), lty=c(1, 1, 3), lwd=3, bty="n")
+    dev.off()
+
     # Print summary statistics
     cat("Summary of filtered priors:\n")
     cat("=========================\n")
@@ -268,6 +304,9 @@
     cat("\nRmax parameters:\n")
     cat("Filtered (log mean, log sd):", round(rmax_pars_filtered, 3), "\n")
     cat("Extreme (log mean, log sd):", round(rmax_pars_extreme, 3), "\n")
+    cat("\nShape parameters:\n")
+    cat("Filtered (mean, sd):", round(shape_pars_filtered, 3), "\n")
+    cat("Extreme (mean, sd):", round(shape_pars_extreme, 3), "\n")
     cat("\nNumber of simulations retained:\n")
     cat("Original:", nrow(prior_unfiltered_dt), "\n")
     cat("Filtered:", nrow(prior_filtered_dt), "\n")
