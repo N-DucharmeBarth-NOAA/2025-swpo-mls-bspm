@@ -159,7 +159,7 @@ model {
         raw_F ~ std_normal();
     
     // Lognormal prior depletion prior from Gedamke and Hoenig 2006 size based Z estimate
-        target += lognormal_lpdf(x[t_assessment] | prior_depletion_meanlog, prior_depletion_sdlog);
+        target += lognormal_lpdf(x[t_dep] | prior_depletion_meanlog, prior_depletion_sdlog);
     
     // observation model
         real mu_index;
