@@ -65,7 +65,7 @@ ssp_prior_pushforward = function(ssp_summary,stan_data,settings){
             }
       }
 
-      vector_var = c("raw_logK","raw_logr","raw_logx0","raw_logsigmap","raw_logshape","logK","r","x0","m","sigmap","sigmap2","sigmao_sc","shape","n","dmsy","h","g","sigmao_add","sigmaf")
+      vector_var = c("raw_logK","raw_logr","raw_logsigmap","raw_logshape","logK","r","m","sigmap","sigmap2","sigmao_sc","shape","n","dmsy","h","g","sigmao_add","sigmaf")
       vector_dt.list = as.list(rep(NA,length(vector_var)))
       for(i in 1:length(vector_dt.list)){
             vector_dt.list[[i]] = data.table(value=get(vector_var[i])) %>%
