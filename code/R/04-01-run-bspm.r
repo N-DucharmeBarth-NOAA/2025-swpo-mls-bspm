@@ -84,7 +84,7 @@
 
         tmp_data$sigmao_input = mean_se
         tmp_data$obs_removals = catch_annual$total_catch
-        tmp_data$sigmac = 1
+        tmp_data$sigmac = 0.2
         tmp_data$PriorSD_sigmaf = 0.025                        
         stan.data = c(tmp_data,tmp.data.priors)
 
@@ -110,8 +110,8 @@
                         stan_save_dir=file.path(proj_dir,"data","output","model_runs"),
                         n_cores=5)
 
-    print(fit, pars = c("logK", "r", "shape", "sigmap","sigmao_add","sigmaf","x[1]","x[71]"))
-
+    print(fit, pars = c("logK", "r", "shape", "sigmap","sigmao_add","sigmaf","x[1]","x[37]","x[71]","removals[3]","removals[70]"))
+    print(stan.data$obs_removals[c(3,70)])
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # save results
     saveRDS(fit, file.path(proj_dir,"data","output","model_runs",paste0(run_number,"-",run_label_stem,"-fit.rds")))

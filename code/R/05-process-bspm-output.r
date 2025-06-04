@@ -97,7 +97,7 @@
     custom_params$ppp$combine = FALSE  # TRUE | FALSE
 
     # Time series
-    custom_params$ppts$var = c("Depletion (D)", "F_Fmsy", "Removals", "Process error")  # Any combination
+    custom_params$ppts$var = c("Depletion (D)", "Population (P)", "F_Fmsy", "Removals", "Process error")  # Any combination
     custom_params$ppts$show = "Posterior"  # "Prior" | "Posterior" | "Both"
     custom_params$ppts$combine = FALSE  # TRUE | FALSE
     custom_params$ppts$prop = 0.25  # 0.01 to 1.00 (increments of 0.05)
@@ -112,7 +112,7 @@
     custom_params$kbmj$resolution = 300  # 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500
 
     # Forecasts
-    custom_params$forecasts$var = c("Depletion (D)", "F_Fmsy", "Removals", "Process error")  # Any combination
+    custom_params$forecasts$var = c("Depletion (D)","Population (P)", "F_Fmsy", "Removals", "Process error")  # Any combination
     custom_params$forecasts$combine = FALSE  # TRUE | FALSE
     custom_params$forecasts$prop = 0.25  # 0.01 to 1.00 (increments of 0.05)
     custom_params$forecasts$quants = 95  # 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100
