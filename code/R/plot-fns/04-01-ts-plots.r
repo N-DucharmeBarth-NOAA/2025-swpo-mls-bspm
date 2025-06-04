@@ -119,7 +119,9 @@ generate_ppts <- function(model_dirs, params = NULL) {
     ggplot() +
     ylab("Metric") +
     xlab("Year") +
-    facet_wrap(~name, scales = "free_y", ncol = min(c(4, uniqueN(plot_dt$name))))
+    facet_wrap(~name, scales = "free_y", 
+           ncol = if(is.null(params$ncol)) min(c(4, uniqueN(plot_dt$name))) else params$ncol,
+           nrow = params$nrow)
   
   if (params$show == "Prior" || params$show == "Both") {
     p <- p + geom_ribbon(data = plot_dt[type == "Prior"], 

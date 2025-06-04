@@ -205,8 +205,8 @@ generate_kb <- function(model_dirs, params = NULL) {
   # Add uncertainty contours if available
   if (!is.null(contour_dt)) {
     p <- p + geom_polygon(data = contour_dt, 
-                         aes(x = P_Pmsy, y = F_Fmsy, color = run_label, fill = run_label, 
-                             group = plot_id, linetype = type), alpha = 0.1)
+                        aes(x = P_Pmsy, y = F_Fmsy, fill = run_label, group = plot_id), 
+                        alpha = 0.1, show.legend = FALSE)
   }
   
   # Add start and end points

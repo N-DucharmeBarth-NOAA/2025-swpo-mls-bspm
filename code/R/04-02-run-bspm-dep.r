@@ -41,8 +41,8 @@
     time_years = catch_annual$year
     n_years = length(time_years)
     
-    index_mat = matrix(-9999, nrow = n_years, ncol = 2)
-    se_mat = matrix(-9999, nrow = n_years, ncol = 2)
+    index_mat = matrix(-999, nrow = n_years, ncol = 2)
+    se_mat = matrix(-999, nrow = n_years, ncol = 2)
 
     mean_se = mean(cpue_dt$SE)
 
@@ -116,7 +116,7 @@
 
     print(fit, pars = c("logK", "r", "shape", "sigmap","sigmao_add","sigmaf","x[1]","x[37]","x[71]","removals[3]","removals[70]"))
     print(stan.data$obs_removals[c(3,70)])
-    
+
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # save results
     saveRDS(fit, file.path(proj_dir,"data","output","model_runs",paste0(run_number,"-",run_label_stem,"-fit.rds")))

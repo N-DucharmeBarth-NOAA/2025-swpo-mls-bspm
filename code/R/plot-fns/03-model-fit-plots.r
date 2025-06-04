@@ -436,7 +436,7 @@ generate_ppp <- function(model_dirs, params = NULL) {
   
   # Reshape and process based on combine setting
   if (params$combine) {
-    plot_dt <- merge(plot_dt, tmp_summary[, .(run_id, run_label)]) %>%
+    plot_dt <- merge(plot_dt, tmp_summary[, .(run_id, run_label)], by = "run_id") %>%
       .[, .(run_label, iter, name, Prior, Posterior)] %>%
       melt(., id.vars = c("run_label", "iter", "name")) %>%
       .[, variable := factor(variable, levels = c("Prior", "Posterior"))] %>%
@@ -444,7 +444,7 @@ generate_ppp <- function(model_dirs, params = NULL) {
       .[variable == "Prior", run_label := "Combined prior"] %>%
       .[, run_label := factor(run_label, levels = c("Combined prior", "Combined posterior"))]
   } else {
-    plot_dt <- merge(plot_dt, tmp_summary[, .(run_id, run_label)]) %>%
+    plot_dt <- merge(plot_dt, tmp_summary[, .(run_id, run_label)], by = "run_id") %>%
       .[, .(run_label, iter, name, Prior, Posterior)] %>%
       melt(., id.vars = c("run_label", "iter", "name")) %>%
       .[, variable := factor(variable, levels = c("Prior", "Posterior"))]
@@ -466,7 +466,9 @@ generate_ppp <- function(model_dirs, params = NULL) {
     ggplot() +
     ylab("Density") +
     xlab("Parameter") +
-    facet_wrap(~name, scales = "free_x", ncol = min(c(3, uniqueN(plot_dt$name))))
+    facet_wrap(~name, scales = "free_x", 
+           ncol = if(is.null(params$ncol)) min(c(3, uniqueN(plot_dt$name))) else params$ncol,
+           nrow = params$nrow)
   
   if (params$show == "Prior" || params$show == "Both") {
     p <- p + geom_density(data = plot_dt[variable == "Prior"], 

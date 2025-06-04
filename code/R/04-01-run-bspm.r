@@ -40,8 +40,8 @@
     time_years = catch_annual$year
     n_years = length(time_years)
     
-    index_mat = matrix(-9999, nrow = n_years, ncol = 2)
-    se_mat = matrix(-9999, nrow = n_years, ncol = 2)
+    index_mat = matrix(-999, nrow = n_years, ncol = 2)
+    se_mat = matrix(-999, nrow = n_years, ncol = 2)
 
     mean_se = mean(cpue_dt$SE)
 

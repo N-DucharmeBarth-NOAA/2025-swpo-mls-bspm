@@ -35,8 +35,10 @@ ssp_prior_pushforward = function(ssp_summary,stan_data,settings){
       raw_epsp = epsp = matrix(NA,nrow=n_samples,ncol=stan_data[name=="T"]$value)
       for(j in 1:ncol(epsp)){
             epsp[,j] = rlnorm(n_samples,log(1.0)-(sigmap^2)/2,sigmap)
-            raw_F[,j] = abs(rnorm(n_samples))
-            F[,j] = raw_F[,j]*sigmaf
+            if(j<ncol(epsp)){
+                  raw_F[,j] = abs(rnorm(n_samples))
+                  F[,j] = raw_F[,j]*sigmaf
+            }
       }
 
       raw_epsp = (log(epsp) - (sigmap^2)/2)/sigmap

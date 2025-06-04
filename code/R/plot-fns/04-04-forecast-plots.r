@@ -90,7 +90,9 @@ generate_fcast <- function(model_dirs, params = NULL) {
     ggplot() +
     ylab("Metric") +
     xlab("Year") +
-    facet_wrap(~name, scales = "free_y", ncol = min(c(4, uniqueN(plot_dt$name)))) +
+    facet_wrap(~name, scales = "free_y", 
+           ncol = if(is.null(params$ncol)) min(c(4, uniqueN(plot_dt$name))) else params$ncol,
+           nrow = params$nrow) +
     geom_ribbon(data = plot_dt[type == "Posterior"], 
                aes(x = year, ymin = lp, ymax = up, fill = run_label), 
                alpha = 0.4, linewidth = 1.15) +

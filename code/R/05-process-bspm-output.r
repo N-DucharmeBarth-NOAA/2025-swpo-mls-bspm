@@ -95,6 +95,8 @@
     custom_params$ppp$raw = TRUE  # TRUE (transformed) | FALSE (raw)
     custom_params$ppp$show = "Both"  # "Prior" | "Posterior" | "Both"
     custom_params$ppp$combine = FALSE  # TRUE | FALSE
+    custom_params$ppp$ncol = 3
+    custom_params$ppp$nrow = 2
 
     # Time series
     custom_params$ppts$var = c("Depletion (D)", "Population (P)", "F_Fmsy", "Removals", "Process error")  # Any combination
@@ -102,6 +104,8 @@
     custom_params$ppts$combine = FALSE  # TRUE | FALSE
     custom_params$ppts$prop = 0.25  # 0.01 to 1.00 (increments of 0.05)
     custom_params$ppts$quants = 95  # 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100
+    custom_params$ppts$ncol = 3
+    custom_params$ppts$nrow = 2  # Let ggplot calculate rows
 
     # Kobe & Majuro
     custom_params$kbmj$show = "Posterior"  # "Prior" | "Posterior" | "Both"
@@ -121,6 +125,8 @@
     custom_params$forecasts$type = "Catch"  # "Catch" | "U" | "MSY" | "Umsy"
     custom_params$forecasts$avg_year = 3  # 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     custom_params$forecasts$scalar = 1.0  # 0.01 to 5.0 (increments of 0.1)
+    custom_params$forecasts$ncol = 3
+    custom_params$forecasts$nrow = 2  # Let ggplot calculate rows
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # generate all plots with batch processing
