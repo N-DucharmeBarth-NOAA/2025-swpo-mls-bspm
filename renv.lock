@@ -2231,6 +2231,21 @@
       "Maintainer": "Hadley Wickham <hadley@posit.co>",
       "Repository": "CRAN"
     },
+    "randtests": {
+      "Package": "randtests",
+      "Version": "1.0.2",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Testing Randomness in R",
+      "Date": "2024-04-22",
+      "Authors@R": "c(person(given = \"Frederico\", family = \"Caeiro\", role = c(\"aut\", \"cre\"), email = \"fac@fct.unl.pt\", comment = c(ORCID = \"0000-0001-8628-7281\")), person(given = \"Ayana\", family = \"Mateus\", role = \"aut\", comment = c(ORCID = \"0000-0002-5630-3321\")) )",
+      "Maintainer": "Frederico Caeiro <fac@fct.unl.pt>",
+      "Description": "Provides several non parametric randomness tests for numeric sequences.",
+      "License": "GPL (>= 2)",
+      "NeedsCompilation": "no",
+      "Author": "Frederico Caeiro [aut, cre] (<https://orcid.org/0000-0001-8628-7281>), Ayana Mateus [aut] (<https://orcid.org/0000-0002-5630-3321>)",
+      "Repository": "CRAN"
+    },
     "renv": {
       "Package": "renv",
       "Version": "1.1.4",
@@ -2424,6 +2439,45 @@
       "Config/testthat/edition": "3",
       "Author": "Jiqiang Guo [aut], Jonah Gabry [aut], Ben Goodrich [cre, aut], Andrew Johnson [aut], Sebastian Weber [aut], Hamada S. Badr [aut] (<https://orcid.org/0000-0002-9808-2344>), Daniel Lee [ctb], Krzysztof Sakrejda [ctb], Modrak Martin [ctb], Trustees of Columbia University [cph], Oleg Sklyar [cph] (R/cxxfunplus.R), The R Core Team [cph] (R/pairs.R, R/dynGet.R), Jens Oehlschlaegel-Akiyoshi [cph] (R/pairs.R), John Maddock [cph] (gamma.hpp), Paul Bristow [cph] (gamma.hpp), Nikhar Agrawal [cph] (gamma.hpp), Christopher Kormanyos [cph] (gamma.hpp), Bronder Steve [ctb]",
       "Maintainer": "Ben Goodrich <benjamin.goodrich@columbia.edu>",
+      "Repository": "CRAN"
+    },
+    "rstantools": {
+      "Package": "rstantools",
+      "Version": "2.4.0",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Tools for Developing R Packages Interfacing with 'Stan'",
+      "Date": "2024-01-22",
+      "Authors@R": "c(person(given = \"Jonah\", family = \"Gabry\", role = c(\"aut\", \"cre\"), email = \"jsg2201@columbia.edu\"), person(given = \"Ben\", family = \"Goodrich\", role = \"aut\", email = \"benjamin.goodrich@columbia.edu\"), person(given = \"Martin\", family = \"Lysy\", role = \"aut\", email = \"mlysy@uwaterloo.ca\"), person(given = \"Andrew\", family = \"Johnson\", role = \"aut\"), person(given = \"Hamada S.\", family = \"Badr\", role = \"ctb\"), person(given = \"Marco\", family = \"Colombo\", role = \"ctb\"), person(given = \"Stefan\", family = \"Siegert\", role = \"ctb\"), person(given = \"Trustees of\", family = \"Columbia University\", role = \"cph\"))",
+      "Description": "Provides various tools for developers of R packages interfacing with 'Stan' <https://mc-stan.org>, including functions to set up the required package structure, S3 generics and default methods to unify function naming across 'Stan'-based R packages, and vignettes with recommendations for developers.",
+      "License": "GPL (>= 3)",
+      "URL": "https://mc-stan.org/rstantools/, https://discourse.mc-stan.org/",
+      "BugReports": "https://github.com/stan-dev/rstantools/issues",
+      "Encoding": "UTF-8",
+      "SystemRequirements": "pandoc, C++14",
+      "Imports": [
+        "desc",
+        "stats",
+        "utils",
+        "Rcpp (>= 0.12.16)",
+        "RcppParallel (>= 5.0.1)"
+      ],
+      "Suggests": [
+        "rstan (>= 2.17.2)",
+        "usethis (>= 1.5.1)",
+        "testthat (>= 2.0.0)",
+        "knitr",
+        "pkgbuild",
+        "pkgload",
+        "roxygen2 (>= 6.0.1)",
+        "rmarkdown",
+        "rstudioapi"
+      ],
+      "RoxygenNote": "7.3.0",
+      "VignetteBuilder": "knitr",
+      "NeedsCompilation": "no",
+      "Author": "Jonah Gabry [aut, cre], Ben Goodrich [aut], Martin Lysy [aut], Andrew Johnson [aut], Hamada S. Badr [ctb], Marco Colombo [ctb], Stefan Siegert [ctb], Trustees of Columbia University [cph]",
+      "Maintainer": "Jonah Gabry <jsg2201@columbia.edu>",
       "Repository": "CRAN"
     },
     "scales": {
