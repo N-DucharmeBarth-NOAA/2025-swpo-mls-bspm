@@ -3,6 +3,7 @@
 # Calculate fishing mortality rates and relative depletion for multiple biological parameter sets
 # Based on Gedamke and Hoenig 2006 - Parallel processing version
 # Uses change in mean size to estimate Z1 and Z2, then calculates SPR-based depletion
+# Enhanced with additional filtering and visualization
 
 # Copyright (c) 2025 Nicholas Ducharme-Barth
 # You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -12,180 +13,16 @@
 library(data.table)
 library(magrittr)
 library(parallel)
-
-#_____________________________________________________________________________________________________________________________
-# define helper functions
-transitional_mean_weight = function(W_inf, Wc, vbk, Z1, Z2, d) {
-    # Equation 6 - modified to be in terms of weight
-    # d time in years
-    
-    # Calculate each component separately for clarity
-    term1 = W_inf
-    
-    numerator_fraction = Z1 * Z2 * (W_inf - Wc) * 
-                        (Z1 + vbk + (Z2 - Z1) * exp(-(Z2 + vbk) * d))
-    
-    denominator_fraction = (Z1 + vbk) * (Z2 + vbk) * 
-                            (Z1 + (Z2 - Z1) * exp(-Z2 * d))
-    
-    mean_weight = term1 - (numerator_fraction / denominator_fraction)
-    
-    return(mean_weight)
-}
-
-negative_log_likelihood = function(par, data, bio_params) {
-    # Equation 8 implementation
-    # define leading parameters
-    Z1 = par[1]
-    Z2 = par[2]
-
-    # extract pars from bio_params
-    max_age = bio_params$max_age
-    L1 = bio_params$L1
-    L2 = bio_params$L2
-    vbk = bio_params$vbk
-    age1 = bio_params$age1
-    age2 = bio_params$age2
-    weight_a = bio_params$weight_a
-    weight_b = bio_params$weight_b
-    Lc = bio_params$Lc
-    
-    # define W_inf and Wc
-    age_vector = seq(from=0, to=bio_params$max_age*2, length.out=50)
-    length_at_age = L1 + (L2 - L1) * (1.0 - exp(-vbk * (age_vector - age1))) / (1.0 - exp(-vbk * (age2 - age1)))
-    W_inf = weight_a*max(length_at_age)^weight_b
-    Wc = weight_a*length_at_age[max(which(length_at_age<Lc))]^weight_b
-
-    # process data
-    proc_dat = data[weight>Wc&year>=1952] %>%
-               .[,.(mean_wt=mean(weight),sd_wt=sd(weight),.N),by=year] %>%
-               .[,d:=year-1952]
-
-    # calculate d_vec
-    d_vec = proc_dat$d
-
-    # Calculate predicted lengths (using your transitional equation)
-    predicted = transitional_mean_weight(W_inf, Wc, vbk, Z1, Z2, d_vec)
-    
-    log_likelihood = sum(dnorm(proc_dat$mean_wt, 
-                         mean = predicted, 
-                         sd = proc_dat$sd_wt/sqrt(proc_dat$N), 
-                         log = TRUE))
-    
-    return(-log_likelihood)  # Return negative for minimization
-}
-
-rel_depletion = function(result, bio_params) {
-    # Calculate relative depletion from Z1 to Z2
-    # define parameters
-    Z1 = result$par[1]
-    Z2 = result$par[2]
-    max_age = bio_params$max_age
-    L1 = bio_params$L1
-    L2 = bio_params$L2
-    vbk = bio_params$vbk
-    age1 = bio_params$age1
-    age2 = bio_params$age2
-    weight_a = bio_params$weight_a
-    weight_b = bio_params$weight_b
-    cv_len = bio_params$cv_len
-    maturity_a = bio_params$maturity_a
-    l50 = bio_params$l50
-    sex_ratio = bio_params$sex_ratio
-    reproductive_cycle = bio_params$reproductive_cycle
-    
-    # age 
-    age_vector = 1:max_age
-    
-    # length
-    length_at_age = L1 + (L2 - L1) * (1.0 - exp(-vbk * (age_vector - age1))) / (1.0 - exp(-vbk * (age2 - age1)))
-    len_lower = seq(from=0, to=ceiling(max(length_at_age*(1+cv_len))), by=1)
-    len_upper = len_lower + 1
-    length_vec = len_lower + 0.5
-
-    # survival
-    survival_at_age_Z1 = rep(NA, max_age)
-    survival_at_age_Z1[1] = 1
-    survival_at_age_Z2 = rep(NA, max_age)
-    survival_at_age_Z2[1] = 1
-    for(i in 2:length(age_vector)) {
-        survival_at_age_Z1[i] = survival_at_age_Z1[i-1] * exp(-Z1)
-        survival_at_age_Z2[i] = survival_at_age_Z2[i-1] * exp(-Z2)
-    }
-    survival_at_age_Z1[max_age] = survival_at_age_Z1[max_age-1] / (1 - exp(-Z1))
-    survival_at_age_Z2[max_age] = survival_at_age_Z2[max_age-1] / (1 - exp(-Z2))
-
-    # maturity
-    maturity_b = -maturity_a/l50
-    maturity_at_length = (exp(maturity_a+maturity_b*length_vec)) / (1+exp(maturity_a+maturity_b*length_vec))
-
-    # calc maturity at age using PLA
-    pla_LA = pla_function(length(length_vec), length(age_vector), age_vector, len_lower, len_upper, L1, L2, vbk, age1, age2, cv_len)
-    maturity_at_age = as.vector(matrix(maturity_at_length, nrow=1, ncol=length(length_vec)) %*% pla_LA)
-    maturity_at_age = maturity_at_age/max(maturity_at_age)
-    
-    # weight
-    weight_at_length = weight_a * length_vec ^ weight_b
-    weight_at_age = as.vector(matrix(weight_at_length, nrow=1, ncol=length(length_vec)) %*% pla_LA)
-
-    # reproductive output per year (sex-ratio & reproductive cycle)
-    reproduction_at_age = (maturity_at_age * weight_at_age * sex_ratio)/reproductive_cycle
-
-    # spr calc
-    # lifetime average eggs per recruit in fished and unfished conditions
-    epr_Z1 = sum(reproduction_at_age*survival_at_age_Z1)
-    epr_Z2 = sum(reproduction_at_age*survival_at_age_Z2)
-    rel_dep_n = sum(survival_at_age_Z2)/sum(survival_at_age_Z1)
-    rel_dep_ssb = epr_Z2/epr_Z1
-    
-    return(data.table(sample_id=bio_params$sample_id, rel_dep_n = rel_dep_n, rel_dep_ssb = rel_dep_ssb))
-}
-
-mean_wt_resid = function(result, bio_params, data) {
-    # Calculate mean weight residuals
-    # define parameters
-    Z1 = result$par[1]
-    Z2 = result$par[2]
-    max_age = bio_params$max_age
-    L1 = bio_params$L1
-    L2 = bio_params$L2
-    vbk = bio_params$vbk
-    age1 = bio_params$age1
-    age2 = bio_params$age2
-    weight_a = bio_params$weight_a
-    weight_b = bio_params$weight_b
-    Lc = bio_params$Lc
-
-    # define W_inf and Wc
-    age_vector = seq(from=0, to=bio_params$max_age*2, length.out=50)
-    length_at_age = L1 + (L2 - L1) * (1.0 - exp(-vbk * (age_vector - age1))) / (1.0 - exp(-vbk * (age2 - age1)))
-    W_inf = weight_a*max(length_at_age)^weight_b
-    Wc = weight_a*length_at_age[max(which(length_at_age<Lc))]^weight_b
-
-    # process data
-    proc_dat = data[weight>Wc&year>=1952] %>%
-            .[,.(mean_wt=mean(weight),sd_wt=sd(weight),.N),by=year] %>%
-            .[,d:=year-1952]
-
-    # calculate d_vec
-    d_vec = proc_dat$d
-
-    # Calculate predicted lengths (using your transitional equation)
-    predicted = transitional_mean_weight(W_inf, Wc, vbk, Z1, Z2, d_vec)
-    
-    proc_dat$pred_wt = predicted
-    proc_dat$resid = proc_dat$mean_wt - proc_dat$pred_wt
-    proc_dat$sample_id = bio_params$sample_id
-
-    return(proc_dat[,.(sample_id, year, d, N, mean_wt, sd_wt, pred_wt, resid)])
-}
+library(ggplot2)
 
 #_____________________________________________________________________________________________________________________________
 # define paths
 proj_dir = this.path::this.proj()
 dir_helper_fns = file.path(proj_dir, "code", "R", "helper-fns")
 model_run_dir = file.path(proj_dir, "data", "output")
+plot_dir = file.path(proj_dir, "plots", "depletion")
 dir.create(model_run_dir, recursive = TRUE)
+dir.create(plot_dir, recursive = TRUE)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # source helper functions
@@ -223,7 +60,7 @@ bio_params_dt = fread(file.path(proj_dir, "data", "output", "bspm_parameter_prio
 #_____________________________________________________________________________________________________________________________
 # Subsampling option
 # Set to NULL to process all data, or specify number of samples
-n_subsample = 10000  # Change this to desired number (e.g., 1000) or leave as NULL for all data
+n_subsample = NULL  # Change this to desired number (e.g., 1000) or leave as NULL for all data
 subsample_seed = 456  # Set seed for reproducible subsampling
 
 if(!is.null(n_subsample) && n_subsample < nrow(bio_params_dt)) {
@@ -260,100 +97,6 @@ cat("Loaded", nrow(nz_wt), "weight observations\n")
 
 # Export data to workers
 clusterExport(cl, c("nz_wt", "bio_params_dt"))
-
-#_____________________________________________________________________________________________________________________________
-# Define processing function for a single parameter set
-process_depletion_set = function(i, bio_params_dt, nz_wt) {
-    
-    # Extract parameters for current iteration
-    params = bio_params_dt[i]
-    
-    # Initialize result list
-    result = list(
-        sample_id = params$sample_id,
-        Z1 = NA_real_,
-        Z2 = NA_real_,
-        convergence = NA_integer_,
-        log_likelihood = NA_real_,
-        rel_dep_n = NA_real_,
-        rel_dep_ssb = NA_real_,
-        error_message = NA_character_
-    )
-    
-    tryCatch({
-        # Fit Z1 and Z2 using optimization
-        opt_result = nlminb(start = c(params$M_ref + 0.1, params$M_ref + 0.2),
-                           objective = negative_log_likelihood,
-                           data = nz_wt,
-                           bio_params = params,
-                           lower = rep(params$M_ref, 2),
-                           upper = rep(3, 2))
-        
-        # Store optimization results
-        result$Z1 = opt_result$par[1]
-        result$Z2 = opt_result$par[2]
-        result$convergence = opt_result$convergence
-        result$log_likelihood = opt_result$objective
-        
-        # Calculate relative depletion if optimization converged
-        if(opt_result$convergence == 0) {
-            depletion_result = rel_depletion(opt_result, params)
-            result$rel_dep_n = depletion_result$rel_dep_n
-            result$rel_dep_ssb = depletion_result$rel_dep_ssb
-        }
-        
-    }, error = function(e) {
-        result$error_message <<- as.character(e$message)
-    })
-    
-    return(result)
-}
-
-# Define separate function to calculate residuals for successful runs
-calculate_residuals_parallel = function(successful_dt, nz_wt) {
-    
-    cat("Calculating residuals for", nrow(successful_dt), "successful parameter sets...\n")
-    
-    # Setup parallel processing for residuals
-    n_cores_resid = min(parallel::detectCores() - 1, nrow(successful_dt))
-    cl_resid = makeCluster(n_cores_resid)
-    
-    # Export necessary objects to workers
-    clusterEvalQ(cl_resid, {
-        library(data.table)
-        library(magrittr)
-    })
-    
-    # Export functions and data to workers
-    clusterExport(cl_resid, c("mean_wt_resid", "transitional_mean_weight", "nz_wt"))
-    
-    # Function to calculate residuals for one parameter set
-    calc_residuals_single = function(i, successful_dt, nz_wt) {
-        params = successful_dt[i]
-        
-        # Recreate opt_result structure from stored values
-        opt_result = list(par = c(params$Z1, params$Z2))
-        
-        tryCatch({
-            residuals = mean_wt_resid(opt_result, params, nz_wt)
-            return(residuals)
-        }, error = function(e) {
-            return(data.table(sample_id = params$sample_id, error = as.character(e$message)))
-        })
-    }
-    
-    # Calculate residuals in parallel
-    residuals_list = parLapply(cl_resid, 1:nrow(successful_dt), calc_residuals_single, 
-                              successful_dt = successful_dt, nz_wt = nz_wt)
-    
-    # Stop the cluster
-    stopCluster(cl_resid)
-    
-    # Combine residuals
-    residuals_dt = rbindlist(residuals_list, fill = TRUE)
-    
-    return(residuals_dt)
-}
 
 #_____________________________________________________________________________________________________________________________
 # Process parameter sets in parallel
@@ -407,6 +150,30 @@ if(converged_runs > 0) {
 }
 
 #_____________________________________________________________________________________________________________________________
+# Apply additional filter: rel_dep_ssb < 1
+cat("\nApplying additional filter: rel_dep_ssb < 1...\n")
+
+if(converged_runs > 0) {
+    # Initial successful runs
+    successful_dt = final_dt[convergence == 0 & !is.na(Z1) & !is.na(rel_dep_ssb)]
+    
+    # Apply depletion filter
+    filtered_dt = successful_dt[rel_dep_ssb < 1]
+    
+    cat("Runs before depletion filter:", nrow(successful_dt), "\n")
+    cat("Runs after depletion filter (rel_dep_ssb < 1):", nrow(filtered_dt), "\n")
+    cat("Filter retention rate:", round(nrow(filtered_dt)/nrow(successful_dt) * 100, 1), "%\n")
+    
+    if(nrow(filtered_dt) > 0) {
+        cat("\nSummary of filtered rel_dep_ssb:\n")
+        print(summary(filtered_dt$rel_dep_ssb))
+    }
+} else {
+    filtered_dt = data.table()
+    cat("No converged runs to filter.\n")
+}
+
+#_____________________________________________________________________________________________________________________________
 # Save results
 output_file = file.path(proj_dir, "data", "output", 
                        if(!is.null(n_subsample)) paste0("depletion_results_parallel_n", n_subsample, ".csv") 
@@ -422,38 +189,163 @@ saveRDS(final_dt, rds_file)
 cat("Results also saved as RDS to:", rds_file, "\n")
 
 #_____________________________________________________________________________________________________________________________
-# Create filtered dataset with only successful runs
-if(converged_runs > 0) {
-    successful_dt = final_dt[convergence == 0 & !is.na(Z1) & !is.na(rel_dep_ssb)]
+# Save filtered dataset and calculate residuals
+if(nrow(filtered_dt) > 0) {
+    output_file_filtered = file.path(proj_dir, "data", "output", 
+                                   if(!is.null(n_subsample)) paste0("depletion_results_filtered_n", n_subsample, ".csv")
+                                   else "depletion_results_filtered.csv")
+    fwrite(filtered_dt, output_file_filtered)
+    cat("Filtered results saved to:", output_file_filtered, "\n")
     
-    output_file_success = file.path(proj_dir, "data", "output", 
-                                   if(!is.null(n_subsample)) paste0("depletion_results_successful_n", n_subsample, ".csv")
-                                   else "depletion_results_successful.csv")
-    fwrite(successful_dt, output_file_success)
-    cat("Successful results saved to:", output_file_success, "\n")
+    rds_file_filtered = file.path(proj_dir, "data", "output", 
+                                if(!is.null(n_subsample)) paste0("depletion_results_filtered_n", n_subsample, ".rds")
+                                else "depletion_results_filtered.rds")
+    saveRDS(filtered_dt, rds_file_filtered)
+    cat("Filtered results also saved as RDS to:", rds_file_filtered, "\n")
     
-    rds_file_success = file.path(proj_dir, "data", "output", 
-                                if(!is.null(n_subsample)) paste0("depletion_results_successful_n", n_subsample, ".rds")
-                                else "depletion_results_successful.rds")
-    saveRDS(successful_dt, rds_file_success)
-    cat("Successful results also saved as RDS to:", rds_file_success, "\n")
-    
-    # Calculate residuals for successful runs using separate parallel processing
-    residuals_dt = calculate_residuals_parallel(successful_dt, nz_wt)
+    # Calculate residuals for filtered runs using separate parallel processing
+    residuals_dt = calculate_residuals_parallel(filtered_dt, nz_wt)
     
     # Save residuals data.table
     if(nrow(residuals_dt) > 0) {
         residuals_output_file = file.path(proj_dir, "data", "output", 
-                                         if(!is.null(n_subsample)) paste0("mean_wt_residuals_successful_n", n_subsample, ".csv")
-                                         else "mean_wt_residuals_successful.csv")
+                                         if(!is.null(n_subsample)) paste0("mean_wt_residuals_filtered_n", n_subsample, ".csv")
+                                         else "mean_wt_residuals_filtered.csv")
         fwrite(residuals_dt, residuals_output_file)
         cat("Residuals saved to:", residuals_output_file, "\n")
         
         residuals_rds_file = file.path(proj_dir, "data", "output", 
-                                      if(!is.null(n_subsample)) paste0("mean_wt_residuals_successful_n", n_subsample, ".rds")
-                                      else "mean_wt_residuals_successful.rds")
+                                      if(!is.null(n_subsample)) paste0("mean_wt_residuals_filtered_n", n_subsample, ".rds")
+                                      else "mean_wt_residuals_filtered.rds")
         saveRDS(residuals_dt, residuals_rds_file)
         cat("Residuals also saved as RDS to:", residuals_rds_file, "\n")
+    }
+}
+
+#_____________________________________________________________________________________________________________________________
+# Calculate observed mean weights by year
+if(nrow(residuals_dt) > 0) {
+    cat("\nCalculating observed mean weights and creating visualization...\n")
+    
+    # Calculate observed mean weight by year from the NZ data
+    # Use the same processing as in mean_wt_resid function
+    obs_mean_wt = nz_wt[year>=1952] %>%
+                  .[,.(mean_wt_obs=mean(weight), sd_wt_obs=sd(weight), .N),by=year]
+    
+    # Merge residuals with filtered results to get rel_dep_ssb values
+    residuals_with_depletion = merge(residuals_dt, filtered_dt[,.(sample_id, rel_dep_ssb)], by = "sample_id") %>%
+                               .[sample_id %in% sample(unique(filtered_dt$sample_id),300)]
+    
+    # Create the mean weight plot
+    p_meanwt = ggplot() +
+        # Spaghetti lines for predicted weights with color based on rel_dep_ssb
+        geom_line(data = residuals_with_depletion, 
+                 aes(x = year, y = pred_wt, group = sample_id, color = rel_dep_ssb),
+                 alpha = 0.4, size = 0.3,linewidth=0.8) +
+        # Error bars for observed weights
+        geom_errorbar(data = obs_mean_wt,
+                     aes(x = year, ymin = mean_wt_obs - sd_wt_obs/sqrt(N), 
+                         ymax = mean_wt_obs + sd_wt_obs/sqrt(N)),
+                     color = "black", alpha = 0.7, width = 0.5) +
+        # Observed mean weights as points
+        geom_point(data = obs_mean_wt, 
+                  aes(x = year, y = mean_wt_obs),
+                  shape = 21, color = "black", fill = "white",size = 2, alpha = 0.9) +
+        viridis::scale_color_viridis("Relative Depletion\n(SSB)", 
+                                    begin = 0.1, end = 0.9, 
+                                    direction = 1, option = "turbo", 
+                                    discrete = FALSE) +
+        labs(x = "Year", 
+             y = "Mean Weight (kg)",
+             title = "Observed vs. Predicted Mean Weights",
+             subtitle = "Red points: observed data, Colored lines: model predictions") +
+        theme_bw() +
+        theme(panel.grid.minor = element_blank(),
+              panel.grid.major = element_line(color = 'gray70', linetype = "dotted"),
+              legend.position = "right",
+              panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
+              strip.background = element_rect(fill = "white"),
+              legend.key = element_rect(fill = "white"))
+    
+    # Save the plot
+    plot_file = file.path(plot_dir, 
+                         if(!is.null(n_subsample)) paste0("mean_weight_comparison_n", n_subsample, ".png")
+                         else "mean_weight_comparison.png")
+    
+    ggsave(filename = plot_file, plot = p_meanwt, device = "png",
+           width = 12, height = 8, units = "in", dpi = 300)
+    cat("Mean weight plot saved to:", plot_file, "\n")
+}
+
+#_____________________________________________________________________________________________________________________________
+# Calculate lognormal prior for rel_dep_ssb and create distribution plot
+if(nrow(filtered_dt) > 0) {
+    cat("\nCalculating lognormal prior for rel_dep_ssb...\n")
+    
+    # Fit lognormal distribution to rel_dep_ssb
+    rel_dep_values = filtered_dt$rel_dep_ssb[filtered_dt$rel_dep_ssb > 0]  # Ensure positive values
+    
+    if(length(rel_dep_values) > 0) {
+        # Fit lognormal parameters using maximum likelihood
+        rel_dep_fn = function(par){-sum(dlnorm(rel_dep_values, meanlog = par[1], sdlog = par[2], log = TRUE))}
+        rel_dep_pars = nlminb(c(log(mean(rel_dep_values)), sd(log(rel_dep_values))), rel_dep_fn)$par
+        
+        # Save parameters
+        rel_dep_output_file = file.path(model_run_dir, 
+                                       if(!is.null(n_subsample)) paste0("rel_dep_ssb_pars_n", n_subsample, ".csv")
+                                       else "rel_dep_ssb_pars.csv")
+        write.csv(rel_dep_pars, file = rel_dep_output_file, row.names = FALSE)
+        cat("Rel_dep_ssb parameters saved to:", rel_dep_output_file, "\n")
+        
+        # Create distribution plot
+        plot_file_dist = file.path(plot_dir, 
+                                  if(!is.null(n_subsample)) paste0("prior_rel_dep_ssb_n", n_subsample, ".png")
+                                  else "prior_rel_dep_ssb.png")
+        
+        png(filename = plot_file_dist, width = 8, height = 6, units = "in", bg = "white", res = 300)
+        
+        # Create histogram
+        hist(rel_dep_values, freq = FALSE, breaks = 50, 
+             xlab = "Relative Depletion (SSB)", 
+             main = "Prior Distribution: Relative Depletion (SSB)",
+             col = "lightblue", border = "white")
+        
+        # Add fitted lognormal curve
+        plot_x = seq(from = 0.001, to = max(rel_dep_values), length.out = 1000)
+        plot_y = dlnorm(plot_x, rel_dep_pars[1], rel_dep_pars[2])
+        lines(plot_x, plot_y, col = "red", lwd = 3)
+        
+        # Add density curve for comparison
+        lines(density(rel_dep_values, adjust = 1.2), col = "blue", lwd = 2, lty = 2)
+        
+        # Add legend
+        legend("topright", 
+               c("Fitted Lognormal", "Kernel Density", "Histogram"), 
+               col = c("red", "blue", "lightblue"), 
+               lty = c(1, 2, 1), lwd = c(3, 2, 1), 
+               fill = c(NA, NA, "lightblue"),
+               border = c(NA, NA, "white"),
+               bty = "n")
+        
+        # Add parameter text
+        text(x = max(rel_dep_values) * 0.7, y = max(plot_y) * 0.8,
+             labels = paste0("Log-normal parameters:\nMeanlog = ", round(rel_dep_pars[1], 3),
+                           "\nSDlog = ", round(rel_dep_pars[2], 3),
+                           "\nN = ", length(rel_dep_values)),
+             adj = 0, cex = 0.9, 
+             bg = "white", box.col = "gray")
+        
+        dev.off()
+        cat("Rel_dep_ssb distribution plot saved to:", plot_file_dist, "\n")
+        
+        # Print summary
+        cat("\nRel_dep_ssb lognormal parameters:\n")
+        cat("Meanlog:", round(rel_dep_pars[1], 4), "\n")
+        cat("SDlog:", round(rel_dep_pars[2], 4), "\n")
+        cat("Mean (arithmetic):", round(exp(rel_dep_pars[1] + rel_dep_pars[2]^2/2), 4), "\n")
+        cat("Median:", round(exp(rel_dep_pars[1]), 4), "\n")
+    } else {
+        cat("No positive rel_dep_ssb values found for lognormal fitting.\n")
     }
 }
 
@@ -467,10 +359,13 @@ if(!is.null(n_subsample)) {
 }
 cat("Total parameter sets processed:", nrow(final_dt), "\n")
 cat("Successful optimizations:", converged_runs, "\n")
-cat("Success rate:", round(converged_runs/nrow(final_dt) * 100, 1), "%\n")
+if(converged_runs > 0) {
+    cat("Runs passing depletion filter (rel_dep_ssb < 1):", nrow(filtered_dt), "\n")
+    cat("Final success rate:", round(nrow(filtered_dt)/nrow(final_dt) * 100, 1), "%\n")
+}
 cat("Total processing time:", round(as.numeric(processing_time, units = "mins"), 2), "minutes\n")
 
-if(converged_runs > 0 & exists("residuals_dt") && nrow(residuals_dt) > 0) {
+if(nrow(filtered_dt) > 0 & exists("residuals_dt") && nrow(residuals_dt) > 0) {
     cat("Residuals data points:", nrow(residuals_dt), "\n")
     cat("Unique years in residuals:", length(unique(residuals_dt$year)), "\n")
 }
