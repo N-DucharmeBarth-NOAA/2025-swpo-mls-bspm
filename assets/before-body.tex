@@ -1,0 +1,40 @@
+$if(title)$
+    \thispagestyle{empty}
+    \begin{center}
+        \begin{figure}
+        \begin{center}
+            \vspace{-2ex}
+            \includegraphics[width=190pt]{static/wcpfc-logo.jpg}\\[-2ex]
+        \end{center}
+        \end{figure}
+        \singlespace
+        \textbf{\sffamily\small $meetingtype$\\$meetingnumber$}\\[3ex]
+        \textsf{$meetinglocation$}\\
+        \textsf{$meetingdates$}\\
+        \rule{\textwidth}{0.5mm}\\
+        \textbf{\sffamily $title$}\\[-1.5ex]
+        \rule{\textwidth}{0.5mm}
+    \end{center}
+
+    \vspace{-1ex}
+    \begin{flushright}
+      \textbf{\sffamily $repnumber$}\\
+      \textbf{\sffamily $date$}
+    \end{flushright}
+    \vspace{2in}
+    \begin{center}
+    $for(by-author)$
+        \textbf{\sffamily $by-author.name.literal$}%
+        $for(by-author.affiliations)$
+            \textsuperscript{$it.number$}%
+        $endfor$%
+        $sep$, %
+    $endfor$
+    \end{center}
+    
+    $for(affiliations)$
+        \footnotetext[$affiliations.number$]{$affiliations.name$}
+    $endfor$
+
+    \clearpage
+$endif$
