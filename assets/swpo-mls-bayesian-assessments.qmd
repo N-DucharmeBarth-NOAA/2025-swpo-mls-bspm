@@ -91,7 +91,7 @@ The complexity of integrated age-structured models, while providing detailed pop
 
 Scaling back model complexity to a *data-moderate* approach, like Bayesian surplus production models (BSPMs), offers analysts a simplified yet robust alternative for stock assessment when data limitations or conflicts present challenges for more complex models. These models have proven effective in recent pelagic fish stock assessments [@winker_jabba_2018], and are routinely applied for WCPFC shark assessments [@neubauer_alternative_2019;@isc_stock_2024;@neubauer_stock_2024]. They also facilitate a more tractable exploration of model assumptions by distilling productivity and fishing assumptions into a restricted parameter subset. The BSPM framework allows for explicit incorporation of parameter uncertainty through informative priors while maintaining computational efficiency and interpretability.
 
-One of the advantages of the Bayesian approach is the through the use of prior information to propagate uncertainty in model assumptions, and biological simulation approaches can provide a robust methods for parameterizing key population dynamics parameters [@pardo_maximum_2016;@isc_stock_2024]. For species with complex life histories like striped marlin, these simulation-based priors can incorporate uncertainty in growth, maturity, natural mortality, and reproductive parameters to derive realistic distributions for maximum intrinsic rate of increase and carrying capacity. Additionally, prior pushforward checks can be used to further refine parameter distributions by identifying parameter combinations that produce clearly improbable outcomes.
+One of the advantages of the Bayesian approach is through the use of prior information to propagate uncertainty in model assumptions, and biological simulation approaches can provide a robust methods for parameterizing key population dynamics parameters [@pardo_maximum_2016;@isc_stock_2024]. For species with complex life histories like striped marlin, these simulation-based priors can incorporate uncertainty in growth, maturity, natural mortality, and reproductive parameters to derive realistic distributions for maximum intrinsic rate of increase and carrying capacity. Additionally, prior pushforward checks can be used to further refine parameter distributions by identifying parameter combinations that produce clearly improbable outcomes.
 
 This analysis presents a data-moderate approach for SWPO striped marlin that addresses the key technical challenges identified in previous assessments while providing a robust framework for stock status evaluation. The model incorporates biological uncertainty through simulation-based priors and includes approaches to address catch uncertainty and population depletion.
 
@@ -103,7 +103,7 @@ In order to address some of the issues raised in @sec-introduction, a series of 
 
 The models were implemented in the Stan probabilistic programming language [@stan_development_team_stan_2024] to take advantage of enhanced convergence diagnostics, greater efficiency in posterior sampling through the no-U-turn (NUTS) Hamiltonian Monte Carlo algorithm [@betancourt_hamiltonian_2013], and greater flexibility with model configuration and prior specification. Implementation in R using the *rstan* package [@stan_development_team_rstan_2024] provides connection to an ecosystem of additional R packages for model diagnostics and validation: *bayesplot* [@gabry_bayesplot_2024] for posterior visualization and *loo* [@vehtari_loo_2024].
 
-The model begins from an assumed unfished state in 1952 and incorporates process error in population dynamics, observation error in abundance indices, and uncertainty in biological parameters. Two model variants were developed: a baseline model and a depletion-constrained model that incorporates additional information about historical stock status from mean size data.
+The model begins from an assumed unfished state in 1952 and incorporates process error in population dynamics, observation error in abundance indices, and uncertainty in biological parameters. Two model variants were developed: a baseline model (`0001-2024cpueExPrior`) and a depletion-constrained model (`0002-2024cpueDepPrior`) that incorporates additional information about historical stock status from mean size data. The `0002-2024cpueDepPrior` includes a mean weight based prior on 1988 depletion, and more detail on the development of this prior can be found in @sec-depletion-prior. Otherwise, both models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering described in @sec-prior-development.
 
 ### Input data {#sec-input-data}
 
@@ -169,13 +169,15 @@ This last filtering step approximates the recent relative trend seen in the inde
 
 ### Depletion Prior {#sec-depletion-prior}
 
-It is not possible to fit to size composition data in a BSPM framework, however information on fishing mortality and depletion may be contained in the long time series of New Zealand recreational fishing data. This fishery routinely catches the largest individuals and shows a decline in average size since the start of the model period [FIGURE: NZ weight data and depletion estimation], prior to which limited large-scale commercial fishing occurred. A supplementary analysis estimated initial population depletion in 1988 using New Zealand recreational fishing weight data. A modified Gedamke-Hoenig approach [@gedamke_estimating_2006] for using size composition data to estimate mortality in non-equilibrium situations was applied. The method assumed a two-period mortality model where total mortality increased from $Z_1$ (initial period) to $Z_2$ (final period) at a known change point (1952) when industrial fishing commenced at the start of the model period (more detail in Technical Annex @sec-transitional-weight-model). For each successful parameter combination, relative spawning stock biomass depletion was calculated as the ratio of spawning potential under the two mortality regimes:
+It is not possible to fit to size composition data in a BSPM framework, however information on fishing mortality and depletion may be contained in the long time series of New Zealand recreational fishing data. This fishery routinely catches the largest individuals and shows a decline in average size since the start of the model period (@fig-gedamke), prior to which limited large-scale commercial fishing occurred. Assuming constant availability and selectivity, declining mean weight can be an indication of increased mortality. Assuming natural mortality M has remained constant, this indicates that the population may be in a more depleted state than in the initial period. The `0002-2024cpueDepPrior` variant was developed to capitalize on this potential additional source of information.
+
+A supplementary analysis was used to estimate relative population depletion in 1988 using New Zealand recreational fishing weight data. A modified Gedamke-Hoenig approach [@gedamke_estimating_2006] for using size composition data to estimate mortality in non-equilibrium situations was applied to estimate change in total mortality from $Z_1$ (initial period) to $Z_2$ (final period) at a known change point (1952) when industrial fishing commenced at the start of the model period (more detail in Technical Annex @sec-transitional-weight-model). These two total mortality rates were calculated for each of the biological parameter combinations described in @sec-biological-simulation and used to calculate relative spawning stock biomass depletion as the ratio of spawning potential under the two mortality regimes:
 
 $$\text{Relative Depletion} = \frac{SPR_{Z_2}}{SPR_{Z_1}} = \frac{\sum_{a=1}^{A_{max}} l_{a,Z_2} f_a}{\sum_{a=1}^{A_{max}} l_{a,Z_1} f_a}$$
 
 where $l_{a,Z}$ is survival to age $a$ under total mortality $Z$, and $f_a$ is reproductive output at age $a$ (incorporating maturity, weight, sex ratio, and reproductive cycle). Additional technical detail on the population dynamics components of this equation can be found in @sec-equilibrium-dynamics of the Technical Annex.
 
-The resulting depletion estimates across successful parameter combinations were used to construct an informative lognormal prior for stock depletion that could be applied in the BSPM in 1988.
+The resulting depletion estimates across successful parameter combinations were used to construct an informative lognormal prior for stock depletion that could be applied in the BSPM in 1988 (@fig-dep-prior).
 
 ## Model Implementation {#sec-model-implementation}
 
@@ -187,15 +189,6 @@ Models were implemented using the No-U-Turn Sampler (NUTS) in Stan with the foll
 - Thinning: every 10th sample retained
 - Adaptation parameters: `adapt_delta = 0.99`, `max_treedepth = 15`
 - Final sample size: 1,000 posterior samples
-
-### Model Configurations {#sec-model-configurations}
-
-Two primary model configurations were developed:
-
-1. **Base BSPM** (`bspm_estF.stan`): Estimated fishing mortality without depletion prior
-2. **Depletion-constrained BSPM** (`bspm_estF_softdep.stan`): Includes 1988 depletion prior
-
-Both models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering.
 
 ### Model Diagnostics {#sec-model-diagnostics}
 
@@ -217,7 +210,9 @@ The analysis explicitly incorporated multiple sources of uncertainty:
 
 Results are presented as posterior distributions reflecting the full uncertainty structure, with management quantities calculated from the joint posterior distribution of all model parameters.
 
-[FIGURE: posterior parameter distributions and correlations]
+# Results {#sec-results}
+
+# Discussion {#sec-discussion}
 
 # Declaration of Generative AI use {#sec-ai-declaration}
 
@@ -396,6 +391,22 @@ ggplot(catch_annual, aes(x = year, y = total_catch)) +
 <br>
 ```
 
+![Observed versus predicted mean weights from New Zealand recreational fishery data. Points show observed mean weights with error bars, colored lines show model predictions from the transitional mean weight model colored by relative spawning stock biomass (SSB) depletion.](../plots/depletion/mean_weight_comparison.png){#fig-gedamke}
+
+\newpage
+
+```{=html}
+<br>
+```
+
+![Prior distribution for relative depletion in 1988 derived from New Zealand recreational weight data. Light blue histogram shows depletion estimates from biological parameter combinations that successfully fit the transitional mean weight model. Blue dashed line shows kernel density estimate, red line shows fitted lognormal distribution used as prior in the depletion-constrained BSPM.](../plots/depletion/prior_rel_dep_ssb.png){#fig-dep-prior}
+
+\newpage
+
+```{=html}
+<br>
+```
+
 # Technical Annex {#sec-tech-annex}
 
 Additional technical detail of population dynamics components used to solve the Euler-Lotka equation for $R_{max}$ and implement the Gedamke-Hoenig approach [@gedamke_estimating_2006] for using size composition data to estimate mortality in non-equilibrium situations. 
@@ -445,7 +456,7 @@ $$\phi_0 = \sum_{a=1}^{A_{max}} l_a f_a$$
 
 This $\alpha$ parameter links the intrinsic rate of increase to recruitment compensation, ensuring that $R_{max}$ estimates reflect realistic population productivity under the assumed stock-recruitment dynamics.
 
-Successful simulations (those yielding $R_{max} > 0$ and $R_{max} < 1.5$) were filtered to create a plausible prior distribution [FIGURE: pushforward]. The resulting distribution was fitted to a lognormal prior for use in the BSPM [FIGURE: Rmax prior].
+Successful simulations (those yielding $R_{max} > 0$ and $R_{max} < 1.5$) were filtered to create a plausible prior distribution (@fig-pushforward). The resulting distribution was fitted to a lognormal prior for use in the BSPM (@fig-rmax-prior).
 
 ## Transitional Mean Weight Model {#sec-transitional-weight-model}
 
