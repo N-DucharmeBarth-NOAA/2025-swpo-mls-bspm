@@ -50,8 +50,8 @@
                 tmp_T = stan.data$T
 
                 tmp_idx = (tmp_T-(run_retro-1)):tmp_T
-                tmp_index[tmp_idx,] = -9999
-                tmp_sigmao[tmp_idx,] = -9999
+                tmp_index[tmp_idx,] = -999
+                tmp_sigmao[tmp_idx,] = -999
 
                 stan.data$index = tmp_index
                 stan.data$sigmao_mat = tmp_sigmao

@@ -116,5 +116,24 @@
 # save results
     saveRDS(fit, file.path(proj_dir,"data","output","model_runs",paste0(run_number,"-",run_label_stem,"-fit.rds")))
 
+#________________________________________________________________________________________________________________________________________________________________________________________________________
+# run retros
+    for(i in 1:5){
+        run_label_stem = paste0("2024cpueExPrior_",i)
+        fit = fit_rstan(stan.data,
+                            stan_c,
+                            run_label = paste0(run_number,"-",run_label_stem),
+                            exec_name = exec_name,
+                            seed  = 321,
+                            chains = 5,
+                            n_thin = 10,
+                            iter_keep = 200,
+                            burnin.prop = 0.5,
+                            adapt_delta = 0.99,
+                            max_treedepth = 12,
+                            silent = FALSE,
+                            stan_save_dir=file.path(proj_dir,"data","output","model_runs"),
+                            n_cores=5)
+    }
 
 

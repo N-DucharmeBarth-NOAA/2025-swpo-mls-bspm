@@ -7,7 +7,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="N. Ducharme-Barth">
-<meta name="dcterms.date" content="2025-06-05">
+<meta name="dcterms.date" content="2025-06-10">
 
 <title>Data-moderate assessment approaches for Southwest Pacific Ocean (SWPO) striped marlin</title>
 <style>
@@ -3230,12 +3230,16 @@ window.Quarto = {
   <li><a href="#sec-rmax-prior" id="toc-sec-rmax-prior" class="nav-link" data-scroll-target="#sec-rmax-prior"><span class="header-section-number">2.2.2</span> Maximum Intrinsic Rate of Increase (<span class="math inline">\(R_{max}\)</span>) Prior</a></li>
   <li><a href="#sec-depletion-prior" id="toc-sec-depletion-prior" class="nav-link" data-scroll-target="#sec-depletion-prior"><span class="header-section-number">2.2.3</span> Depletion Prior</a></li>
   </ul></li>
-  <li><a href="#sec-model-implementation" id="toc-sec-model-implementation" class="nav-link" data-scroll-target="#sec-model-implementation"><span class="header-section-number">2.3</span> Model Implementation</a>
+  <li><a href="#sec-model-implementation" id="toc-sec-model-implementation" class="nav-link" data-scroll-target="#sec-model-implementation"><span class="header-section-number">2.3</span> Model Implementation</a></li>
+  <li><a href="#sec-model-diagnostics" id="toc-sec-model-diagnostics" class="nav-link" data-scroll-target="#sec-model-diagnostics"><span class="header-section-number">2.4</span> Model Diagnostics</a>
   <ul class="collapse">
-  <li><a href="#sec-computational-setup" id="toc-sec-computational-setup" class="nav-link" data-scroll-target="#sec-computational-setup"><span class="header-section-number">2.3.1</span> Computational Setup</a></li>
-  <li><a href="#sec-model-diagnostics" id="toc-sec-model-diagnostics" class="nav-link" data-scroll-target="#sec-model-diagnostics"><span class="header-section-number">2.3.2</span> Model Diagnostics</a></li>
+  <li><a href="#sec-convergence-diagnostics" id="toc-sec-convergence-diagnostics" class="nav-link" data-scroll-target="#sec-convergence-diagnostics"><span class="header-section-number">2.4.1</span> Convergence Diagnostics</a></li>
+  <li><a href="#sec-data-fits" id="toc-sec-data-fits" class="nav-link" data-scroll-target="#sec-data-fits"><span class="header-section-number">2.4.2</span> Data Fits</a></li>
+  <li><a href="#sec-posterior-predictive-checks" id="toc-sec-posterior-predictive-checks" class="nav-link" data-scroll-target="#sec-posterior-predictive-checks"><span class="header-section-number">2.4.3</span> Posterior Predictive Checks</a></li>
+  <li><a href="#sec-retrospective-analysis" id="toc-sec-retrospective-analysis" class="nav-link" data-scroll-target="#sec-retrospective-analysis"><span class="header-section-number">2.4.4</span> Retrospective Analysis</a></li>
+  <li><a href="#sec-hindcast-cross-validation" id="toc-sec-hindcast-cross-validation" class="nav-link" data-scroll-target="#sec-hindcast-cross-validation"><span class="header-section-number">2.4.5</span> Hindcast Cross-Validation</a></li>
   </ul></li>
-  <li><a href="#sec-uncertainty-characterization" id="toc-sec-uncertainty-characterization" class="nav-link" data-scroll-target="#sec-uncertainty-characterization"><span class="header-section-number">2.4</span> Uncertainty Characterization</a></li>
+  <li><a href="#forecasts" id="toc-forecasts" class="nav-link" data-scroll-target="#forecasts"><span class="header-section-number">2.5</span> Forecasts</a></li>
   </ul></li>
   <li><a href="#sec-results" id="toc-sec-results" class="nav-link" data-scroll-target="#sec-results"><span class="header-section-number">3</span> Results</a></li>
   <li><a href="#sec-discussion" id="toc-sec-discussion" class="nav-link" data-scroll-target="#sec-discussion"><span class="header-section-number">4</span> Discussion</a></li>
@@ -3284,7 +3288,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">05 June 2025</p>
+      <p class="date">10 June 2025</p>
     </div>
   </div>
   
@@ -3319,7 +3323,7 @@ pointer-events: none;
 <p>The complexity of integrated age-structured models, while providing detailed population dynamics representation, can become problematic when fundamental data conflicts exist or when key biological parameters are uncertain. For SWPO striped marlin, these challenges are compounded by spatiotemporal heterogeneity in fleet coverage, potential non-representativeness in mixed-fleet composition data, and limitations in age data from opportunistic sampling. In the current case, changes to productivity (growth, natural mortality, maturity, and/or steepness) or selectivity assumptions will impact biomass scaling through predictions of expected size composition data.</p>
 <p>Scaling back model complexity to a <em>data-moderate</em> approach, like Bayesian surplus production models (BSPMs), offers analysts a simplified yet robust alternative for stock assessment when data limitations or conflicts present challenges for more complex models. These models have proven effective in recent pelagic fish stock assessments <span class="citation" data-cites="winker_jabba_2018">(<a href="#ref-winker_jabba_2018" role="doc-biblioref">Winker et al., 2018</a>)</span>, and are routinely applied for WCPFC shark assessments <span class="citation" data-cites="neubauer_alternative_2019 isc_stock_2024 neubauer_stock_2024">(<a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>; <a href="#ref-neubauer_alternative_2019" role="doc-biblioref">Neubauer et al., 2019</a>, <a href="#ref-neubauer_stock_2024" role="doc-biblioref">2024</a>)</span>. They also facilitate a more tractable exploration of model assumptions by distilling productivity and fishing assumptions into a restricted parameter subset. The BSPM framework allows for explicit incorporation of parameter uncertainty through informative priors while maintaining computational efficiency and interpretability.</p>
 <p>One of the advantages of the Bayesian approach is through the use of prior information to propagate uncertainty in model assumptions, and biological simulation approaches can provide a robust methods for parameterizing key population dynamics parameters <span class="citation" data-cites="pardo_maximum_2016 isc_stock_2024">(<a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>; <a href="#ref-pardo_maximum_2016" role="doc-biblioref">Pardo et al., 2016</a>)</span>. For species with complex life histories like striped marlin, these simulation-based priors can incorporate uncertainty in growth, maturity, natural mortality, and reproductive parameters to derive realistic distributions for maximum intrinsic rate of increase and carrying capacity. Additionally, prior pushforward checks can be used to further refine parameter distributions by identifying parameter combinations that produce clearly improbable outcomes.</p>
-<p>This analysis presents a data-moderate approach for SWPO striped marlin that addresses the key technical challenges identified in previous assessments while providing a robust framework for stock status evaluation. The model incorporates biological uncertainty through simulation-based priors and includes approaches to address catch uncertainty and population depletion.</p>
+<p>This analysis presents a data-moderate approach for SWPO striped marlin that addresses some of the key technical challenges identified in previous assessments while providing a robust framework for stock status evaluation. The model incorporates biological uncertainty through simulation-based priors and includes approaches to address catch uncertainty and population depletion. It is important to note that this analysis complements the 2025 revised stock assessment report <span class="citation" data-cites="castillo-jordan_revised_2025">(<a href="#ref-castillo-jordan_revised_2025" role="doc-biblioref">Castillo-Jordan et al., 2025</a>)</span>. While the relative simplicity of data-moderate approaches offer some advantages relative to more data-intensive approaches like fully-integrated age-structured stock assessment models, particularly when uncertainty in data or key assumptions are high, this comes at the cost of simplifying the model fishery and population dynamics. Over-simplification of key age-structured processes, or lack of spatiotemporal specificity could result in biases in data-moderate approaches. Taking multiple modeling approaches into account can give managers a holistic view on the likely status and trajectory of the stock.</p>
 </section>
 <section id="sec-methods" class="level1" data-number="2">
 <h1 data-number="2"><span class="header-section-number">2</span> Methods</h1>
@@ -3392,26 +3396,52 @@ pointer-events: none;
 </section>
 <section id="sec-model-implementation" class="level2" data-number="2.3">
 <h2 data-number="2.3" class="anchored" data-anchor-id="sec-model-implementation"><span class="header-section-number">2.3</span> Model Implementation</h2>
-<section id="sec-computational-setup" class="level3" data-number="2.3.1">
-<h3 data-number="2.3.1" class="anchored" data-anchor-id="sec-computational-setup"><span class="header-section-number">2.3.1</span> Computational Setup</h3>
-<p>Models were implemented using the No-U-Turn Sampler (NUTS) in Stan with the following configuration: - 5 chains with random starting points - 3,000 iterations per chain (1,000 warmup) - Thinning: every 10th sample retained - Adaptation parameters: <code>adapt_delta = 0.99</code>, <code>max_treedepth = 15</code> - Final sample size: 1,000 posterior samples</p>
+<p>Models were implemented using the No-U-Turn Sampler (NUTS) in Stan. Each model was run using 5 independent Markov chains with randomly generated starting values to ensure robust exploration of the posterior parameter space. Each chain was sampled for 3,000 iterations, with the first 1,000 iterations discarded as warmup to allow for algorithm adaptation. To reduce posterior sample autocorrelation and storage requirements, every 10 samples was retained from the post-warmup iterations, yielding a final sample size of 1,000 draws from the joint posterior distribution across all chains. The NUTS algorithm was configured with strict adaptation parameters to ensure reliable convergence. The adaptation delta was set to 0.99 to reduce the step size and minimize divergent transitions, while the maximum tree depth was increased to 12 to allow for longer trajectories during the dynamic sampling process.</p>
+<p>Model convergence and performance were assessed using multiple diagnostic criteria recommended for Bayesian stock assessment workflows <span class="citation" data-cites="monnahan_toward_2024">(<a href="#ref-monnahan_toward_2024" role="doc-biblioref">Monnahan, 2024</a>)</span>. The potential scale reduction factor (<span class="math inline">\(\hat{R}\)</span>) was required to be less than 1.01 for all parameters, indicating convergence across chains. Effective sample sizes were required to exceed 500 to ensure adequate precision in posterior estimates. Additionally, posterior predictive checks were conducted to evaluate model adequacy through comparison of observed versus predicted index and catch values, while parameter identifiability was assessed through visual examination of posterior distributions and correlation structures among estimated parameters <span class="citation" data-cites="gabry_visualization_2019">(<a href="#ref-gabry_visualization_2019" role="doc-biblioref">Gabry et al., 2019</a>)</span>.</p>
 </section>
-<section id="sec-model-diagnostics" class="level3" data-number="2.3.2">
-<h3 data-number="2.3.2" class="anchored" data-anchor-id="sec-model-diagnostics"><span class="header-section-number">2.3.2</span> Model Diagnostics</h3>
-<p>Model performance was assessed using: - Convergence diagnostics: <span class="math inline">\(\hat{R} &lt; 1.01\)</span>, effective sample size &gt; 500 - Posterior predictive checks for index and catch fits - Parameter identifiability through posterior examination</p>
-<p>[TABLE: model convergence diagnostics]</p>
+<section id="sec-model-diagnostics" class="level2" data-number="2.4">
+<h2 data-number="2.4" class="anchored" data-anchor-id="sec-model-diagnostics"><span class="header-section-number">2.4</span> Model Diagnostics</h2>
+<p>Model performance was comprehensively evaluated using multiple diagnostic criteria recommended for Bayesian stock assessment workflows <span class="citation" data-cites="monnahan_toward_2024">(<a href="#ref-monnahan_toward_2024" role="doc-biblioref">Monnahan, 2024</a>)</span>. The diagnostic framework included Stan model convergence criteria, data fits, posterior predictive checks, retrospective analysis, and hindcast cross-validation.</p>
+<section id="sec-convergence-diagnostics" class="level3" data-number="2.4.1">
+<h3 data-number="2.4.1" class="anchored" data-anchor-id="sec-convergence-diagnostics"><span class="header-section-number">2.4.1</span> Convergence Diagnostics</h3>
+<p>Conventional Stan model convergence diagnostics and thresholds were employed to identify whether posterior distributions were representative and unbiased <span class="citation" data-cites="monnahan_toward_2024">(<a href="#ref-monnahan_toward_2024" role="doc-biblioref">Monnahan, 2024</a>)</span>. Models were considered to have ‘converged’ to a stable, unbiased posterior distribution if they satisfied the following criteria:</p>
+<ul>
+<li><strong>Potential scale reduction factor</strong> (<span class="math inline">\(\hat{R}\)</span>) less than 1.01 for all leading model parameters, indicating convergence across chains</li>
+<li><strong>Bulk effective sample size</strong> (<span class="math inline">\(N_{eff}\)</span>) greater than 500 for all leading model parameters, ensuring adequate precision in posterior estimates<br>
+</li>
+<li><strong>No divergent transitions</strong> during the NUTS sampling process, which can indicate problematic posterior geometry</li>
+<li><strong>Maximum tree depth</strong> not exceeded during sampling, ensuring adequate exploration of parameter space</li>
+</ul>
+<p>Additionally, trace plots and rank plots were examined to visually assess mixing and convergence behavior across chains <span class="citation" data-cites="gabry_visualization_2019">(<a href="#ref-gabry_visualization_2019" role="doc-biblioref">Gabry et al., 2019</a>)</span>.</p>
+</section>
+<section id="sec-data-fits" class="level3" data-number="2.4.2">
+<h3 data-number="2.4.2" class="anchored" data-anchor-id="sec-data-fits"><span class="header-section-number">2.4.2</span> Data Fits</h3>
+<p>Model fit to different data sources (abundance indices and catch observations) was quantified using normalized root-mean-squared error (NRMSE):</p>
+<p><span class="math display">\[RMSE = \sqrt{\frac{\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}{n}}\]</span></p>
+<p><span class="math display">\[NRMSE = \frac{RMSE}{\sum_{i=1}^{n} y_i / n}\]</span></p>
+<p>where <span class="math inline">\(y_i\)</span> are the observed values and <span class="math inline">\(\hat{y}_i\)</span> are the model predictions. The average NRMSE across all posterior samples was calculated for each data component.</p>
+</section>
+<section id="sec-posterior-predictive-checks" class="level3" data-number="2.4.3">
+<h3 data-number="2.4.3" class="anchored" data-anchor-id="sec-posterior-predictive-checks"><span class="header-section-number">2.4.3</span> Posterior Predictive Checks</h3>
+<p>Posterior predictive checks were conducted to evaluate model adequacy by comparing observed data with data simulated from the fitted model. For each posterior sample, synthetic datasets were generated using the estimated parameters, and agreement between observed and predicted datasets was assessed visually.</p>
+</section>
+<section id="sec-retrospective-analysis" class="level3" data-number="2.4.4">
+<h3 data-number="2.4.4" class="anchored" data-anchor-id="sec-retrospective-analysis"><span class="header-section-number">2.4.4</span> Retrospective Analysis</h3>
+<p>Retrospective analysis was conducted for each model by sequentially peeling off a year from the terminal end of the fitted index and re-running the model. Data were removed for each year up to five years from 2022 to 2018. Estimates of <span class="math inline">\(x\)</span> in the terminal year of each retrospective peel were compared to the corresponding estimate of <span class="math inline">\(x\)</span> from the full model run to better understand any potential biases or uncertainty in terminal year estimates. The Mohn’s <span class="math inline">\(\rho\)</span> statistic <span class="citation" data-cites="mohn_retrospective_1999">(<a href="#ref-mohn_retrospective_1999" role="doc-biblioref">Mohn, 1999</a>)</span> was calculated and presented. This statistic measures the average relative difference between an estimated quantity from an assessment (e.g., depletion in final year) with a reduced time-series of information and the same quantity estimated from an assessment using the full time-series.</p>
+<p>Mohn’s <span class="math inline">\(\rho\)</span> was calculated as: <span class="math inline">\(\rho = \frac{1}{n}\sum_{i=1}^{n}\frac{\hat{\theta}{T-i,T-i} - \hat{\theta}{T,T-i}}{\hat{\theta}_{T,T-i}}\)</span> where <span class="math inline">\(\hat{\theta}{T-i,T-i}\)</span> is the estimate of parameter <span class="math inline">\(\theta\)</span> in year <span class="math inline">\(T-i\)</span> from the model with data through year <span class="math inline">\(T-i\)</span>, and <span class="math inline">\(\hat{\theta}{T,T-i}\)</span> is the estimate for year <span class="math inline">\(T-i\)</span> from the full model.</p>
+<p>Additionally, following <span class="citation" data-cites="kokkalis_good_2024">Kokkalis et al. (<a href="#ref-kokkalis_good_2024" role="doc-biblioref">2024</a>)</span> the proportion of retrospective peels where the relative exploitation rate (<span class="math inline">\(U/U_{MSY}\)</span>) and relative depletion (<span class="math inline">\(D/D_{MSY}\)</span>) inside the credible intervals of the full model run were calculated. This metric provides an additional perspective on retrospective consistency by evaluating whether the uncertainty estimates from the full model appropriately capture the range of estimates obtained when using reduced datasets.</p>
+</section>
+<section id="sec-hindcast-cross-validation" class="level3" data-number="2.4.5">
+<h3 data-number="2.4.5" class="anchored" data-anchor-id="sec-hindcast-cross-validation"><span class="header-section-number">2.4.5</span> Hindcast Cross-Validation</h3>
+<p>Hindcast cross-validation <span class="citation" data-cites="kell_validation_2021">(<a href="#ref-kell_validation_2021" role="doc-biblioref">Kell et al., 2021</a>)</span> was conducted for each index to determine the performance of the model to predict the observed CPUE <span class="math inline">\(I\)</span> one-step-ahead into the future relative to a naïve predictor. Briefly, the ‘model-free’ approach to hindcast cross-validation was used, and made use of the same set of five retrospective peels described in <a href="#sec-retrospective-analysis" class="quarto-xref">Section 2.4.4</a>.</p>
+<p>The ‘model-free’ hindcast calculation is described using the model from the last peel <span class="math inline">\(BSPM_{2017}\)</span> as an example. This model fit to index data through 2017 but included catch through 2022. The model estimates of predicted CPUE in 2018 based on <span class="math inline">\(BSPM_{2017}\)</span> is the ‘model-free’ hindcast for 2018, <span class="math inline">\(\hat{I}_{2018}\)</span>. The naïve prediction of CPUE in 2018 is simply the observed CPUE from 2017, <span class="math inline">\(I_{2017} = \ddot{I}_{2018}\)</span>. The absolute scaled error (ASE) of the prediction is:</p>
+<p><span class="math inline">\(ASE_{2018} = \frac{|I_{2018} - \hat{I}_{2018}|}{|I_{2018} - \ddot{I}_{2018}|}\)</span></p>
+<p>Repeating this calculation across all retrospective peels for years 2019-2022 and taking the average across ASE values gives the mean ASE or MASE for the model. An MASE value less than one indicates that the model has greater predictive skill than the naïve predictor.</p>
 </section>
 </section>
-<section id="sec-uncertainty-characterization" class="level2" data-number="2.4">
-<h2 data-number="2.4" class="anchored" data-anchor-id="sec-uncertainty-characterization"><span class="header-section-number">2.4</span> Uncertainty Characterization</h2>
-<p>The analysis explicitly incorporated multiple sources of uncertainty:</p>
-<ol type="1">
-<li><strong>Biological uncertainty</strong>: Through comprehensive life history parameter simulation</li>
-<li><strong>Catch uncertainty</strong>: Via lognormal catch likelihood with <span class="math inline">\(\sigma_C = 0.2\)</span></li>
-<li><strong>Observation uncertainty</strong>: Through time-varying index uncertainty plus additional error</li>
-<li><strong>Process uncertainty</strong>: Through estimated recruitment/population variability</li>
-</ol>
-<p>Results are presented as posterior distributions reflecting the full uncertainty structure, with management quantities calculated from the joint posterior distribution of all model parameters.</p>
+<section id="forecasts" class="level2" data-number="2.5">
+<h2 data-number="2.5" class="anchored" data-anchor-id="forecasts"><span class="header-section-number">2.5</span> Forecasts</h2>
+<p>Simple, status quo based catch projections over a 10 year window are provided for each model. [More detail to be filled in here…]</p>
 </section>
 </section>
 <section id="sec-results" class="level1" data-number="3">
@@ -3433,6 +3463,9 @@ Betancourt, M. J., &amp; Girolami, M. (2013). <em>Hamiltonian <span>Monte</span>
 <div id="ref-castillo-jordan_stock_2024" class="csl-entry" role="listitem">
 Castillo-Jordan, C., Day, J., Teears, T., Davies, N., Hampton, J., McKechnie, S., Magnusson, A., Peatman, T., Vidal, T., Williams, P., &amp; Hamer, P. (2024). <em>Stock <span>Assessment</span> of <span>Striped</span> <span>Marlin</span> in the <span>Southwest</span> <span>Pacific</span> <span>Ocean</span>: 2024</em> (WCPFC-SC20-2024/SA-WP-03 (Ver. 2.01)). <a href="https://meetings.wcpfc.int/node/23120">https://meetings.wcpfc.int/node/23120</a>
 </div>
+<div id="ref-castillo-jordan_revised_2025" class="csl-entry" role="listitem">
+Castillo-Jordan, C., Day, J., Teears, T., Davies, N., Hampton, J., McKechnie, S., Magnusson, A., Peatman, T., Vidal, T., Williams, P., &amp; Hamer, P. (2025). <em>Revised <span>Stock</span> <span>Assessment</span> of <span>Striped</span> <span>Marlin</span> in the <span>Southwest</span> <span>Pacific</span> <span>Ocean</span>: 2025</em> (WCPFC-SC21-2025/SA-WP-XX).
+</div>
 <div id="ref-ducharme-barth_summary_2025" class="csl-entry" role="listitem">
 Ducharme-Barth, N., Castillo-Jordan, C., Sculley, M., Ahrens, R., &amp; Carvalho, J. (2025). <em>Summary report from the <span>NOAA</span>-<span>SPC</span> assessment model meeting on <span>SWPO</span> striped marlin</em> (WCPFC-SC21-2025/SA-IP-XX).
 </div>
@@ -3444,6 +3477,9 @@ Farley, J., Eveson, P., Krusic-Golub, K., &amp; Kopf, K. (2021). <em>Southwest <
 </div>
 <div id="ref-gabry_bayesplot_2024" class="csl-entry" role="listitem">
 Gabry, J., &amp; Mahr, T. (2024). <em>Bayesplot: <span>Plotting</span> for <span>Bayesian</span> <span>Models</span></em> (R package version 1.11.1). <a href="htps://mc-stan.org/bayesplot/">htps://mc-stan.org/bayesplot/</a>
+</div>
+<div id="ref-gabry_visualization_2019" class="csl-entry" role="listitem">
+Gabry, J., Simpson, D., Vehtari, A., Betancourt, M., &amp; Gelman, A. (2019). Visualization in <span>Bayesian</span> <span>Workflow</span>. <em>Journal of the Royal Statistical Society Series A: Statistics in Society</em>, <em>182</em>(2), 389–402. <a href="https://doi.org/10.1111/rssa.12378">https://doi.org/10.1111/rssa.12378</a>
 </div>
 <div id="ref-gedamke_estimating_2006" class="csl-entry" role="listitem">
 Gedamke, T., &amp; Hoenig, J. M. (2006). Estimating <span>Mortality</span> from <span>Mean</span> <span>Length</span> <span>Data</span> in <span>Nonequilibrium</span> <span>Situations</span>, with <span>Application</span> to the <span>Assessment</span> of <span>Goosefish</span>. <em>Transactions of the American Fisheries Society</em>, <em>135</em>(2), 476–487. <a href="https://doi.org/10.1577/T05-153.1">https://doi.org/10.1577/T05-153.1</a>
@@ -3463,8 +3499,14 @@ Hutchings, J. A., Myers, R. A., García, V. B., Lucifora, L. O., &amp; Kuparinen
 <div id="ref-isc_stock_2024" class="csl-entry" role="listitem">
 ISC. (2024). <em>Stock <span>Assessment</span> of <span>Shortfin</span> <span>Mako</span> <span>Shark</span> in the <span>North</span> <span>Pacific</span> <span>Ocean</span> through 2022</em> (WCPFC-SC20-2024/SA-WP-14). <a href="https://meetings.wcpfc.int/node/22828">https://meetings.wcpfc.int/node/22828</a>
 </div>
+<div id="ref-kell_validation_2021" class="csl-entry" role="listitem">
+Kell, L. T., Sharma, R., Kitakado, T., Winker, H., Mosqueira, I., Cardinale, M., &amp; Fu, D. (2021). Validation of stock assessment methods: Is it me or my model talking? <em>ICES Journal of Marine Science</em>, <em>78</em>(6), 2244–2255. <a href="https://doi.org/10.1093/icesjms/fsab104">https://doi.org/10.1093/icesjms/fsab104</a>
+</div>
 <div id="ref-kokkalis_good_2024" class="csl-entry" role="listitem">
 Kokkalis, A., Berg, C. W., Kapur, M. S., Winker, H., Jacobsen, N. S., Taylor, M. H., Ichinokawa, M., Miyagawa, M., Medeiros-Leal, W., Nielsen, J. R., &amp; Mildenberger, T. K. (2024). Good practices for surplus production models. <em>Fisheries Research</em>, <em>275</em>, 107010. <a href="https://doi.org/10.1016/j.fishres.2024.107010">https://doi.org/10.1016/j.fishres.2024.107010</a>
+</div>
+<div id="ref-mohn_retrospective_1999" class="csl-entry" role="listitem">
+Mohn, R. (1999). The retrospective problem in sequential population analysis: <span>An</span> investigation using cod fishery and simulated data. <em>ICES Journal of Marine Science</em>, <em>56</em>(4), 473–488. <a href="https://doi.org/10.1006/jmsc.1999.0481">https://doi.org/10.1006/jmsc.1999.0481</a>
 </div>
 <div id="ref-monnahan_toward_2024" class="csl-entry" role="listitem">
 Monnahan, C. C. (2024). Toward good practices for <span>Bayesian</span> data-rich fisheries stock assessments using a modern statistical workflow. <em>Fisheries Research</em>, <em>275</em>, 107024. <a href="https://doi.org/10.1016/j.fishres.2024.107024">https://doi.org/10.1016/j.fishres.2024.107024</a>

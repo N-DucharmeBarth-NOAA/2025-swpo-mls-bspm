@@ -93,7 +93,7 @@ Scaling back model complexity to a *data-moderate* approach, like Bayesian surpl
 
 One of the advantages of the Bayesian approach is through the use of prior information to propagate uncertainty in model assumptions, and biological simulation approaches can provide a robust methods for parameterizing key population dynamics parameters [@pardo_maximum_2016;@isc_stock_2024]. For species with complex life histories like striped marlin, these simulation-based priors can incorporate uncertainty in growth, maturity, natural mortality, and reproductive parameters to derive realistic distributions for maximum intrinsic rate of increase and carrying capacity. Additionally, prior pushforward checks can be used to further refine parameter distributions by identifying parameter combinations that produce clearly improbable outcomes.
 
-This analysis presents a data-moderate approach for SWPO striped marlin that addresses the key technical challenges identified in previous assessments while providing a robust framework for stock status evaluation. The model incorporates biological uncertainty through simulation-based priors and includes approaches to address catch uncertainty and population depletion.
+This analysis presents a data-moderate approach for SWPO striped marlin that addresses some of the key technical challenges identified in previous assessments while providing a robust framework for stock status evaluation. The model incorporates biological uncertainty through simulation-based priors and includes approaches to address catch uncertainty and population depletion. It is important to note that this analysis complements the 2025 revised stock assessment report [@castillo-jordan_revised_2025]. While the relative simplicity of data-moderate approaches offer some advantages relative to more data-intensive approaches like fully-integrated age-structured stock assessment models, particularly when uncertainty in data or key assumptions are high, this comes at the cost of simplifying the model fishery and population dynamics. Over-simplification of key age-structured processes, or lack of spatiotemporal specificity could result in biases in data-moderate approaches. Taking multiple modeling approaches into account can give managers a holistic view on the likely status and trajectory of the stock.
 
 # Methods {#sec-methods}
 
@@ -181,34 +181,84 @@ The resulting depletion estimates across successful parameter combinations were 
 
 ## Model Implementation {#sec-model-implementation}
 
-### Computational Setup {#sec-computational-setup}
+```{r}
+#| label: read-model-config
+#| echo: false
+#| warning: false
+#| message: false
 
-Models were implemented using the No-U-Turn Sampler (NUTS) in Stan with the following configuration:
-- 5 chains with random starting points
-- 3,000 iterations per chain (1,000 warmup)
-- Thinning: every 10th sample retained
-- Adaptation parameters: `adapt_delta = 0.99`, `max_treedepth = 15`
-- Final sample size: 1,000 posterior samples
+# Read model configuration data
+library(data.table)
+model_config <- fread(file.path(dir_model_runs, "0001-2024cpueExPrior_0", "settings.csv"))
 
-### Model Diagnostics {#sec-model-diagnostics}
+# Extract values for inline use
+n_chains <- model_config$chains
+iter_total <- model_config$iter_total
+burnin_prop <- model_config$burnin.prop
+n_thin <- model_config$n_thin
+adapt_delta <- model_config$adapt_delta
+max_treedepth <- model_config$max_treedepth
+iter_keep <- model_config$iter_keep
 
-Model performance was assessed using:
-- Convergence diagnostics: $\hat{R} < 1.01$, effective sample size > 500
-- Posterior predictive checks for index and catch fits
-- Parameter identifiability through posterior examination
+# Calculate derived values
+warmup_iter <- burnin_prop*n_thin*iter_keep
+post_warmup_iter <- iter_total - warmup_iter
+final_sample_size <- (post_warmup_iter / n_thin) * n_chains
+```
 
-[TABLE: model convergence diagnostics]
+Models were implemented using the No-U-Turn Sampler (NUTS) in Stan. Each model was run using `r n_chains` independent Markov chains with randomly generated starting values to ensure robust exploration of the posterior parameter space. Each chain was sampled for `r format(iter_total, big.mark = ",")` iterations, with the first `r format(warmup_iter, big.mark = ",")` iterations discarded as warmup to allow for algorithm adaptation. To reduce posterior sample autocorrelation and storage requirements, every `r n_thin` samples was retained from the post-warmup iterations, yielding a final sample size of `r format(final_sample_size, big.mark = ",")` draws from the joint posterior distribution across all chains. The NUTS algorithm was configured with strict adaptation parameters to ensure reliable convergence. The adaptation delta was set to `r adapt_delta` to reduce the step size and minimize divergent transitions, while the maximum tree depth was increased to `r max_treedepth` to allow for longer trajectories during the dynamic sampling process.
 
-## Uncertainty Characterization {#sec-uncertainty-characterization}
+Model convergence and performance were assessed using multiple diagnostic criteria recommended for Bayesian stock assessment workflows [@monnahan_toward_2024]. The potential scale reduction factor ($\hat{R}$) was required to be less than 1.01 for all parameters, indicating convergence across chains. Effective sample sizes were required to exceed 500 to ensure adequate precision in posterior estimates. Additionally, posterior predictive checks were conducted to evaluate model adequacy through comparison of observed versus predicted index and catch values, while parameter identifiability was assessed through visual examination of posterior distributions and correlation structures among estimated parameters [@gabry_visualization_2019].
 
-The analysis explicitly incorporated multiple sources of uncertainty:
+## Model Diagnostics {#sec-model-diagnostics}
 
-1. **Biological uncertainty**: Through comprehensive life history parameter simulation
-2. **Catch uncertainty**: Via lognormal catch likelihood with $\sigma_C = 0.2$
-3. **Observation uncertainty**: Through time-varying index uncertainty plus additional error
-4. **Process uncertainty**: Through estimated recruitment/population variability
+Model performance was comprehensively evaluated using multiple diagnostic criteria recommended for Bayesian stock assessment workflows [@monnahan_toward_2024]. The diagnostic framework included Stan model convergence criteria, data fits, posterior predictive checks, retrospective analysis, and hindcast cross-validation.
 
-Results are presented as posterior distributions reflecting the full uncertainty structure, with management quantities calculated from the joint posterior distribution of all model parameters.
+### Convergence Diagnostics {#sec-convergence-diagnostics}
+
+Conventional Stan model convergence diagnostics and thresholds were employed to identify whether posterior distributions were representative and unbiased [@monnahan_toward_2024]. Models were considered to have 'converged' to a stable, unbiased posterior distribution if they satisfied the following criteria:
+
+- **Potential scale reduction factor** ($\hat{R}$) less than 1.01 for all leading model parameters, indicating convergence across chains
+- **Bulk effective sample size** ($N_{eff}$) greater than 500 for all leading model parameters, ensuring adequate precision in posterior estimates  
+- **No divergent transitions** during the NUTS sampling process, which can indicate problematic posterior geometry
+- **Maximum tree depth** not exceeded during sampling, ensuring adequate exploration of parameter space
+
+
+Additionally, trace plots and rank plots were examined to visually assess mixing and convergence behavior across chains [@gabry_visualization_2019].
+
+### Data Fits {#sec-data-fits}
+
+Model fit to different data sources (abundance indices and catch observations) was quantified using normalized root-mean-squared error (NRMSE):
+
+$$RMSE = \sqrt{\frac{\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}{n}}$$
+
+$$NRMSE = \frac{RMSE}{\sum_{i=1}^{n} y_i / n}$$
+
+where $y_i$ are the observed values and $\hat{y}_i$ are the model predictions. The average NRMSE across all posterior samples was calculated for each data component.
+
+### Posterior Predictive Checks {#sec-posterior-predictive-checks}
+
+Posterior predictive checks were conducted to evaluate model adequacy by comparing observed data with data simulated from the fitted model. For each posterior sample, synthetic datasets were generated using the estimated parameters, and agreement between observed and predicted datasets was assessed visually.
+
+### Retrospective Analysis {#sec-retrospective-analysis}
+
+Retrospective analysis was conducted for each model by sequentially peeling off a year from the terminal end of the fitted index and re-running the model. Data were removed for each year up to five years from 2022 to 2018. Estimates of $x$ in the terminal year of each retrospective peel were compared to the corresponding estimate of $x$ from the full model run to better understand any potential biases or uncertainty in terminal year estimates. The Mohn's $\rho$ statistic [@mohn_retrospective_1999] was calculated and presented. This statistic measures the average relative difference between an estimated quantity from an assessment (e.g., depletion in final year) with a reduced time-series of information and the same quantity estimated from an assessment using the full time-series.
+
+Additionally, following @kokkalis_good_2024 the proportion of retrospective peels where the relative exploitation rate ($U/U_{MSY}$) and relative depletion ($D/D_{MSY}$) inside the credible intervals of the full model run were calculated. This metric provides an additional perspective on retrospective consistency by evaluating whether the uncertainty estimates from the full model appropriately capture the range of estimates obtained when using reduced datasets.
+
+### Hindcast Cross-Validation {#sec-hindcast-cross-validation}
+
+Hindcast cross-validation [@kell_validation_2021] was conducted for each index to determine the performance of the model to predict the observed CPUE $I$ one-step-ahead into the future relative to a naïve predictor. Briefly, the 'model-free' approach to hindcast cross-validation was used, and made use of the same set of five retrospective peels described in @sec-retrospective-analysis. 
+
+The 'model-free' hindcast calculation is described using the model from the last peel $BSPM_{2017}$ as an example. This model fit to index data through 2017 but included catch through 2022. The model estimates of predicted CPUE in 2018 based on $BSPM_{2017}$ is the 'model-free' hindcast for 2018, $\hat{I}_{2018}$. The naïve prediction of CPUE in 2018 is simply the observed CPUE from 2017, $I_{2017} = \ddot{I}_{2018}$. The absolute scaled error (ASE) of the prediction is:
+
+$ASE_{2018} = \frac{|I_{2018} - \hat{I}_{2018}|}{|I_{2018} - \ddot{I}_{2018}|}$
+
+Repeating this calculation across all retrospective peels for years 2019-2022 and taking the average across ASE values gives the mean ASE or MASE for the model. An MASE value less than one indicates that the model has greater predictive skill than the naïve predictor.
+
+## Forecasts
+
+Simple, status quo based catch projections over a 10 year window are provided for each model. [More detail to be filled in here...]
 
 # Results {#sec-results}
 
