@@ -232,13 +232,13 @@ Additionally, trace plots and rank plots were examined to visually assess mixing
 
 ### Data Fits {#sec-data-fits}
 
-Model fit to different data sources (abundance indices and catch observations) was quantified using normalized root-mean-squared error (NRMSE):
+Model fit to the abundance index was quantified using normalized root-mean-squared error (NRMSE):
 
 $$RMSE = \sqrt{\frac{\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}{n}}$$
 
 $$NRMSE = \frac{RMSE}{\sum_{i=1}^{n} y_i / n}$$
 
-where $y_i$ are the observed values and $\hat{y}_i$ are the model predictions. The average NRMSE across all posterior samples was calculated for each data component.
+where $y_i$ are the observed values and $\hat{y}_i$ are the model predictions. The average NRMSE across all posterior samples was calculated for each data component. Additionally, Probability Integral Transform (PIT) style residuals were calculated for the fit to the index.
 
 ### Posterior Predictive Checks {#sec-posterior-predictive-checks}
 
@@ -248,7 +248,7 @@ Posterior predictive checks were conducted to evaluate model adequacy by compari
 
 Retrospective analysis was conducted for each model by sequentially peeling off a year from the terminal end of the fitted index and re-running the model. Data were removed for each year up to five years from 2022 to 2018. Estimates of $x$ in the terminal year of each retrospective peel were compared to the corresponding estimate of $x$ from the full model run to better understand any potential biases or uncertainty in terminal year estimates. The Mohn's $\rho$ statistic [@mohn_retrospective_1999] was calculated and presented. This statistic measures the average relative difference between an estimated quantity from an assessment (e.g., depletion in final year) with a reduced time-series of information and the same quantity estimated from an assessment using the full time-series.
 
-Additionally, following @kokkalis_good_2024 the proportion of retrospective peels where the relative exploitation rate ($U/U_{MSY}$) and relative depletion ($D/D_{MSY}$) inside the credible intervals of the full model run were calculated. This metric provides an additional perspective on retrospective consistency by evaluating whether the uncertainty estimates from the full model appropriately capture the range of estimates obtained when using reduced datasets.
+Additionally, following @kokkalis_good_2024 the proportion of retrospective peels (or coverage) where the relative exploitation rate ($U/U_{MSY}$) and relative depletion ($D/D_{MSY}$) were inside the credible intervals of the full model run was calculated. This metric provides an additional perspective on retrospective consistency by evaluating whether the uncertainty estimates from the full model appropriately capture the range of estimates obtained when using reduced datasets.
 
 ### Hindcast Cross-Validation {#sec-hindcast-cross-validation}
 
@@ -262,7 +262,7 @@ Repeating this calculation across all retrospective peels for years 2019-2022 an
 
 ## Forecasts
 
-Simple, status quo based catch projections over a 10 year window are provided for each model. [More detail to be filled in here...]
+Simple, status quo catch based stochastic projections over a 10 year window are provided for each model. For each model, projected catch was taken as the average catch over the terminal 5 years (2018-2022). Process error in the projection period was randomly resampled from the estimated process error in the main model period.
 
 # Results {#sec-results}
 
@@ -289,23 +289,27 @@ catch_cv <- stan_data[name == "sigmac" & type == "Data"]$value
 
 Both BSPM model variants (`0001-2024cpueExPrior` and `0002-2024cpueDepPrior`) achieved satisfactory convergence based on standard Hamiltonian Monte Carlo diagnostics (@tbl-summary). Both models met all convergence criteria with $\hat{R}$ values well below the 1.01 threshold and effective sample sizes exceeding the recommended minimum of 500 (100 samples per chain). No divergent transitions were observed across chains, and maximum tree depth was not exceeded during sampling, which did not indicate issues in exploring the posterior space.
 
-## Model Fit to Data {#sec-model-fit}
+### Model Fit to Data {#sec-model-fit}
 
-### Catch Data Fit
+#### Catch Data Fit
 
 Both models were fit to the observed catch time series (1952-2022) with a coefficient of variation of `r catch_cv` applied to account for uncertainty in catch estimates. Given that the fishing mortality required to fit the catch was also directly estimated, model fit to the catch was good (@fig-pred-catch). Notably, the models predicted lower than observed catch for the large catch event in 1954. 
 
-### CPUE Index Fit
+#### CPUE Index Fit
 
-Model fit to the standardized CPUE index (1988-2022) was evaluated using normalized root-mean-squared error (NRMSE). Both models provided reasonable fits to the observed index given the high variability and observation error (@tbl-summary). The `0002-2024cpueDepPrior` model showed marginally improved fit to the CPUE index, with lower RMSE values. In general, both models successfully captured the general declining trend in the standardized CPUE from 1988-2022. However, the estimated combination of observation and process error meant that the model was not pulled as tightly to each individual observation resulting in a persistant overfit in the last decade. Posterior predictive checks confirmed that the models were able to replicate the key features of the observed CPUE data (@fig-idx-fit).
+Model fit to the standardized CPUE index (1988-2022) was evaluated using normalized root-mean-squared error (NRMSE). Both models provided reasonable fits to the observed index given the high variability and observation error (@tbl-summary). The `0002-2024cpueDepPrior` model showed marginally improved fit to the CPUE index, with lower RMSE values. In general, both models successfully captured the general declining trend in the standardized CPUE from 1988-2022. However, the estimated combination of observation and process error meant that the model was not pulled as tightly to each individual observation resulting in a persistant overfit in the last decade (e.g., negative residuals @fig-idx-residuals). Posterior predictive checks confirmed that the models were able to replicate the key features of the observed CPUE data (@fig-idx-fit).
 
-## Model Validation {#sec-model-validation}
+### Model Validation {#sec-model-validation}
 
-[Retrospective analysis and hindcast cross-validation results to assess model reliability and predictive performance.]
+Overall retrospective bias was very low, and close to 0 for both models (@tbl-summary; @fig-retro) indicating a lack of persistant bias in terminal estimates as successive years of the index were removed from the model. Additionally, estimates of the relative exploitation rate ($U/U_{MSY}$) and relative depletion ($D/D_{MSY}$) were inside the credible intervals of the full model run 100% of the time (@tbl-summary). In terms of hindcast cross validation, both models (though `0002-2024cpueDepPrior` model showed marginally better performance) slightly exceeded the performance of the naïve predictor (@tbl-summary; @fig-hcxval) which provides some support that the model has identified and estimated a production for the stock.
 
 ## Population Dynamics and Stock Status {#sec-stock-status}
 
-[Parameter estimates, stock depletion levels, and reference point ratios for both baseline and constrained models.]
+In both models, most leading parameters (*log(K)*, $R_{max}$, $\sigma_P$, $n$, $\sigma_F$, and $\sigma_{O,add}$) showed posterior update from their respective prior distributions (@fig-prior-post), indicating that there was sufficient information in the data to impact parameter estimates. The shape parameter $n$ showed little deviation from the Schaefer-model prior. Both models estimated similar levels of $\sigma_P$ and additional observation error $\sigma_{O,add}$ (@tbl-param-hmc) which is unsurprising given that they fit to the same catch and standardized index. Though estimates of $\sigma_P$ were elevated from the prior, the model mainly reconciled the variability in the index by estimating substantial additional observation error $\sigma_{O,add}$ resulting in a roughly 3:1 of total observation error $\sigma_O$ to process error $\sigma_P$. Similar to what was seen in @isc_stock_2024, there was a trade-off between *log(K)* and $\sigma_F$ where the `0001-2024cpueExPrior` model estimated higher population scale and lower fishing mortality relative to the `0002-2024cpueDepPrior` model.
+
+Substantial posterior update was shown for the $R_{max}$ parameter where both models estimated productivity on the lower end of the biological prior. These median estimates of $R_{max}$, between 0.2 - 0.3 (@tbl-param-hmc), are not completely inconsistent, with estimates of $R_{max}$ for an analagous species in the Atlantic Ocean, white marlin (*Kajikia albida*). Based on the most recent ICCAT assessment [@iccat_report_2020] implemented using JABBA [@winker_jabba_2018], $R_{max}$ was estimated to be 0.163 (0.122 - 0.215 95% credible interval) which is contained within the posterior estimates of both the `0001-2024cpueExPrior` and `0002-2024cpueDepPrior` models (@tbl-param-hmc). In the case of the Atlantic white marlin assessment, the JABBA model showed remarkable consistency with estimates of stock status and trend relative to a fully integrated, length structured model implemented in Stock Synthesis [@iccat_report_2020]. Returning to the current analysis, a lower level of productivity $R_{max}$ was estimated, with less uncertainty (@tbl-param-hmc), for the `0002-2024cpueDepPrior` model assuming a more depleted stock. Filtering the original biological prior to match the $R_{max}$ posterior distribution from the `0002-2024cpueDepPrior` model using an inverse transform sampling approach identifies that this lower productivity is characterized by a pronounced shift to lower steepness values $h$ and by a lesser extent to smaller values of von Bertalanffy $k$ (@fig-rmax-subsample-bio).
+
+[Trends & $x_{1988}$]
 
 ## Biological Reference Points {#sec-reference-points}
 
@@ -344,11 +348,11 @@ Table: Biological parameter distributions and sources used in simulation framewo
 | Length at age 10 | $L_2$ | Lognormal | 210 cm | 0.2 | Independent | [@ducharme-barth_summary_2025] |
 | Growth coefficient | $k$ | Beta(6.5, 3.5) | ~0.65 | - | Independent | [@ducharme-barth_summary_2025] |
 | Length CV | $cv_{len}$ | Uniform | - | [0.05, 0.25] | - | Growth variability |
-| Maximum age | $A_{max}$ | Lognormal | 15 years | 0.2 | r = -0.3 with $M_{ref}$ | [@farley_southwest_2021] |
-| Reference mortality | $M_{ref}$ | Lognormal | 0.36 $yr^{-1}$ | 0.44 | r = -0.3 with $A_{max}$ | [@hamel_development_2022] (5.4/$A_{max}$) |
+| Maximum age | $A_{max}$ | Lognormal | 15 years | 0.2 | $\rho$ = -0.3 with $M_{ref}$ | [@farley_southwest_2021] |
+| Reference mortality | $M_{ref}$ | Lognormal | 0.36 $yr^{-1}$ | 0.44 | $\rho$ = -0.3 with $A_{max}$ | [@hamel_development_2022] (5.4/$A_{max}$) |
 | Maturity slope | $a_{mat}$ | Normal | -20 | 0.2 | - | Logistic steepness |
 | Length at 50% maturity | $L_{50}$ | Lognormal | 184 cm | 0.2 | - | [@farley_southwest_2021] |
-| Weight coefficient | $a_w$ | Lognormal | $5.4\times10^{-7}$ | 0.05 | r = -0.5 with $b_w$ | [@castillo-jordan_stock_2024] |
+| Weight coefficient | $a_w$ | Lognormal | $5.4\times10^{-7}$ | 0.05 | $\rho$ = -0.5 with $b_w$ | [@castillo-jordan_stock_2024] |
 | Weight exponent | $b_w$ | Normal | 3.58 | 0.05 | r = -0.5 with $a_w$ | [@castillo-jordan_stock_2024] Constrained: 150-350 kg at 300 cm |
 | Steepness | $h$ | Beta(3, 1.5) | ~0.73 | - | - | Censored to [0.2, 1.0] |
 | Sex ratio (prop. female) | $s$ | Normal | 0.5 | 0.05 | - | Constrained [0.01, 0.99] |
@@ -412,7 +416,7 @@ Table: Prior distributions for Bayesian surplus production model parameters {#tb
 | | | | | |
 | **Process and Observation Error** | | | | |
 | $\sigma_P$ | Lognormal | $\log(`r round(exp(PriorMean_logsigmap), 4)`)$ | `r round(PriorSD_logsigmap, 2)` | Process error standard deviation [@winker_jabba_2018] |
-| $\sigma_{O,add}$ | Half-Normal | 0 | `r round(PriorSD_sigmao_add, 2)` | Additional observation error |
+| $\sigma_{O,add}$ | Half-Normal | 0 | `r round(PriorSD_sigmao_add, 2)` | Additional estimated observation error |
 | $\sigma_F$ | Half-Normal | 0 | `r round(PriorSD_sigmaf, 3)` | Fishing mortality variability |
 | | | | | |
 | **Depletion Constraint (Constrained Model Only)** | | | | |
@@ -430,10 +434,112 @@ Table: Prior distributions for Bayesian surplus production model parameters {#tb
 
 Table: Model summary {#tbl-summary}
 
-| Model | Max $\hat{R}$ | Min ESS | Divergent | Tree Depth | BFMI Issues | Index RMSE |
-|-------|---------------|---------|-----------|------------|-------------|-------------|
-| 0001-2024cpueExPrior | `r round(baseline$max_rhat, 3)` | `r round(baseline$min_neff, 0)` | `r baseline$divergent` | `r baseline$treedepth` | `r baseline$low_bfmi` | `r round(baseline$median_rmse, 3)` |
-| 0002-2024cpueDepPrior | `r round(constrained$max_rhat, 3)` | `r round(constrained$min_neff, 0)` | `r constrained$divergent` | `r constrained$treedepth` | `r constrained$low_bfmi` | `r round(constrained$median_rmse, 3)` |
+| Model | Max $\hat{R}$ | Min ESS | Divergent | Tree Depth | BFMI Issues | Index RMSE | Mohn's $\rho$ | MASE | Coverage $D/D_{MSY}$ | Coverage $U/U_{MSY}$ |
+|-------|---------------|---------|-----------|------------|-------------|-------------|---------------|------|--------------------|-------------------|
+| `0001` | `r round(baseline$max_rhat, 3)` | `r round(baseline$min_neff*1000)` | `r baseline$divergent` | `r baseline$treedepth` | `r baseline$low_bfmi` | `r round(baseline$median_rmse, 3)` | `r round(baseline$retro, 3)` | `r round(baseline$hcxval, 3)` | `r round(baseline$coverage_pmsy*100, 1)`% | `r round(baseline$coverage_fmsy*100, 1)`% |
+| `0002` | `r round(constrained$max_rhat, 3)` | `r round(constrained$min_neff*1000)` | `r constrained$divergent` | `r constrained$treedepth` | `r constrained$low_bfmi` | `r round(constrained$median_rmse, 3)` | `r round(constrained$retro, 3)` | `r round(constrained$hcxval, 3)` | `r round(constrained$coverage_pmsy*100, 1)`% | `r round(constrained$coverage_fmsy*100, 1)`% |
+
+**Notes:** 
+
+`0001` corresponds to the `0001-2024cpueExPrior` model
+
+`0002` corresponds to the `0002-2024cpueDepPrior` model
+
+- Max $\hat{R}$: Maximum potential scale reduction factor across all parameters (should be < 1.01)
+- Min ESS: Minimum effective sample size across all parameters (should be > 500)
+- Divergent: Number of divergent transitions during sampling (should be 0)
+- Tree Depth: Whether maximum tree depth was exceeded during sampling
+- BFMI Issues: Whether low Bayesian Fraction of Missing Information was detected
+- Index RMSE: Root mean squared error for fit to standardized CPUE index
+- Mohn's $\rho$: Retrospective bias statistic (values close to 0 indicate low bias)
+- MASE: Mean Absolute Scaled Error from hindcast cross-validation (< 1 indicates model outperforms naïve predictor)
+- Coverage $D/D_{MSY}$: Percentage of retrospective peels where relative depletion estimates fall within full model credible intervals
+- Coverage $U/U_{MSY}$: Percentage of retrospective peels where relative exploitation rate estimates fall within full model credible intervals
+
+:::
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: calculate-parameter-credible-intervals
+#| echo: false
+#| warning: false
+#| message: false
+
+# Load required libraries
+library(data.table)
+
+# Read HMC samples for both models
+hmc_baseline <- fread(file.path(proj_dir, "data", "output", "model_runs", "0001-2024cpueExPrior_0", "hmc_samples.csv"))
+hmc_constrained <- fread(file.path(proj_dir, "data", "output", "model_runs", "0002-2024cpueDepPrior_0", "hmc_samples.csv"))
+
+# Function to calculate summary statistics for parameters
+calculate_parameter_summary <- function(hmc_data, param_name) {
+  param_values <- hmc_data[variable == param_name]$value
+  list(
+    median = median(param_values, na.rm = TRUE),
+    lower = quantile(param_values, 0.025, na.rm = TRUE),
+    upper = quantile(param_values, 0.975, na.rm = TRUE)
+  )
+}
+
+# Define all parameters from the CSV snippet (reordered)
+all_parameters <- c("logK", "r", "sigmap", "shape", "sigmaf", "sigmao_add", "sigmao_sc", "x[37]")
+
+# Calculate statistics for baseline model
+baseline_estimates <- lapply(all_parameters, function(p) {
+  calculate_parameter_summary(hmc_baseline, p)
+})
+names(baseline_estimates) <- all_parameters
+
+# Calculate statistics for constrained model  
+constrained_estimates <- lapply(all_parameters, function(p) {
+  calculate_parameter_summary(hmc_constrained, p)
+})
+names(constrained_estimates) <- all_parameters
+
+# Formatting functions
+format_estimate <- function(stats, digits = 2) {
+  sprintf(paste0("%.", digits, "f (%.", digits, "f-%.", digits, "f)"), 
+          stats$median, stats$lower, stats$upper)
+}
+
+format_rmax <- function(stats) {
+  sprintf("%.2f (%.2f-%.2f)", stats$median, stats$lower, stats$upper)
+}
+
+format_logK <- function(stats) {
+  sprintf("%.1f (%.1f-%.1f)", stats$median, stats$lower, stats$upper)
+}
+```
+
+::: {.landscape}
+
+Table: Posterior estimates with 95% credible intervals for all BSPM parameters {#tbl-param-hmc}
+
+| Model | *log(K)*   | $R_{max}$ | $\sigma_P$ | *Shape ($n$)* | $\sigma_F$ | $\sigma_{O,add}$ | $\sigma_{O}$ | $x_{1988}$ |
+|-------|------------|---------------|----------------|-----------------|----------------|---------------------|-------------------|-------------------|
+| `0001` | `r format_logK(baseline_estimates$logK)` | `r format_rmax(baseline_estimates$r)` | `r format_estimate(baseline_estimates$sigmap)` | `r format_estimate(baseline_estimates$shape)` | `r format_estimate(baseline_estimates$sigmaf)` | `r format_estimate(baseline_estimates$sigmao_add)` | `r format_estimate(baseline_estimates$sigmao_sc)` | `r format_estimate(baseline_estimates[["x[37]"]])` |
+| `0002` | `r format_logK(constrained_estimates$logK)` | `r format_rmax(constrained_estimates$r)` | `r format_estimate(constrained_estimates$sigmap)` | `r format_estimate(constrained_estimates$shape)` | `r format_estimate(constrained_estimates$sigmaf)` | `r format_estimate(constrained_estimates$sigmao_add)` | `r format_estimate(constrained_estimates$sigmao_sc)` | `r format_estimate(constrained_estimates[["x[37]"]])` |
+
+**Parameter Definitions:**
+
+`0001` corresponds to the `0001-2024cpueExPrior` model
+
+`0002` corresponds to the `0002-2024cpueDepPrior` model
+
+- *log(K)*: Natural logarithm of carrying capacity (total numbers)
+- $R_{max}$: Maximum intrinsic rate of population increase (per year)  
+- $\sigma_P$: Process error standard deviation
+- *Shape ($n$)*: Pella-Tomlinson production function shape parameter
+- $\sigma_F$: Fishing mortality variability standard deviation
+- $\sigma_{O,add}$: Extra estimated observation error component
+- $\sigma_{O}$: Total observation error (input + additional)
+- $x_{1988}$: Population depletion in 1988 (year 37 of model period)
 
 :::
 
@@ -570,11 +676,91 @@ knitr::include_graphics(file.path(proj_dir, "plots", "depletion", "prior_rel_dep
 ```{r}
 #| label: fig-pred-catch
 #| echo: false
-#| fig-cap: "Time series of observed catch (black dots with uncertainty bounds) and model-predicted catch for two Bayesian surplus production models fitted to SWPO striped marlin data from 1950-2022. The left panel shows model 0001-2024cpueExPrior (baseline model with expert priors) and the right panel shows model 0002-2024cpueDepPrior (depletion-constrained model incorporating 1988 depletion prior from New Zealand recreational weight data). Colored lines represent posterior median predictions with shaded uncertainty bands showing 95% credible intervals."
+#| fig-cap: "Time series of observed catch (black dots with uncertainty bounds) and model-predicted catch for two Bayesian surplus production models fitted to SWPO striped marlin data from 1950-2022. The left panel shows model `0001-2024cpueExPrior` (baseline model with expert priors) and the right panel shows model `0002-2024cpueDepPrior` (depletion-constrained model incorporating 1988 depletion prior from New Zealand recreational weight data). Colored lines represent posterior median predictions with shaded uncertainty bands showing 95% credible intervals."
 #| out-width: "100%"
 #| fig-pos: "H"
 
 knitr::include_graphics(file.path(proj_dir, "plots", "predicted_catch.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-idx-residuals
+#| echo: false
+#| fig-cap: "Probability-integral transform (PIT) style residuals from each model (colored points) fit to the standardized index."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","model_comparison","comparisons", "comparison_index_fit_residuals.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-retro
+#| echo: false
+#| fig-cap: "Retrospective analysis for both models with respect to time series of depletion $D_t$, depletion relative to depletion at MSY $D_t/D_{MSY}$, exploitation rate $U_t$, and exploitation rate relative to the rate of exploitation that produces MSY $U_t/U_{MSY}$. The base model with data included through 2022 (black line – median; dark shading – 50% credible interval; light shading – 95% credible interval) is shown relative to the retrospective models. Colored lines correspond to the last year of index data and the colored point indicates the estimate in the last year of the retrospective peel."
+#| out-width: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","retro_analysis.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-hcxval
+#| echo: false
+#| fig-cap: "Standardized indices of relative abundance used in the Bayesian Surplus Production Model. Open circles show observed values (standardized to mean of 1; black horizontal line) and the vertical bars indicate the observation error (95% confidence interval). One year ahead 'model-free' hindcast predictions are shown by the colored lines, where the color indicates the last year of index data seen by the model. The predicted value is shown one year-ahead with the colored point."
+#| out-height: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","hcxval_analysis.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-prior-post
+#| echo: false
+#| fig-cap: 'Posterior parameter distributions (solid lines) for leading parameters (*log(K)*, $R_{max}$, $\sigma_P$, shape ($n$), $\sigma_F$, $\sigma_{O,add}$, and $\sigma_{O,sc}$), relative to their assumed prior distributions (dotted lines) for both models.'
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","model_comparison","comparisons", "comparison_prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-rmax-subsample-bio
+#| echo: false
+#| fig-cap: "Distributions of biological parameters (maximum age *max_age*, natural mortality reference *M_ref*, length at birth *L1*, asymptotic length *L2*, von Bertalanffy growth coefficient *vbk*, length at 50% maturity *l50*, sex ratio at birth *sex_ratio*, coefficient of variation in length *cv_len*, weight-length relationship parameters *weight_a* and *weight_b*, and steepness *h*) used in the rmax sub-sampling process. Original biological prior distribution (orange shading), distribution based on extreme filtering criteria following the prior pushforward analysis (green shading), and final sub-sampled distribution selected to match the posterior $R_{max}$ distribution (blue shading)."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "rmax_subsampling_biological_parameters.png"))
 ```
 
 \newpage

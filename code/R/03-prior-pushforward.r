@@ -77,7 +77,8 @@
                          logK = bio_params_dt$logK[sample_indices],
                          r = bio_params_dt$rmax[sample_indices],
                          sigmap = rep(0, nsim),
-                         init_dep = rep(1, nsim))
+                         init_dep = rep(1, nsim),
+                         id = bio_params_dt$id[sample_indices])
 
     sim_dt.list = as.list(rep(NA, nsim))
     for(i in 1:nsim)
@@ -97,7 +98,8 @@
                                      time = floor(catch_dt$time),
                                      dep = n,
                                      n = n*exp(prior_dt$logK[i]),
-                                     u = catch_dt$catch_n/(roll_n*exp(prior_dt$logK[i])))
+                                     u = catch_dt$catch_n/(roll_n*exp(prior_dt$logK[i])),
+                                     id = rep(prior_dt$id[i], nrow(catch_dt)))
     }
 
     sim_dt = rbindlist(sim_dt.list)
@@ -117,6 +119,9 @@
     # survival
         seed_surv = sim_dt[time==2022&dep>0.02&n>15000&rmax<1]$seed
         seed_flat = sim_dt[time==2022&dep>0.02&n>15000&rmax<1&pct_change_n > -5 & pct_change_n < 10]$seed
+
+        rmax_exprior_id = sim_dt[time==2022&dep>0.02&n>15000&rmax<1&pct_change_n > -5 & pct_change_n < 10]$id
+        saveRDS(rmax_exprior_id, file.path(proj_dir,"data","output","rmax_exprior_id.rds"))
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # plot
