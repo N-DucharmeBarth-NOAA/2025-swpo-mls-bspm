@@ -81,6 +81,10 @@ dir_model_runs = file.path(proj_dir,"data","output","model_runs")
 
 \newpage
 
+# Executive summary
+
+\newpage
+
 # Introduction {#sec-introduction}
 
 Assessment of Southwest Pacific Ocean (SWPO) striped marlin (*Kajikia audax*) has been challenging. As documented in the joint NOAA-SPC modeling meeting report [@ducharme-barth_summary_2025], key issues identified by WCPFC SC20 included poor fits to size composition data and relative abundance indices, conflicts between different data sources, and difficulties in estimating model initial conditions.
@@ -262,6 +266,55 @@ Simple, status quo based catch projections over a 10 year window are provided fo
 
 # Results {#sec-results}
 
+```{r}
+#| label: read-model-diagnostics
+#| echo: false
+#| warning: false
+#| message: false
+
+# Read summary diagnostics
+library(data.table)
+summary_diagnostics <- fread(file.path(proj_dir, "data", "output", "summary_retro0.csv"))
+
+# Extract diagnostics for both models
+baseline <- summary_diagnostics[run_number == "0001-2024cpueExPrior"]
+constrained <- summary_diagnostics[run_number == "0002-2024cpueDepPrior"]
+
+# Read stan data to get catch CV
+stan_data <- fread(file.path(proj_dir, "data", "output", "model_runs", "0001-2024cpueExPrior_0", "stan_data.csv"))
+catch_cv <- stan_data[name == "sigmac" & type == "Data"]$value
+```
+
+## Model Convergence and Diagnostics {#sec-model-convergence}
+
+Both BSPM model variants (`0001-2024cpueExPrior` and `0002-2024cpueDepPrior`) achieved satisfactory convergence based on standard Hamiltonian Monte Carlo diagnostics (@tbl-summary). Both models met all convergence criteria with $\hat{R}$ values well below the 1.01 threshold and effective sample sizes exceeding the recommended minimum of 500 (100 samples per chain). No divergent transitions were observed across chains, and maximum tree depth was not exceeded during sampling, which did not indicate issues in exploring the posterior space.
+
+## Model Fit to Data {#sec-model-fit}
+
+### Catch Data Fit
+
+Both models were fit to the observed catch time series (1952-2022) with a coefficient of variation of `r catch_cv` applied to account for uncertainty in catch estimates. Given that the fishing mortality required to fit the catch was also directly estimated, model fit to the catch was good (@fig-pred-catch). Notably, the models predicted lower than observed catch for the large catch event in 1954. 
+
+### CPUE Index Fit
+
+Model fit to the standardized CPUE index (1988-2022) was evaluated using normalized root-mean-squared error (NRMSE). Both models provided reasonable fits to the observed index given the high variability and observation error (@tbl-summary). The `0002-2024cpueDepPrior` model showed marginally improved fit to the CPUE index, with lower RMSE values. In general, both models successfully captured the general declining trend in the standardized CPUE from 1988-2022. However, the estimated combination of observation and process error meant that the model was not pulled as tightly to each individual observation resulting in a persistant overfit in the last decade. Posterior predictive checks confirmed that the models were able to replicate the key features of the observed CPUE data (@fig-idx-fit).
+
+## Model Validation {#sec-model-validation}
+
+[Retrospective analysis and hindcast cross-validation results to assess model reliability and predictive performance.]
+
+## Population Dynamics and Stock Status {#sec-stock-status}
+
+[Parameter estimates, stock depletion levels, and reference point ratios for both baseline and constrained models.]
+
+## Biological Reference Points {#sec-reference-points}
+
+[MSY-based reference points (MSY, D_MSY, U_MSY, F_MSY) estimated from both model variants.]
+
+## Future Projections {#sec-projections}
+
+[Ten-year stochastic projections under different catch scenarios and associated risk assessments.]
+
 # Discussion {#sec-discussion}
 
 # Declaration of Generative AI use {#sec-ai-declaration}
@@ -373,6 +426,23 @@ Table: Prior distributions for Bayesian surplus production model parameters {#tb
 <br>
 ```
 
+::: {.landscape}
+
+Table: Model summary {#tbl-summary}
+
+| Model | Max $\hat{R}$ | Min ESS | Divergent | Tree Depth | BFMI Issues | Index RMSE |
+|-------|---------------|---------|-----------|------------|-------------|-------------|
+| 0001-2024cpueExPrior | `r round(baseline$max_rhat, 3)` | `r round(baseline$min_neff, 0)` | `r baseline$divergent` | `r baseline$treedepth` | `r baseline$low_bfmi` | `r round(baseline$median_rmse, 3)` |
+| 0002-2024cpueDepPrior | `r round(constrained$max_rhat, 3)` | `r round(constrained$min_neff, 0)` | `r constrained$divergent` | `r constrained$treedepth` | `r constrained$low_bfmi` | `r round(constrained$median_rmse, 3)` |
+
+:::
+
+\newpage
+
+```{=html}
+<br>
+```
+
 # Figures {#sec-figures}
 
 ```{r}
@@ -417,7 +487,15 @@ ggplot(catch_annual, aes(x = year, y = total_catch)) +
 <br>
 ```
 
-![Standardized index (black points), observation error (black bars), and posterior predicted model fits (colored lines) with associated 95% credible interval (colored shading).](../plots/model_comparison/comparisons/comparison_index_fit_ppd.png){#fig-idx-fit}
+```{r}
+#| label: fig-idx-fit
+#| echo: false
+#| fig-cap: "Standardized index (black points), observation error (black bars), and posterior predicted model fits (colored lines) with associated 95% credible interval (colored shading)."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "model_comparison", "comparisons", "comparison_index_fit_ppd.png"))
+```
 
 \newpage
 
@@ -425,7 +503,15 @@ ggplot(catch_annual, aes(x = year, y = total_catch)) +
 <br>
 ```
 
-![Prior pushforward check for population depletion trajectories under different biological parameter filtering scenarios. Each line represents a simulated population trajectory colored by maximum intrinsic rate of increase ($R_{max}$). Left panel shows unfiltered $R_{max}$, middle panel shows filtered $R_{max}$, and right panel shows extreme filtering.](../plots/pushforward/prior_push.sim_dep.png){#fig-pushforward}
+```{r}
+#| label: fig-pushforward
+#| echo: false
+#| fig-cap: "Prior pushforward check for population depletion trajectories under different biological parameter filtering scenarios. Each line represents a simulated population trajectory colored by maximum intrinsic rate of increase ($R_{max}$). Left panel shows unfiltered $R_{max}$, middle panel shows filtered $R_{max}$, and right panel shows extreme filtering."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "pushforward", "prior_push.sim_dep.png"))
+```
 
 \newpage
 
@@ -433,7 +519,15 @@ ggplot(catch_annual, aes(x = year, y = total_catch)) +
 <br>
 ```
 
-![Prior distributions for maximum intrinsic rate of population increase $R_{max}$. Upper panel: Gray histogram is the $R_{max}$ values from the numerical simulation which meet baseline filtering levels. Red line is fitted lognormal distribution. Middle panel: Gray histogram is the $R_{max}$ values from the numerical simulation which meet extreme filtering levels. Dotted red line is fitted lognormal distribution. Bottom panel: Original distribution of $R_{max}$ values from numerical simulation (gray), those from viable populations (blue), and the two lognormal priors (red).](../plots/pushforward/prior.rmax.png){#fig-rmax-prior}
+```{r}
+#| label: fig-rmax-prior
+#| echo: false
+#| fig-cap: "Prior distributions for maximum intrinsic rate of population increase $R_{max}$. Upper panel: Gray histogram is the $R_{max}$ values from the numerical simulation which meet baseline filtering levels. Red line is fitted lognormal distribution. Middle panel: Gray histogram is the $R_{max}$ values from the numerical simulation which meet extreme filtering levels. Dotted red line is fitted lognormal distribution. Bottom panel: Original distribution of $R_{max}$ values from numerical simulation (gray), those from viable populations (blue), and the two lognormal priors (red)."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "pushforward", "prior.rmax.png"))
+```
 
 \newpage
 
@@ -441,7 +535,15 @@ ggplot(catch_annual, aes(x = year, y = total_catch)) +
 <br>
 ```
 
-![Observed versus predicted mean weights from New Zealand recreational fishery data. Points show observed mean weights with error bars, colored lines show model predictions from the transitional mean weight model colored by relative spawning stock biomass (SSB) depletion.](../plots/depletion/mean_weight_comparison.png){#fig-gedamke}
+```{r}
+#| label: fig-gedamke
+#| echo: false
+#| fig-cap: "Observed versus predicted mean weights from New Zealand recreational fishery data. Points show observed mean weights with error bars, colored lines show model predictions from the transitional mean weight model colored by relative spawning stock biomass (SSB) depletion."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "depletion", "mean_weight_comparison.png"))
+```
 
 \newpage
 
@@ -449,7 +551,31 @@ ggplot(catch_annual, aes(x = year, y = total_catch)) +
 <br>
 ```
 
-![Prior distribution for relative depletion in 1988 derived from New Zealand recreational weight data. Light blue histogram shows depletion estimates from biological parameter combinations that successfully fit the transitional mean weight model. Blue dashed line shows kernel density estimate, red line shows fitted lognormal distribution used as prior in the depletion-constrained BSPM.](../plots/depletion/prior_rel_dep_ssb.png){#fig-dep-prior}
+```{r}
+#| label: fig-dep-prior
+#| echo: false
+#| fig-cap: "Prior distribution for relative depletion in 1988 derived from New Zealand recreational weight data. Light blue histogram shows depletion estimates from biological parameter combinations that successfully fit the transitional mean weight model. Blue dashed line shows kernel density estimate, red line shows fitted lognormal distribution used as prior in the depletion-constrained BSPM."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "depletion", "prior_rel_dep_ssb.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-pred-catch
+#| echo: false
+#| fig-cap: "Time series of observed catch (black dots with uncertainty bounds) and model-predicted catch for two Bayesian surplus production models fitted to SWPO striped marlin data from 1950-2022. The left panel shows model 0001-2024cpueExPrior (baseline model with expert priors) and the right panel shows model 0002-2024cpueDepPrior (depletion-constrained model incorporating 1988 depletion prior from New Zealand recreational weight data). Colored lines represent posterior median predictions with shaded uncertainty bands showing 95% credible intervals."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "predicted_catch.png"))
+```
 
 \newpage
 
