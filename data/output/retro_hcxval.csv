@@ -1,3 +1,4 @@
 run_id,retro,hcxval,coverage_pmsy,coverage_fmsy,n_retro
 0001-2024cpueExPrior_0-bspm_estF,0.00581323688294362,0.966121271922568,1,1,5
 0002-2024cpueDepPrior_0-bspm_estF_softdep,-0.00501427066585514,0.862903720932678,1,1,5
+0003-2024cpueFPrior_0-bspm_estF_softdep,-0.0255426370843792,0.778884329664638,1,1,5

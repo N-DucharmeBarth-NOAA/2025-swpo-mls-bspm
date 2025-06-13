@@ -129,8 +129,7 @@
     # survival
         seed_surv = sim_dt[time==2022&dep>0.02&n>15000&rmax<1]$seed
         seed_flat = sim_dt[time==2022&dep>0.02&n>15000&rmax<1&pct_change_n > -5 & pct_change_n < 10]$seed
-        seed_catch = sim_dt[time==2022&dep>0.02&n>15000&rmax<1&pct_change_n > -5 & pct_change_n < 10 & maxCatch < 100000]$seed
-
+        seed_catch = sim_dt[time==2022&dep>0.02&n>15000&rmax<1&pct_change_n > -5 & pct_change_n < 10 & maxCatch < 350000]$seed
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # plot
@@ -167,8 +166,9 @@
 							strip.background =element_rect(fill="white"),
 							legend.key = element_rect(fill = "white"))
 
+    p
 
-    p = rbind(p1,p2,p3,p4) %>%
+    pp = rbind(p1,p2,p3,p4) %>%
         .[,type:=factor(type,levels=c("Un-filtered","Survival filter","Trend filter","Catch filter"))] %>%
         ggplot() +
         facet_wrap(~type) +
@@ -184,5 +184,195 @@
 							panel.grid.minor = element_line(color = 'gray70',linetype = "dotted"),
 							strip.background =element_rect(fill="white"),
 							legend.key = element_rect(fill = "white"))
-    p
+    pp
 
+    ppp = rbind(p4) %>%
+        .[,type:=factor(type,levels=c("Un-filtered","Survival filter","Trend filter","Catch filter"))] %>%
+        # Calculate median and 95% quantile by time, type, and sigmaF
+        .[, .(
+            median_removals = median(removals, na.rm = TRUE),
+            q95_removals = quantile(removals, 0.95, na.rm = TRUE),
+            q05_removals = quantile(removals, 0.05, na.rm = TRUE)
+        ), by = .(time, type)] %>%
+        ggplot() +
+        facet_wrap(~type) +
+        ylim(0,NA) +
+        xlab("Year") +
+        ylab("Removals") +
+        geom_ribbon(aes(x=time, ymin=q05_removals, ymax=q95_removals), alpha=0.3,fill="blue") +
+        geom_line(aes(x=time, y=median_removals), size=1, color="blue") +
+        geom_line(data=catch_dt,aes(x=time,y=catch_n),size=1) +
+        geom_hline(yintercept=0) +
+        theme(panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
+                            panel.grid.major = element_line(color = 'gray70',linetype = "dotted"), 
+                            panel.grid.minor = element_line(color = 'gray70',linetype = "dotted"),
+                            strip.background =element_rect(fill="white"),
+                            legend.key = element_rect(fill = "white"))
+    ppp
+
+    # Create filtered datasets based on the three filter states
+    sim_unfiltered_dt = sim_dt  # All simulations
+    prior_unfiltered_dt = prior_dt
+
+    sim_filtered_dt = sim_dt[seed %in% seed_surv]  # Survival filter
+    prior_filtered_dt = prior_dt[seed %in% seed_surv]
+
+    sim_extreme_dt = sim_dt[seed %in% seed_flat]  # Survival + stability filter  
+    prior_extreme_dt = prior_dt[seed %in% seed_flat]
+
+    sim_catch_dt = sim_dt[seed %in% seed_catch]  # Survival + stability + catch filter  
+    prior_catch_dt = prior_dt[seed %in% seed_catch]
+
+    # Define new filtered priors
+    # logK
+    logK_fn_filtered = function(par){-sum(dnorm(prior_filtered_dt$logK, mean = par[1], sd = par[2], log = TRUE))}
+    logK_pars_filtered = nlminb(c(16.5, 0.4), logK_fn_filtered)$par
+
+    logK_fn_extreme = function(par){-sum(dnorm(prior_extreme_dt$logK, mean = par[1], sd = par[2], log = TRUE))}
+    logK_pars_extreme = nlminb(c(16.5, 0.4), logK_fn_extreme)$par
+
+    logK_fn_catch = function(par){-sum(dnorm(prior_catch_dt$logK, mean = par[1], sd = par[2], log = TRUE))}
+    logK_pars_catch = nlminb(c(16.5, 0.4), logK_fn_catch)$par
+    write.csv(logK_pars_catch, file = file.path(model_run_dir, "logK_pars_catch.csv"))
+
+    png(filename = file.path(plot_dir, "prior.logK.w_sigmaF.png"), width = 6, height = 8, units = "in", bg = "white", res = 300)
+    par(mfrow=c(4,1))
+
+    # Filtered (survival only)
+    hist(prior_filtered_dt$logK, freq=FALSE, breaks=50, xlab="logK", main="Prior: LogK - Filtered (Survival)")
+    plot_x = seq(from=min(prior_filtered_dt$logK), to=max(prior_filtered_dt$logK), length.out=1000)
+    plot_y = dnorm(plot_x, logK_pars_filtered[1], logK_pars_filtered[2])
+    lines(plot_x, plot_y, col="red")
+    legend("topright", c("Update prior: Filtered"), col=c("red"), lwd=3, bty="n")
+
+    # Extreme (survival + stability)
+    hist(prior_extreme_dt$logK, freq=FALSE, breaks=50, xlab="logK", main="Prior: LogK - Extreme (Survival + Stability)")
+    plot_x2 = seq(from=min(prior_extreme_dt$logK), to=max(prior_extreme_dt$logK), length.out=1000)
+    plot_y2 = dnorm(plot_x2, logK_pars_extreme[1], logK_pars_extreme[2])
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    legend("topright", c("Update prior: Extreme"), col=c("red"), lwd=3, lty=3, bty="n")
+
+    # Catch (survival + stability + catch)
+    hist(prior_catch_dt$logK, freq=FALSE, breaks=50, xlab="logK", main="Prior: LogK - Catch (Survival + Stability + Catch)")
+    plot_x3 = seq(from=min(prior_catch_dt$logK), to=max(prior_catch_dt$logK), length.out=1000)
+    plot_y3 = dnorm(plot_x3, logK_pars_catch[1], logK_pars_catch[2])
+    lines(plot_x3, plot_y3, col="red", lty=2)
+    legend("topright", c("Update prior: Catch"), col=c("red"), lwd=3, lty=2, bty="n")
+
+    # Comparison plot
+    plot(plot_x, plot_y, col="red", type="l", xlab="logK", ylab="Density", 
+        xlim=range(c(plot_x, plot_x2, plot_x3)), ylim=c(0, max(c(plot_y, plot_y2, plot_y3))*1.2))
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    lines(plot_x3, plot_y3, col="red", lty=2)
+    lines(density(prior_unfiltered_dt$logK), col="blue")
+    legend("topright", c("Original prior", "Update prior: Filtered", "Update prior: Extreme", "Update prior: Catch"), 
+        col=c("blue", "red", "red", "red"), lty=c(1, 1, 3, 2), lwd=3, bty="n")
+    dev.off()
+
+    # r (rmax)
+    rmax_fn_filtered = function(par){-sum(dnorm(log(prior_filtered_dt$r), mean = par[1], sd = par[2], log = TRUE))}
+    rmax_pars_filtered = nlminb(c(log(0.1), 0.4), rmax_fn_filtered)$par
+
+    rmax_fn_extreme = function(par){-sum(dnorm(log(prior_extreme_dt$r), mean = par[1], sd = par[2], log = TRUE))}
+    rmax_pars_extreme = nlminb(c(log(0.1), 0.4), rmax_fn_extreme)$par
+
+    rmax_fn_catch = function(par){-sum(dnorm(log(prior_catch_dt$r), mean = par[1], sd = par[2], log = TRUE))}
+    rmax_pars_catch = nlminb(c(log(0.1), 0.4), rmax_fn_catch)$par
+    write.csv(rmax_pars_catch, file = file.path(model_run_dir, "rmax_pars_catch.csv"))
+
+    png(filename = file.path(plot_dir, "prior.rmax.w_sigmaF.png"), width = 6, height = 8, units = "in", bg = "white", res = 300)
+    par(mfrow=c(4,1))
+
+    # Filtered (survival only)
+    hist(log(prior_filtered_dt$r), freq=FALSE, breaks=50, xlab="log(Rmax)", main="Prior: Rmax - Filtered (Survival)")
+    plot_x = seq(from=min(log(prior_filtered_dt$r)), to=max(log(prior_filtered_dt$r)), length.out=1000)
+    plot_y = dnorm(plot_x, rmax_pars_filtered[1], rmax_pars_filtered[2])
+    lines(plot_x, plot_y, col="red")
+    legend("topright", c("Update prior: Filtered"), col=c("red"), lwd=3, bty="n")
+
+    # Extreme (survival + stability)
+    hist(log(prior_extreme_dt$r), freq=FALSE, breaks=50, xlab="log(Rmax)", main="Prior: Rmax - Extreme (Survival + Stability)")
+    plot_x2 = seq(from=min(log(prior_extreme_dt$r)), to=max(log(prior_extreme_dt$r)), length.out=1000)
+    plot_y2 = dnorm(plot_x2, rmax_pars_extreme[1], rmax_pars_extreme[2])
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    legend("topright", c("Update prior: Extreme"), col=c("red"), lwd=3, lty=3, bty="n")
+
+    # Catch (survival + stability + catch)
+    hist(log(prior_catch_dt$r), freq=FALSE, breaks=50, xlab="log(Rmax)", main="Prior: Rmax - Catch (Survival + Stability + Catch)")
+    plot_x3 = seq(from=min(log(prior_catch_dt$r)), to=max(log(prior_catch_dt$r)), length.out=1000)
+    plot_y3 = dnorm(plot_x3, rmax_pars_catch[1], rmax_pars_catch[2])
+    lines(plot_x3, plot_y3, col="red", lty=2)
+    legend("topright", c("Update prior: Catch"), col=c("red"), lwd=3, lty=2, bty="n")
+
+    # Comparison plot
+    plot(plot_x, plot_y, col="red", type="l", xlab="log(Rmax)", ylab="Density", 
+        xlim=range(c(plot_x, plot_x2, plot_x3)), ylim=c(0, max(c(plot_y, plot_y2, plot_y3))*1.2))
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    lines(plot_x3, plot_y3, col="red", lty=2)
+    lines(density(log(prior_unfiltered_dt$r)), col="blue")
+    legend("topright", c("Original prior", "Update prior: Filtered", "Update prior: Extreme", "Update prior: Catch"), 
+        col=c("blue", "red", "red", "red"), lty=c(1, 1, 3, 2), lwd=3, bty="n")
+    dev.off()
+
+
+
+    # Add sigmaF prior calculations (half-normal distribution)
+    # Define half-normal density function
+    dhalfnorm = function(x, sigma, log = FALSE) {
+        if (log) {
+            log(2) + dnorm(x, mean = 0, sd = sigma, log = TRUE) - log(sigma) - 0.5 * log(2 * pi)
+        } else {
+            (2 / (sigma * sqrt(2 * pi))) * exp(-x^2 / (2 * sigma^2))
+        }
+    }
+
+    sigmaF_fn_filtered = function(par){-sum(dhalfnorm(prior_filtered_dt$sigmaF, sigma = par[1], log = TRUE))}
+    sigmaF_pars_filtered = nlminb(c(0.05), sigmaF_fn_filtered)$par
+    write.csv(sigmaF_pars_filtered, file = file.path(model_run_dir, "sigmaF_pars_filtered.csv"))
+
+    sigmaF_fn_extreme = function(par){-sum(dhalfnorm(prior_extreme_dt$sigmaF, sigma = par[1], log = TRUE))}
+    sigmaF_pars_extreme = nlminb(c(0.05), sigmaF_fn_extreme)$par
+    write.csv(sigmaF_pars_extreme, file = file.path(model_run_dir, "sigmaF_pars_extreme.csv"))
+
+    sigmaF_fn_catch = function(par){-sum(dhalfnorm(prior_catch_dt$sigmaF, sigma = par[1], log = TRUE))}
+    sigmaF_pars_catch = nlminb(c(0.05), sigmaF_fn_catch)$par
+    write.csv(sigmaF_pars_catch, file = file.path(model_run_dir, "sigmaF_pars_catch.csv"))
+
+    # Plot sigmaF priors
+    png(filename = file.path(plot_dir, "prior.sigmaF.w_sigmaF.png"), width = 6, height = 8, units = "in", bg = "white", res = 300)
+    par(mfrow=c(4,1))
+
+    # Filtered (survival only)
+    hist(prior_filtered_dt$sigmaF, freq=FALSE, breaks=50, xlab="sigmaF", main="Prior: SigmaF - Filtered (Survival)")
+    plot_x = seq(from=0, to=max(prior_filtered_dt$sigmaF), length.out=1000)
+    plot_y = dhalfnorm(plot_x, sigma = sigmaF_pars_filtered[1])
+    lines(plot_x, plot_y, col="red")
+    legend("topright", c("Update prior: Filtered"), col=c("red"), lwd=3, bty="n")
+
+    # Extreme (survival + stability)
+    hist(prior_extreme_dt$sigmaF, freq=FALSE, breaks=50, xlab="sigmaF", main="Prior: SigmaF - Extreme (Survival + Stability)")
+    plot_x2 = seq(from=0, to=max(prior_extreme_dt$sigmaF), length.out=1000)
+    plot_y2 = dhalfnorm(plot_x2, sigma = sigmaF_pars_extreme[1])
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    legend("topright", c("Update prior: Extreme"), col=c("red"), lwd=3, lty=3, bty="n")
+
+    # Catch (survival + stability + catch)
+    hist(prior_catch_dt$sigmaF, freq=FALSE, breaks=50, xlab="sigmaF", main="Prior: SigmaF - Catch (Survival + Stability + Catch)")
+    plot_x3 = seq(from=0, to=max(prior_catch_dt$sigmaF), length.out=1000)
+    plot_y3 = dhalfnorm(plot_x3, sigma = sigmaF_pars_catch[1])
+    lines(plot_x3, plot_y3, col="red", lty=2)
+    legend("topright", c("Update prior: Catch"), col=c("red"), lwd=3, lty=2, bty="n")
+
+    # Comparison plot
+    plot(plot_x, plot_y, col="red", type="l", xlab="sigmaF", ylab="Density", 
+        xlim=range(c(plot_x, plot_x2, plot_x3)), ylim=c(0, max(c(plot_y, plot_y2, plot_y3))*1.2))
+    lines(plot_x2, plot_y2, col="red", lty=3)
+    lines(plot_x3, plot_y3, col="red", lty=2)
+    lines(density(prior_unfiltered_dt$sigmaF), col="blue")
+    # Add initial half-normal prior with sd = 0.025
+    plot_x_initial = seq(from=0, to=max(c(plot_x, plot_x2, plot_x3)), length.out=1000)
+    plot_y_initial = dhalfnorm(plot_x_initial, sigma = 0.025)
+    lines(plot_x_initial, plot_y_initial, col="green", lwd=2)
+    legend("topright", c("Initial half-normal (sd=0.025)", "Empirical prior", "Update prior: Filtered", "Update prior: Extreme", "Update prior: Catch"), 
+        col=c("green", "blue", "red", "red", "red"), lty=c(1, 1, 1, 3, 2), lwd=c(2, 3, 3, 3, 3), bty="n")   
+    dev.off()

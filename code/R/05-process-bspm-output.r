@@ -51,7 +51,8 @@
 # define model directories
     model_list = c(
         "0001-2024cpueExPrior_0",
-        "0002-2024cpueDepPrior_0"
+        "0002-2024cpueDepPrior_0",
+        "0003-2024cpueFPrior_0"
     )
     
     model_dirs = file.path(dir_model_runs, model_list)
@@ -146,7 +147,7 @@
         height = 10,
         dpi = 300,
         parallel = TRUE,
-        n_cores = 2
+        n_cores = 3
     )
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
