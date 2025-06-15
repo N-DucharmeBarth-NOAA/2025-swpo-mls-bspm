@@ -25,7 +25,7 @@
 # load data
     rmax_exprior_id = readRDS(file.path(proj_dir,"data","output","rmax_exprior_id.rds"))
     prior_dt = fread(file.path(proj_dir,"data","output","bspm_parameter_priors_filtered.csv"))
-    posterior_dt = fread(file.path(proj_dir,"data","output","model_runs","0002-2024cpueDepPrior_0","hmc_samples.csv"))
+    posterior_dt = fread(file.path(proj_dir,"data","output","model_runs","0003-2024cpueFPrior_0","hmc_samples.csv"))
     r_posterior = posterior_dt[variable == "r", value]
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________

@@ -131,6 +131,8 @@
         seed_flat = sim_dt[time==2022&dep>0.02&n>15000&rmax<1&pct_change_n > -5 & pct_change_n < 10]$seed
         seed_catch = sim_dt[time==2022&dep>0.02&n>15000&rmax<1&pct_change_n > -5 & pct_change_n < 10 & maxCatch < 350000]$seed
 
+        rmax_fprior_id = sim_dt[time==2022&dep>0.02&n>15000&rmax<1&pct_change_n > -5 & pct_change_n < 10 & maxCatch < 350000]$id
+        saveRDS(rmax_fprior_id, file.path(proj_dir,"data","output","rmax_fprior_id.rds"))
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # plot
 
@@ -166,7 +168,9 @@
 							strip.background =element_rect(fill="white"),
 							legend.key = element_rect(fill = "white"))
 
-    p
+    ggsave(filename=paste0("prior_push.sim_n.sigmaF.png"), plot =p, device = "png", path = plot_dir,
+  			scale = 1, width = 12, height = 6, units = c("in"),
+  			dpi = 300, limitsize = TRUE)
 
     pp = rbind(p1,p2,p3,p4) %>%
         .[,type:=factor(type,levels=c("Un-filtered","Survival filter","Trend filter","Catch filter"))] %>%
@@ -208,7 +212,10 @@
                             panel.grid.minor = element_line(color = 'gray70',linetype = "dotted"),
                             strip.background =element_rect(fill="white"),
                             legend.key = element_rect(fill = "white"))
-    ppp
+
+    ggsave(filename=paste0("prior_push.removals.sigmaF.png"), plot =ppp, device = "png", path = plot_dir,
+  			scale = 1, width = 12, height = 6, units = c("in"),
+  			dpi = 300, limitsize = TRUE)
 
     # Create filtered datasets based on the three filter states
     sim_unfiltered_dt = sim_dt  # All simulations
