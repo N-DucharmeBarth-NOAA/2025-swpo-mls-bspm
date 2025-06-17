@@ -122,6 +122,7 @@
 
         rmax_exprior_id = sim_dt[time==2022&dep>0.02&n>15000&rmax<1&pct_change_n > -5 & pct_change_n < 10]$id
         saveRDS(rmax_exprior_id, file.path(proj_dir,"data","output","rmax_exprior_id.rds"))
+        fwrite(sim_dt,file.path(proj_dir,"data","output","sim_dt.csv"))
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # plot
@@ -265,12 +266,12 @@
     dev.off()
 
     # Shape parameter (n)
-    shape_fn_filtered = function(par){-sum(dnorm(prior_filtered_dt$n, mean = par[1], sd = par[2], log = TRUE))}
-    shape_pars_filtered = nlminb(c(mean(prior_filtered_dt$n), sd(prior_filtered_dt$n)), shape_fn_filtered)$par
+    shape_fn_filtered = function(par){-sum(dnorm(log(prior_filtered_dt$n), mean = par[1], sd = par[2], log = TRUE))}
+    shape_pars_filtered = nlminb(c(log(2), 0.4), shape_fn_filtered)$par
     write.csv(shape_pars_filtered, file = file.path(model_run_dir, "shape_pars_filtered.csv"))
 
-    shape_fn_extreme = function(par){-sum(dnorm(prior_extreme_dt$n, mean = par[1], sd = par[2], log = TRUE))}
-    shape_pars_extreme = nlminb(c(mean(prior_extreme_dt$n), sd(prior_extreme_dt$n)), shape_fn_extreme)$par
+    shape_fn_extreme = function(par){-sum(dnorm(log(prior_extreme_dt$n), mean = par[1], sd = par[2], log = TRUE))}
+    shape_pars_extreme = nlminb(c(log(2), 0.4), shape_fn_extreme)$par
     write.csv(shape_pars_extreme, file = file.path(model_run_dir, "shape_pars_extreme.csv"))
 
     # Plot shape parameter priors
@@ -280,14 +281,14 @@
     # Filtered (survival only)
     hist(prior_filtered_dt$n, freq=FALSE, breaks=50, xlab="Shape", main="Prior: Shape Parameter - Filtered (Survival)")
     plot_x = seq(from=min(prior_filtered_dt$n), to=max(prior_filtered_dt$n), length.out=1000)
-    plot_y = dnorm(plot_x, shape_pars_filtered[1], shape_pars_filtered[2])
+    plot_y = dlnorm(plot_x, shape_pars_filtered[1], shape_pars_filtered[2])
     lines(plot_x, plot_y, col="red")
     legend("topright", c("Update prior: Filtered"), col=c("red"), lwd=3, bty="n")
 
     # Extreme (survival + stability)
     hist(prior_extreme_dt$n, freq=FALSE, breaks=50, xlab="Shape", main="Prior: Shape Parameter - Extreme (Survival + Stability)")
     plot_x2 = seq(from=min(prior_extreme_dt$n), to=max(prior_extreme_dt$n), length.out=1000)
-    plot_y2 = dnorm(plot_x2, shape_pars_extreme[1], shape_pars_extreme[2])
+    plot_y2 = dlnorm(plot_x2, shape_pars_extreme[1], shape_pars_extreme[2])
     lines(plot_x2, plot_y2, col="red", lty=3)
     legend("topright", c("Update prior: Extreme"), col=c("red"), lwd=3, lty=3, bty="n")
 

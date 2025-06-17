@@ -140,7 +140,7 @@ get_parameter_map <- function() {
   map <- cbind(
     c("logK","x0","r","sigmao_add","sigmap","shape","sigmaf","ll_q","lp__"),
     c("logK","x0","r","sigmao_add","sigmap","n","sigmaf","ll_q","lp__"),
-    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logn","raw_sigmaf","raw_logll_q","lp__")
+    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_sigmaf","raw_logll_q","lp__")
   )
   colnames(map) <- c("input","transformed","raw")
   return(map)
@@ -407,7 +407,7 @@ generate_hmc_rhat <- function(model_dir, params = NULL) {
     parameter_map_extended <- cbind(
       c("logK","x0","r","sigmao_add","sigmap","shape","sigmaf","ll_q","epsp","lp__"),
       c("logK","x0","r","sigmao_add","sigmap","n","sigmaf","ll_q","epsp","lp__"),
-      c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logn","raw_sigmaf","raw_logll_q","raw_epsp","lp__")
+      c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_sigmaf","raw_logll_q","raw_epsp","lp__")
     )
     colnames(parameter_map_extended) <- c("input","transformed","raw")
     target_par <- c(params$leading_params, "epsp")
@@ -475,7 +475,7 @@ generate_hmc_neff <- function(model_dir, params = NULL) {
     parameter_map_extended <- cbind(
       c("logK","x0","r","sigmao_add","sigmap","shape","sigmaf","ll_q","epsp","lp__"),
       c("logK","x0","r","sigmao_add","sigmap","n","sigmaf","ll_q","epsp","lp__"),
-      c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logn","raw_sigmaf","raw_logll_q","raw_epsp","lp__")
+      c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_sigmaf","raw_logll_q","raw_epsp","lp__")
     )
     colnames(parameter_map_extended) <- c("input","transformed","raw")
     target_par <- c(params$leading_params, "epsp")
