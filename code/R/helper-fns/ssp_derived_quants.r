@@ -158,7 +158,7 @@ ssp_derived_quants = function(hmc_samples,stan_data,output="percentiles",percent
         if(output=="percentiles"){
             tmp = tmp %>%
                     melt(.,id.vars = c("run_id","iter")) %>%
-                    .[,.(value=quantile(value,probs=percentile)),by=.(run_id,variable)]
+                    .[,.(value=quantile(value,probs=percentile,na.rm=TRUE)),by=.(run_id,variable)]
             tmp = tmp %>%
                     .[,variable:=factor(variable,levels=unique(tmp$variable),labels=paste0(unique(tmp$variable),"-p",percentile))] %>%
                     dcast(.,run_id~variable)          
