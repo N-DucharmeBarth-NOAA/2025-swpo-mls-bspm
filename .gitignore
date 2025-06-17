@@ -7,3 +7,4 @@ data/output/depletion_results*
 data/output/model_runs/*
 data/output/mean_wt_residuals_filtered.csv
 data/output/mean_wt_residuals_filtered.rds
+data/output/sim_dt.csv
