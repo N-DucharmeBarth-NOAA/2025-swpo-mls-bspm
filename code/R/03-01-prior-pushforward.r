@@ -317,3 +317,228 @@
     cat("Original:", nrow(prior_unfiltered_dt), "\n")
     cat("Filtered:", nrow(prior_filtered_dt), "\n")
     cat("Extreme:", nrow(prior_extreme_dt), "\n")
+
+
+#________________________________________________________________________________________________________________________________________________________________________________________________________
+# multivariate priors
+    library(MASS)
+    library(GGally)
+    library(corrplot)
+    library(mvtnorm)
+    
+    # Create multivariate parameter matrices (log-transformed where appropriate)
+    mv_params_filtered = cbind(prior_filtered_dt$logK, log(prior_filtered_dt$r), log(prior_filtered_dt$n))
+    mv_params_extreme = cbind(prior_extreme_dt$logK, log(prior_extreme_dt$r), log(prior_extreme_dt$n))
+    colnames(mv_params_filtered) = colnames(mv_params_extreme) = c("logK", "log_r", "log_n")
+    
+    # MLE fitting for multivariate normal distributions with better error handling
+    mv_mle_filtered = function(par) {
+        mu = par[1:3]
+        # Use Cholesky decomposition parameterization for positive definiteness
+        L_vec = par[4:9]  # 6 parameters for lower triangular Cholesky factor
+        L = matrix(0, 3, 3)
+        L[lower.tri(L, diag=TRUE)] = L_vec
+        Sigma = L %*% t(L)  # This ensures positive definiteness
+        
+        # Check for numerical issues
+        if(any(!is.finite(Sigma)) || det(Sigma) <= 1e-10) return(1e10)
+        
+        tryCatch({
+            -sum(dmvnorm(mv_params_filtered, mu, Sigma, log=TRUE))
+        }, error = function(e) 1e10)
+    }
+
+    mv_mle_extreme = function(par) {
+        mu = par[1:3]
+        # Use Cholesky decomposition parameterization for positive definiteness
+        L_vec = par[4:9]  # 6 parameters for lower triangular Cholesky factor
+        L = matrix(0, 3, 3)
+        L[lower.tri(L, diag=TRUE)] = L_vec
+        Sigma = L %*% t(L)  # This ensures positive definiteness
+        
+        # Check for numerical issues
+        if(any(!is.finite(Sigma)) || det(Sigma) <= 1e-10) return(1e10)
+        
+        tryCatch({
+            -sum(dmvnorm(mv_params_extreme, mu, Sigma, log=TRUE))
+        }, error = function(e) 1e10)
+    }
+
+    # Better starting values using Cholesky decomposition
+    init_cov_filtered = cov(mv_params_filtered)
+    init_chol_filtered = chol(init_cov_filtered)  # Upper triangular
+    init_chol_lower_filtered = t(init_chol_filtered)       # Convert to lower triangular
+
+    init_cov_extreme = cov(mv_params_extreme)
+    init_chol_extreme = chol(init_cov_extreme)  # Upper triangular
+    init_chol_lower_extreme = t(init_chol_extreme)       # Convert to lower triangular
+
+    init_filtered = c(colMeans(mv_params_filtered), 
+                    init_chol_lower_filtered[lower.tri(init_chol_lower_filtered, diag=TRUE)])
+
+    init_extreme = c(colMeans(mv_params_extreme),
+                    init_chol_lower_extreme[lower.tri(init_chol_lower_extreme, diag=TRUE)])
+
+    # Fit with more robust settings
+    mv_fit_filtered = nlminb(init_filtered, mv_mle_filtered,
+                            control = list(eval.max = 1000, iter.max = 500))
+
+    mv_fit_extreme = nlminb(init_extreme, mv_mle_extreme,
+                        control = list(eval.max = 1000, iter.max = 500))
+
+    # Check convergence and extract parameters for FILTERED
+    if(mv_fit_filtered$convergence != 0 && mv_fit_filtered$convergence != 4) {
+        warning("Filtered MLE fitting may not have converged properly. Using sample moments instead.")
+        mv_mean_filtered = colMeans(mv_params_filtered)
+        mv_cov_filtered = cov(mv_params_filtered)
+    } else {
+        # Extract fitted parameters from Cholesky parameterization
+        mv_mean_filtered = mv_fit_filtered$par[1:3]
+        L_fitted_filtered = matrix(0, 3, 3)
+        L_fitted_filtered[lower.tri(L_fitted_filtered, diag=TRUE)] = mv_fit_filtered$par[4:9]
+        mv_cov_filtered = L_fitted_filtered %*% t(L_fitted_filtered)
+    }
+
+    # Check convergence and extract parameters for EXTREME
+    if(mv_fit_extreme$convergence != 0 && mv_fit_extreme$convergence != 4) {
+        warning("Extreme MLE fitting may not have converged properly. Using sample moments instead.")
+        mv_mean_extreme = colMeans(mv_params_extreme)
+        mv_cov_extreme = cov(mv_params_extreme)
+    } else {
+        # Extract fitted parameters from Cholesky parameterization
+        mv_mean_extreme = mv_fit_extreme$par[1:3]
+        L_fitted_extreme = matrix(0, 3, 3)
+        L_fitted_extreme[lower.tri(L_fitted_extreme, diag=TRUE)] = mv_fit_extreme$par[4:9]
+        mv_cov_extreme = L_fitted_extreme %*% t(L_fitted_extreme)
+    }
+
+    # Add names to means and covariance matrices
+    names(mv_mean_filtered) = names(mv_mean_extreme) = c("logK", "log_r", "log_n")
+    dimnames(mv_cov_filtered) = dimnames(mv_cov_extreme) = list(c("logK", "log_r", "log_n"), c("logK", "log_r", "log_n"))
+    
+    # Calculate correlations
+    mv_cor_filtered = cov2cor(mv_cov_filtered)
+    mv_cor_extreme = cov2cor(mv_cov_extreme)
+    
+    # Save multivariate parameters
+    write.csv(mv_mean_filtered, file.path(model_run_dir, "mv_mean_filtered.csv"))
+    write.csv(mv_cov_filtered, file.path(model_run_dir, "mv_cov_filtered.csv"))
+    write.csv(mv_cor_filtered, file.path(model_run_dir, "mv_cor_filtered.csv"))
+    write.csv(mv_mean_extreme, file.path(model_run_dir, "mv_mean_extreme.csv"))
+    write.csv(mv_cov_extreme, file.path(model_run_dir, "mv_cov_extreme.csv"))
+    write.csv(mv_cor_extreme, file.path(model_run_dir, "mv_cor_extreme.csv"))
+    
+    
+    # Create ggpairs plots
+        set.seed(123)
+        n_samples = min(1000, nrow(prior_filtered_dt))  # Sample size for comparison
+        
+        # Original samples (subsample for fair comparison)
+        original_indices = sample(1:nrow(prior_unfiltered_dt), n_samples)
+        original_df = data.frame(
+            logK = prior_unfiltered_dt$logK[original_indices],
+            log_r = log(prior_unfiltered_dt$r[original_indices]),
+            log_n = log(prior_unfiltered_dt$n[original_indices]),
+            type = "Original"
+        )
+        
+        # Samples from fitted filtered distribution
+        fitted_filtered_samples = mvrnorm(n_samples, mv_mean_filtered, mv_cov_filtered)
+        fitted_filtered_df = data.frame(
+            logK = fitted_filtered_samples[,1],
+            log_r = fitted_filtered_samples[,2], 
+            log_n = fitted_filtered_samples[,3],
+            type = "Fitted Filtered"
+        )
+        
+        # Samples from fitted extreme distribution
+        fitted_extreme_samples = mvrnorm(n_samples, mv_mean_extreme, mv_cov_extreme)
+        fitted_extreme_df = data.frame(
+            logK = fitted_extreme_samples[,1],
+            log_r = fitted_extreme_samples[,2],
+            log_n = fitted_extreme_samples[,3], 
+            type = "Fitted Extreme"
+        )
+        
+        # Combine all three groups
+        combined_df = rbind(original_df, fitted_filtered_df, fitted_extreme_df)
+        combined_df$type = factor(combined_df$type, levels = c("Original", "Fitted Filtered", "Fitted Extreme"))
+        
+        p_pairs = ggpairs(combined_df, columns=1:3, aes(color=type, alpha=0.7),
+                        upper=list(continuous="cor"),
+                        lower=list(continuous="points"),
+                        diag=list(continuous="densityDiag")) +
+                scale_color_manual(values = c("Original" = "blue", 
+                                            "Fitted Filtered" = "red", 
+                                            "Fitted Extreme" = "darkred")) +
+                scale_fill_manual(values = c("Original" = "blue", 
+                                            "Fitted Filtered" = "red", 
+                                            "Fitted Extreme" = "darkred")) +
+                theme(
+                        text = element_text(size = 20),
+                        panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
+                        panel.grid.major = element_line(color = 'gray70', linetype = "dotted"), 
+                        panel.grid.minor = element_line(color = 'gray70', linetype = "dotted"),
+                        strip.background = element_rect(fill = "white"),
+                        legend.key = element_rect(fill = "white")
+                    )
+        
+        ggsave(filename="multivariate_pairs_comparison.png", plot=p_pairs, path=plot_dir,
+            width=12, height=10, units="in", dpi=300)
+
+    # Create additional comparison plot: Original vs Univariate vs Multivariate extreme
+    set.seed(123)
+    n_samples = min(1000, nrow(prior_extreme_dt))  # Sample size for comparison
+
+    # Original samples (subsample for fair comparison)
+    original_indices = sample(1:nrow(prior_extreme_dt), n_samples)
+    original_df = data.frame(
+        logK = prior_extreme_dt$logK[original_indices],
+        log_r = log(prior_extreme_dt$r[original_indices]),
+        log_n = log(prior_extreme_dt$n[original_indices]),
+        type = "Original"
+    )
+
+    # Samples from univariate extreme distributions (independent sampling)
+    univariate_extreme_df = data.frame(
+        logK = rnorm(n_samples, logK_pars_extreme[1], logK_pars_extreme[2]),
+        log_r = rnorm(n_samples, rmax_pars_extreme[1], rmax_pars_extreme[2]),
+        log_n = rnorm(n_samples, shape_pars_extreme[1], shape_pars_extreme[2]),
+        type = "Univariate Extreme"
+    )
+
+    # Samples from fitted multivariate extreme distribution
+    fitted_mv_extreme_samples = mvrnorm(n_samples, mv_mean_extreme, mv_cov_extreme)
+    fitted_mv_extreme_df = data.frame(
+        logK = fitted_mv_extreme_samples[,1],
+        log_r = fitted_mv_extreme_samples[,2],
+        log_n = fitted_mv_extreme_samples[,3], 
+        type = "Multivariate Extreme"
+    )
+
+    # Combine all three groups
+    combined_extreme_df = rbind(original_df, univariate_extreme_df, fitted_mv_extreme_df)
+    combined_extreme_df$type = factor(combined_extreme_df$type, 
+                                    levels = c("Original", "Univariate Extreme", "Multivariate Extreme"))
+
+    p_pairs_extreme = ggpairs(combined_extreme_df, columns=1:3, aes(color=type, alpha=0.7),
+                    upper=list(continuous="cor"),
+                    lower=list(continuous="points"),
+                    diag=list(continuous="densityDiag")) +
+            scale_color_manual(values = c("Original" = "blue", 
+                                        "Univariate Extreme" = "orange", 
+                                        "Multivariate Extreme" = "darkred")) +
+            scale_fill_manual(values = c("Original" = "blue", 
+                                    "Univariate Extreme" = "orange", 
+                                    "Multivariate Extreme" = "darkred")) +
+            theme(
+                    text = element_text(size = 20),
+                    panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
+                    panel.grid.major = element_line(color = 'gray70', linetype = "dotted"), 
+                    panel.grid.minor = element_line(color = 'gray70', linetype = "dotted"),
+                    strip.background = element_rect(fill = "white"),
+                    legend.key = element_rect(fill = "white")
+                )
+
+    ggsave(filename="univariate_vs_multivariate_extreme.png", plot=p_pairs_extreme, path=plot_dir,
+        width=12, height=10, units="in", dpi=300)
