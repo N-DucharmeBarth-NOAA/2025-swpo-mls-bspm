@@ -12,16 +12,59 @@ ssp_prior_pushforward = function(ssp_summary,stan_data,settings){
       chains = settings$chains
       n_samples = settings$iter_keep*chains
 
-      logK = rnorm(n_samples,ssp_summary$PriorMean_logK,ssp_summary$PriorSD_logK)
-      raw_logK = (logK - ssp_summary$PriorMean_logK)/ssp_summary$PriorSD_logK
-      r = exp(rnorm(n_samples,ssp_summary$PriorMean_logr,ssp_summary$PriorSD_logr))
-      raw_logr = (log(r) - ssp_summary$PriorMean_logr)/ssp_summary$PriorSD_logr
+      # Check if using multivariate priors
+      has_mv_prior = "mv_prior_mean" %in% stan_data$name
+      
+      if (has_mv_prior) {
+            # Extract multivariate prior parameters
+            mv_mean = stan_data[name == "mv_prior_mean" & type == "Data"][order(row)]$value
+            mv_sd = stan_data[name == "mv_prior_sd" & type == "Data"][order(row)]$value
+            
+            # Reconstruct correlation matrix
+            mv_corr_data = stan_data[name == "mv_prior_corr" & type == "Data"]
+            max_row = max(mv_corr_data$row)
+            max_col = max(mv_corr_data$col)
+            mv_corr_mat = matrix(NA, max_row, max_col)
+            
+            for(i in 1:nrow(mv_corr_data)) {
+                  mv_corr_mat[mv_corr_data$row[i], mv_corr_data$col[i]] = mv_corr_data$value[i]
+            }
+            
+            # Create covariance matrix
+            mv_cov = diag(mv_sd) %*% mv_corr_mat %*% diag(mv_sd)
+            
+            # Sample from multivariate normal
+            library(MASS)  # for mvrnorm
+            mv_samples = mvrnorm(n_samples, mv_mean, mv_cov)
+            
+            # Extract individual parameters
+            logK = mv_samples[, 1]
+            log_r = mv_samples[, 2]
+            log_shape = mv_samples[, 3]
+            
+            r = exp(log_r)
+            shape = exp(log_shape)
+            
+            # Calculate raw parameters for compatibility
+            raw_logK = (logK - mv_mean[1]) / mv_sd[1]
+            raw_logr = (log_r - mv_mean[2]) / mv_sd[2]
+            raw_logshape = (log_shape - mv_mean[3]) / mv_sd[3]
+            
+      } else {
+            # Original univariate approach
+            logK = rnorm(n_samples, ssp_summary$PriorMean_logK, ssp_summary$PriorSD_logK)
+            raw_logK = (logK - ssp_summary$PriorMean_logK) / ssp_summary$PriorSD_logK
+            r = exp(rnorm(n_samples, ssp_summary$PriorMean_logr, ssp_summary$PriorSD_logr))
+            raw_logr = (log(r) - ssp_summary$PriorMean_logr) / ssp_summary$PriorSD_logr
+            
+            shape = exp(rnorm(n_samples, stan_data[name == "logshape" & type == "PriorMean"]$value, 
+                              stan_data[name == "logshape" & type == "PriorSD"]$value))
+            raw_logshape = (log(shape) - stan_data[name == "logshape" & type == "PriorMean"]$value) / 
+                        stan_data[name == "logshape" & type == "PriorSD"]$value
+      }
 
       sigmap = exp(rnorm(n_samples,stan_data[name=="logsigmap"&type=="PriorMean"]$value,stan_data[name=="logsigmap"&type=="PriorSD"]$value))
       raw_logsigmap = (log(sigmap) - stan_data[name=="logsigmap"&type=="PriorMean"]$value)/stan_data[name=="logsigmap"&type=="PriorSD"]$value
-
-      shape = exp(rnorm(n_samples,stan_data[name=="logshape"&type=="PriorMean"]$value,stan_data[name=="logshape"&type=="PriorSD"]$value))
-      raw_logshape = (log(shape) - stan_data[name=="logshape"&type=="PriorMean"]$value)/stan_data[name=="logshape"&type=="PriorSD"]$value
 
       raw_sigmao_add = abs(rnorm(n_samples))
       sigmao_add = raw_sigmao_add*stan_data[name=="sigmao_add"&type=="PriorSD"]$value

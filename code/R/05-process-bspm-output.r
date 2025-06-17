@@ -24,7 +24,7 @@
     dir_helper_fns = file.path(proj_dir,"code","R","helper-fns")
     dir_plot_fns = file.path(proj_dir,"code","R","plot-fns")
     dir_model_runs = file.path(proj_dir,"data","output","model_runs")
-    dir_plots = file.path(proj_dir,"plots","model_comparison")
+    dir_plots = file.path(proj_dir,"plots","sens-0005")
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # source helper functions
@@ -50,9 +50,9 @@
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # define model directories
     model_list = c(
-        "0001-2024cpueExPrior_0",
-        "0002-2024cpueDepPrior_0",
-        "0003-2024cpueFPrior_0"
+        "0003-2024cpueFPrior_0",
+        "0004-2024cpueShapePrior_0",
+        "0005-2024cpueMVPrior_0"
     )
     
     model_dirs = file.path(dir_model_runs, model_list)
