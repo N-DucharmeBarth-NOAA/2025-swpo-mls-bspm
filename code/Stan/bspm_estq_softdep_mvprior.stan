@@ -1,8 +1,8 @@
 // Modified fletcher-schaefer surplus production model with effort-based fishing mortality
 // Original code from Bayesian biomass dynamic model (https://github.com/cttedwards/bdm/) by Charles Edwards
-// This version uses effort-based F structure and estimates:
-// logK, r, initial depletion, shape, effort-based catchability (qeff), process error, 
-// additional observation error, and catchability deviations.
+// This version uses effort-based F structure with dual error components:
+// - qdev: systematic catchability changes (NOT bias corrected)
+// - edev: effort measurement errors (bias corrected)
 
 data {
     int T; // time dimension
@@ -13,6 +13,7 @@ data {
     real sigmao_input; // observation error
     int lambdas[I]; // lambdas for CPUE
     real sigmac; // observation error for catch
+    real sigma_edev; // effort deviate variance
     int t_dep; // year of depletion prior
 
     // New effort-based parameters  
@@ -36,7 +37,10 @@ data {
     real prior_depletion_sdlog; // prior SD on log scale
 }
 
-
+transformed data{
+    int Tm1;
+    Tm1 = T-1;
+}
 
 parameters {
     // Updated multivariate parameters (now 4-dimensional)
@@ -48,8 +52,10 @@ parameters {
     
     // Effort-based parameters
     real raw_sigma_qdev; // qdev variability
+    real raw_sigma_edev; // edev variability
     real raw_rho; // AR correlation (to be transformed)
     vector[n_periods] raw_qdev_period; // raw period-specific deviations (non-centered)
+    vector[Tm1] raw_edev; // raw annual effort deviations (non-centered)
 }
 
 transformed parameters {
@@ -90,16 +96,18 @@ transformed parameters {
     // Transform AR correlation parameter
     rho = tanh(raw_rho * prior_rho_sd + prior_rho_mean); // keeps rho in [-1,1]
     
-    // Effort-based fishing mortality calculation
+    // Effort-based fishing mortality calculation with dual error structure
     real sigma_qdev; 
     vector[n_periods] qdev_period; // transformed period deviations
-    real qdev[Tm1];
+    real qdev[Tm1]; // systematic catchability changes
+    real edev[Tm1]; // effort measurement errors
     real F[Tm1];
     
-    // Transform qdev variability
+    // Transform error variabilities
     sigma_qdev = raw_sigma_qdev * prior_sigma_qdev_sd;
+    sigma_edev = raw_sigma_edev * prior_sigma_edev_sd;
     
-    // Non-centered parameterization for AR(1) process
+    // Non-centered parameterization for AR(1) catchability process
     qdev_period[1] = raw_qdev_period[1] * sigma_qdev;
     for(p in 2:n_periods) {
         qdev_period[p] = rho * qdev_period[p-1] + raw_qdev_period[p] * sigma_qdev * sqrt(1 - rho^2);
@@ -112,9 +120,16 @@ transformed parameters {
         qdev[t] = qdev_period[period];
     }
     
-    // Calculate fishing mortality: F_t = qeff * effort_t * exp(qdev_t)
+    // Independent annual effort deviations (non-centered)
     for(t in 1:Tm1) {
-        F[t] = qeff * effort[t] * exp(qdev[t]);
+        edev[t] = raw_edev[t] * sigma_edev;
+    }
+    
+    // Calculate fishing mortality: F_t = qeff * exp(qdev_t) * effort_t * exp(edev_t - sigma_edev^2/2)
+    real sigma_edev2;
+    sigma_edev2 = pow(sigma_edev, 2);
+    for(t in 1:Tm1) {
+        F[t] = qeff * exp(qdev[t]) * effort[t] * exp(edev[t] - sigma_edev2/2);
     }
 
     // process error
@@ -198,7 +213,8 @@ model {
     // Effort-based priors (non-centered)
     raw_sigma_qdev ~ std_normal();
     raw_rho ~ std_normal(); // Prior on raw rho parameter
-    raw_qdev_period ~ std_normal(); // All deviations are standard normal
+    raw_qdev_period ~ std_normal(); // All catchability deviations are standard normal
+    raw_edev ~ std_normal(); // All effort deviations are standard normal
     
     // prior densities for other estimated parameters
     raw_epsp ~ std_normal();
