@@ -1,8 +1,8 @@
 // Modified fletcher-schaefer surplus production model with effort-based fishing mortality
-// Original code from Bayesian biomass dynamic model (https://github.com/cttedwards/bdm/) by Charles Edwards
-// This version uses effort-based F structure with dual error components:
-// - qdev: systematic catchability changes (NOT bias corrected)
-// - edev: effort measurement errors (bias corrected)
+// Updated prior structure based on pushforward analysis:
+// - 3D multivariate prior for logK, log_r, log_shape  
+// - Independent qeff parameter
+// - Correlated rho and sigma_qdev parameters
 
 data {
     int T; // time dimension
@@ -21,18 +21,25 @@ data {
     int n_step; // years per period (e.g., 3-5 years)
     int n_periods; // number of catchability periods
 
-    // Updated multivariate priors (now 4-dimensional)
-    vector[4] mv_prior_mean; // mean vector [logK, log_r, log_n, log_qeff]
-    vector[4] mv_prior_sd; // standard deviations 
-    corr_matrix[4] mv_prior_corr; // correlation matrix
+    // Updated multivariate priors (now 3-dimensional: logK, log_r, log_shape)
+    vector[3] mv_prior_mean; // mean vector [logK, log_r, log_shape]
+    vector[3] mv_prior_sd; // standard deviations 
+    corr_matrix[3] mv_prior_corr; // correlation matrix
+
+    // Independent qeff prior parameters
+    real prior_qeff_meanlog; // mean on log scale
+    real prior_qeff_sdlog; // SD on log scale
+
+    // Bivariate prior for rho and sigma_qdev (on transformed scale)
+    vector[2] mv_qdev_prior_mean; // [atanh_rho_mean, log_sigma_qdev_mean]
+    vector[2] mv_qdev_prior_sd; // standard deviations
+    corr_matrix[2] mv_qdev_prior_corr; // correlation matrix
 
     // Other priors
     real PriorMean_logsigmap;
     real PriorSD_logsigmap;
     real PriorSD_sigmao_add;
-    real prior_sigma_qdev_sd; // prior SD for qdev variability
-    real prior_rho_mean; // prior mean for rho
-    real prior_rho_sd; // prior SD for rho
+    real sigma_edev_sd; // prior SD for sigma_edev
     real prior_depletion_meanlog; // prior mean on log scale
     real prior_depletion_sdlog; // prior SD on log scale
 }
@@ -43,17 +50,21 @@ transformed data{
 }
 
 parameters {
-    // Updated multivariate parameters (now 4-dimensional)
-    vector[4] raw_mv_params; // [raw_logK, raw_log_r, raw_log_n, raw_log_qeff]
+    // Updated multivariate parameters (now 3-dimensional)
+    vector[3] raw_mv_params; // [raw_logK, raw_log_r, raw_log_shape]
+
+    // Independent qeff parameter
+    real raw_logqeff; // raw log effort catchability
+
+    // Bivariate parameters for rho and sigma_qdev
+    vector[2] raw_qdev_params; // [raw_atanh_rho, raw_log_sigma_qdev]
 
     real raw_logsigmap;
     real<lower=0> raw_sigmao_add;
     real raw_epsp[T];
     
     // Effort-based parameters
-    real raw_sigma_qdev; // qdev variability
     real raw_sigma_edev; // edev variability
-    real raw_rho; // AR correlation (to be transformed)
     vector[n_periods] raw_qdev_period; // raw period-specific deviations (non-centered)
     vector[Tm1] raw_edev; // raw annual effort deviations (non-centered)
 }
@@ -63,49 +74,55 @@ transformed parameters {
     real logK;
     real r;
     real shape;
-    real logqeff; // effort-based catchability (from multivariate prior)
+    real logqeff; // effort-based catchability (independent)
     real qeff; // transformed effort catchability
     real dev[T]; // recruitment deviates
     real epsp[T]; // process error (multiplicative)
     real sigmap;
-    real rho; // transformed AR correlation
+    real rho; // AR correlation for catchability
+    real sigma_qdev; // catchability variability
 
     // For backward compatibility - extract individual raw parameters
     real raw_logK;
     real raw_logr;
     real raw_logshape;
-    real raw_logqeff; // effort catchability
 
-    // Updated multivariate transformation (4-dimensional)
-    vector[4] mv_params;
+    // Updated multivariate transformation (3-dimensional)
+    vector[3] mv_params;
     mv_params = mv_prior_mean + diag_pre_multiply(mv_prior_sd, cholesky_decompose(mv_prior_corr)) * raw_mv_params;
     
     // Extract individual parameters (transformed scale)
     logK = mv_params[1]; // logK (already on log scale)
     r = exp(mv_params[2]); // r (transform from log scale)
     shape = exp(mv_params[3]); // shape (transform from log scale)
-    logqeff = mv_params[4]; // log effort catchability (already on log scale)
-    qeff = exp(logqeff); // effort catchability (transform from log scale)
     
     // Extract individual raw parameters (for compatibility)
     raw_logK = (mv_params[1] - mv_prior_mean[1]) / mv_prior_sd[1];
     raw_logr = (mv_params[2] - mv_prior_mean[2]) / mv_prior_sd[2];
     raw_logshape = (mv_params[3] - mv_prior_mean[3]) / mv_prior_sd[3];
-    raw_logqeff = (mv_params[4] - mv_prior_mean[4]) / mv_prior_sd[4];
     
-    // Transform AR correlation parameter
-    rho = tanh(raw_rho * prior_rho_sd + prior_rho_mean); // keeps rho in [-1,1]
+    // Independent qeff parameter
+    logqeff = raw_logqeff * prior_qeff_sdlog + prior_qeff_meanlog;
+    qeff = exp(logqeff);
+    raw_logqeff = (logqeff - prior_qeff_meanlog) / prior_qeff_sdlog;
+    
+    // Bivariate transformation for rho and sigma_qdev
+    vector[2] qdev_params;
+    qdev_params = mv_qdev_prior_mean + diag_pre_multiply(mv_qdev_prior_sd, cholesky_decompose(mv_qdev_prior_corr)) * raw_qdev_params;
+    
+    // Transform parameters back to natural scale
+    rho = tanh(qdev_params[1]); // atanh_rho -> rho
+    sigma_qdev = exp(qdev_params[2]); // log_sigma_qdev -> sigma_qdev
     
     // Effort-based fishing mortality calculation with dual error structure
-    real sigma_qdev; 
     vector[n_periods] qdev_period; // transformed period deviations
     real qdev[Tm1]; // systematic catchability changes
     real edev[Tm1]; // effort measurement errors
     real F[Tm1];
     
-    // Transform error variabilities
-    sigma_qdev = raw_sigma_qdev * prior_sigma_qdev_sd;
-    sigma_edev = raw_sigma_edev * prior_sigma_edev_sd;
+    // Effort error variability
+    real sigma_edev;
+    sigma_edev = raw_sigma_edev * sigma_edev_sd;
     
     // Non-centered parameterization for AR(1) catchability process
     qdev_period[1] = raw_qdev_period[1] * sigma_qdev;
@@ -207,12 +224,17 @@ transformed parameters {
 } 
 
 model {
-    // Updated multivariate normal prior (4-dimensional)
+    // Updated multivariate normal prior (3-dimensional)
     raw_mv_params ~ std_normal(); // Standard normal for raw parameters
 
+    // Independent qeff prior (lognormal)
+    raw_logqeff ~ std_normal(); // Standard normal for raw parameter
+
+    // Bivariate prior for rho and sigma_qdev
+    raw_qdev_params ~ std_normal(); // Standard normal for raw parameters
+    
     // Effort-based priors (non-centered)
-    raw_sigma_qdev ~ std_normal();
-    raw_rho ~ std_normal(); // Prior on raw rho parameter
+    raw_sigma_edev ~ std_normal();
     raw_qdev_period ~ std_normal(); // All catchability deviations are standard normal
     raw_edev ~ std_normal(); // All effort deviations are standard normal
     
