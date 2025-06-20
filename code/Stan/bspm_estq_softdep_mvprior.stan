@@ -13,8 +13,10 @@ data {
     real sigmao_input; // observation error
     int lambdas[I]; // lambdas for CPUE
     real sigmac; // observation error for catch
-    real sigma_edev; // effort deviate variance
+    real sigma_edev; // effort dev variation
     int t_dep; // year of depletion prior
+    int use_depletion_prior; // boolean flag (0/1) to control depletion prior
+    int fit_to_data; // boolean flag (0/1) to control if likelihoods are turned on
 
     // New effort-based parameters  
     real effort[T]; // effort time series
@@ -39,7 +41,6 @@ data {
     real PriorMean_logsigmap;
     real PriorSD_logsigmap;
     real PriorSD_sigmao_add;
-    real sigma_edev_sd; // prior SD for sigma_edev
     real prior_depletion_meanlog; // prior mean on log scale
     real prior_depletion_sdlog; // prior SD on log scale
 }
@@ -64,7 +65,6 @@ parameters {
     real raw_epsp[T];
     
     // Effort-based parameters
-    real raw_sigma_edev; // edev variability
     vector[n_periods] raw_qdev_period; // raw period-specific deviations (non-centered)
     vector[Tm1] raw_edev; // raw annual effort deviations (non-centered)
 }
@@ -86,6 +86,8 @@ transformed parameters {
     real raw_logK;
     real raw_logr;
     real raw_logshape;
+    real raw_rho;
+    real raw_sigma_qdev;
 
     // Updated multivariate transformation (3-dimensional)
     vector[3] mv_params;
@@ -104,7 +106,6 @@ transformed parameters {
     // Independent qeff parameter
     logqeff = raw_logqeff * prior_qeff_sdlog + prior_qeff_meanlog;
     qeff = exp(logqeff);
-    raw_logqeff = (logqeff - prior_qeff_meanlog) / prior_qeff_sdlog;
     
     // Bivariate transformation for rho and sigma_qdev
     vector[2] qdev_params;
@@ -114,15 +115,15 @@ transformed parameters {
     rho = tanh(qdev_params[1]); // atanh_rho -> rho
     sigma_qdev = exp(qdev_params[2]); // log_sigma_qdev -> sigma_qdev
     
+    // Extract individual raw parameters for rho and sigma_qdev (for compatibility)
+    raw_rho = (qdev_params[1] - mv_qdev_prior_mean[1]) / mv_qdev_prior_sd[1];
+    raw_sigma_qdev = (qdev_params[2] - mv_qdev_prior_mean[2]) / mv_qdev_prior_sd[2];
+    
     // Effort-based fishing mortality calculation with dual error structure
     vector[n_periods] qdev_period; // transformed period deviations
     real qdev[Tm1]; // systematic catchability changes
     real edev[Tm1]; // effort measurement errors
     real F[Tm1];
-    
-    // Effort error variability
-    real sigma_edev;
-    sigma_edev = raw_sigma_edev * sigma_edev_sd;
     
     // Non-centered parameterization for AR(1) catchability process
     qdev_period[1] = raw_qdev_period[1] * sigma_qdev;
@@ -143,10 +144,8 @@ transformed parameters {
     }
     
     // Calculate fishing mortality: F_t = qeff * exp(qdev_t) * effort_t * exp(edev_t - sigma_edev^2/2)
-    real sigma_edev2;
-    sigma_edev2 = pow(sigma_edev, 2);
     for(t in 1:Tm1) {
-        F[t] = qeff * exp(qdev[t]) * effort[t] * exp(edev[t] - sigma_edev2/2);
+        F[t] = qeff * exp(qdev[t]) * effort[t] * exp(edev[t] - sigma_edev^2/2);
     }
 
     // process error
@@ -234,7 +233,6 @@ model {
     raw_qdev_params ~ std_normal(); // Standard normal for raw parameters
     
     // Effort-based priors (non-centered)
-    raw_sigma_edev ~ std_normal();
     raw_qdev_period ~ std_normal(); // All catchability deviations are standard normal
     raw_edev ~ std_normal(); // All effort deviations are standard normal
     
@@ -244,7 +242,9 @@ model {
     raw_sigmao_add ~ std_normal();
     
     // Lognormal prior depletion prior from Gedamke and Hoenig 2006 size based Z estimate
-    target += lognormal_lpdf(x[t_dep] | prior_depletion_meanlog, prior_depletion_sdlog);
+    if(use_depletion_prior == 1) {
+        target += lognormal_lpdf(x[t_dep] | prior_depletion_meanlog, prior_depletion_sdlog);
+    }
     
     // observation model - uses analytical q[i]
     real mu_index;
@@ -253,7 +253,9 @@ model {
             for(t in 1:T){
                 if(index[t,i]>0.0 && x[t]>0.0 && q[i]>0.0) {
                     mu_index = log(q[i]*x[t]) - sigmao2[t,i]/2;
-                    target += lognormal_lpdf(index[t,i] | mu_index,sigmao[t,i]);
+                    if(fit_to_data == 1) {
+                        target += lognormal_lpdf(index[t,i] | mu_index,sigmao[t,i]);
+                    }
                 }
             }
         }
@@ -263,6 +265,8 @@ model {
     real mu_catch;
     for(t in 1:Tm1){
         mu_catch = log(removals[t]) - 0.5*sigmac^2;
-        target += lognormal_lpdf(obs_removals[t]|mu_catch,sigmac);
+        if(fit_to_data == 1) {
+            target += lognormal_lpdf(obs_removals[t]|mu_catch,sigmac);
+        }
     }
 }

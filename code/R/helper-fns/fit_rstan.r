@@ -36,10 +36,16 @@
         # rstan_options(auto_write = TRUE)
 
         # define run characteristics
+            if(length(grep("-ppc",test,fixed=TRUE))>0){
+                copy_run_label = run_label
+                copy_run_label = gsub("-ppc","",copy_run_label)
+            } else {
+                copy_run_label = run_label
+            }
             run_id = paste0(run_label,"-",exec_name)
-            run_number = strsplit(run_label,"_")[[1]][1]
-            run_name = strsplit(run_label,"_")[[1]][2]
-            run_retro = as.numeric(strsplit(run_label,"_")[[1]][2])
+            run_number = strsplit(copy_run_label,"_")[[1]][1]
+            run_name = strsplit(copy_run_label,"_")[[1]][2]
+            run_retro = as.numeric(strsplit(copy_run_label,"_")[[1]][2])
             iter_total = n_thin*iter_keep + burnin.prop*n_thin*iter_keep
             file.name = paste0(stan_code_dir,exec_name,".stan") # path to stan file
 
@@ -59,7 +65,15 @@
 
         # define the inits
             set.seed(seed)
-            stan.inits = replicate(chains,stan_inits_func(Tm1 = (stan.data$T-1)),simplify=FALSE)
+            # Try to get n_periods from stan.data if it exists (for effort models)
+            n_periods_val = if("n_periods" %in% names(stan.data)) stan.data$n_periods else NULL
+
+            # Use the auto-detection version
+            stan.inits = replicate(chains, 
+                                stan_inits_func_auto(Tm1 = (stan.data$T-1), 
+                                                    n_periods = n_periods_val,
+                                                    exec_name = exec_name), 
+                                simplify=FALSE)
         
         # compile if necessary
         if(missing(stan_c)){
