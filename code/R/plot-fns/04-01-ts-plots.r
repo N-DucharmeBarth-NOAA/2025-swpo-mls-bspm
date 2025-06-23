@@ -19,8 +19,8 @@ generate_ppts <- function(model_dirs, params = NULL) {
   
   # Parameter mapping
   parameter_map <- cbind(
-    c("Depletion (D)", "Population (P)", "U", "F", "D_Dmsy", "P_Pmsy", "U_Umsy", "F_Fmsy", "Removals", "Process error", "Process error (raw)", "Process error (mult.)", "Surplus production"),
-    c("D", "P", "U", "F", "D_Dmsy", "P_Pmsy", "U_Umsy", "F_Fmsy", "removals", "dev", "raw_epsp", "epsilon_p", "surplus_production")
+    c("Depletion (D)", "Population (P)", "U", "F", "D_Dmsy", "P_Pmsy", "U_Umsy", "F_Fmsy", "Removals", "Process error", "Process error (raw)", "Process error (mult.)", "Surplus production","Effort deviate","Catchability deviate","Nominal CPUE"),
+    c("D", "P", "U", "F", "D_Dmsy", "P_Pmsy", "U_Umsy", "F_Fmsy", "removals", "dev", "raw_epsp", "epsilon_p", "surplus_production","edev","qdev","nominal_cpue")
   )
   colnames(parameter_map) <- c("input", "grab")
   target_par <- params$var

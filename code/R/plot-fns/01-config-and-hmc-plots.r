@@ -138,9 +138,9 @@ load_model_data <- function(model_dir) {
 # Parameter mapping
 get_parameter_map <- function() {
   map <- cbind(
-    c("logK","x0","r","sigmao_add","sigmap","shape","sigmaf","ll_q","lp__"),
-    c("logK","x0","r","sigmao_add","sigmap","n","sigmaf","ll_q","lp__"),
-    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_sigmaf","raw_logll_q","lp__")
+    c("logK","x0","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","sigmaf","ll_q","lp__"),
+    c("logK","x0","r","sigmao_add","sigmap","n","qeff","rho","sigma_qdev","sigmaf","ll_q","lp__"),
+    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_logqeff","raw_rho","raw_sigma_qdev","raw_sigmaf","raw_logll_q","lp__")
   )
   colnames(map) <- c("input","transformed","raw")
   return(map)

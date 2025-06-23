@@ -1,7 +1,6 @@
 # ISC SHARKWG
 # 2024/06/11
 # Time series of derived quantities
-# Modified to handle F estimation scenarios
 
 # Copyright (c) 2024 ISC SHARKWG
 # You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -34,6 +33,12 @@ ssp_derived_quants_ts = function(ssp_summary,samples_dt,stan_data,settings,sub_s
       # Check if F is estimated in the model
       F_estimated <- "F" %in% unique(samples_dt$name)
 
+      # Check if effort data is available
+      effort_available <- "effort" %in% unique(stan_data$name)
+      if(effort_available){
+            effort_data = stan_data[name=="effort"]$value
+      }
+
       if(!("removals" %in% unique(samples_dt$name))){
             removals = matrix(NA,nrow=nrow(D),ncol=ncol(D))
             for(i in 1:nrow(removals)){
@@ -51,12 +56,21 @@ ssp_derived_quants_ts = function(ssp_summary,samples_dt,stan_data,settings,sub_s
       # Extract F values if estimated
       if(F_estimated){
             F_estimated_matrix = dcast(samples_dt[name=="F",.(iter,row,value)],iter~row) %>% .[,iter:=NULL] %>% as.matrix(.)
-            # Pad with NA for time T since F only goes to T-1
-            F_estimated_matrix = cbind(F_estimated_matrix, NA)
+            # Extract edev and qdev if they exist
+            if("edev" %in% unique(samples_dt$name)){
+                  edev_estimated_matrix = dcast(samples_dt[name=="edev",.(iter,row,value)],iter~row) %>% .[,iter:=NULL] %>% as.matrix(.)
+            } else {
+                  edev_estimated_matrix = NULL
+            }
+            if("qdev" %in% unique(samples_dt$name)){
+                  qdev_estimated_matrix = dcast(samples_dt[name=="qdev",.(iter,row,value)],iter~row) %>% .[,iter:=NULL] %>% as.matrix(.)
+            } else {
+                  qdev_estimated_matrix = NULL
+            }
       }
 
       epsp = dev = matrix(NA,nrow=nrow(raw_epsp),ncol=ncol(raw_epsp))
-      surplus_production = epsilon_p = D_Dmsy=P_Pmsy=U_Umsy=F_Fmsy=F=U = P = matrix(NA,nrow=nrow(D),ncol=ncol(D))
+      surplus_production = epsilon_p = D_Dmsy=P_Pmsy=U_Umsy=F_Fmsy=F=U = P = edev = qdev = nominal_cpue = matrix(NA,nrow=nrow(D),ncol=ncol(D))
       
       for(i in 1:nrow(raw_epsp)){
          dev[i,] = raw_epsp[i,] * sigmap[i]
@@ -64,20 +78,33 @@ ssp_derived_quants_ts = function(ssp_summary,samples_dt,stan_data,settings,sub_s
          P[i,] = exp(logK[i]) * D[i,]
          
          for(j in 1:ncol(U)){
-            if(F_estimated){
-                  # Use estimated F values and calculate U from F
-                  if(j < T){
-                        F[i,j] = F_estimated_matrix[i,j]
-                        U[i,j] = 1 - exp(-F[i,j])
-                  } else {
-                        # Set F[T] and U[T] to NA
-                        F[i,j] = NA
-                        U[i,j] = NA
+            if(F_estimated && j <= ncol(F_estimated_matrix)){
+                  F[i,j] = F_estimated_matrix[i,j]
+                  U[i,j] = 1 - exp(-F[i,j])
+                  # Extract edev and qdev if available
+                  if(!is.null(edev_estimated_matrix) && j <= ncol(edev_estimated_matrix)){
+                        edev[i,j] = edev_estimated_matrix[i,j]
+                  }
+                  if(!is.null(qdev_estimated_matrix) && j <= ncol(qdev_estimated_matrix)){
+                        qdev[i,j] = qdev_estimated_matrix[i,j]
                   }
             } else {
-                  # Calculate U from removals/population, then F from U
                   U[i,j] = as.numeric(min(c(removals[i,j]/P[i,j],0.9999)))
-                  F[i,j] = as.numeric(-log(-U[i,j]+1))
+                  F[i,j] = if(j < ncol(U)) as.numeric(-log(-U[i,j]+1)) else NA
+                  # edev and qdev remain NA (already initialized as NA)
+            }
+            
+            # Calculate nominal CPUE if effort is available and removals are estimated
+            if(effort_available && j <= length(effort_data) && !is.na(removals[i,j])){
+                  # Convert effort to thousand hooks and calculate CPUE (catch per 1000 hooks)
+                  effort_thousand_hooks = effort_data[j] * 1e6 / 10
+                  if(effort_thousand_hooks > 0){
+                        nominal_cpue[i,j] = removals[i,j] / effort_thousand_hooks
+                  } else {
+                        nominal_cpue[i,j] = NA
+                  }
+            } else {
+                  nominal_cpue[i,j] = NA
             }
             
             if(j<ncol(U)){
@@ -101,7 +128,7 @@ ssp_derived_quants_ts = function(ssp_summary,samples_dt,stan_data,settings,sub_s
       }
 
       # pad epsp & dev
-      matrix_var = c("raw_epsp","dev","epsilon_p","surplus_production","D_Dmsy","P_Pmsy","U_Umsy","F_Fmsy","F","U","P","D","removals")
+      matrix_var = c("raw_epsp","dev","epsilon_p","surplus_production","D_Dmsy","P_Pmsy","U_Umsy","F_Fmsy","F","U","P","D","removals","edev","qdev","nominal_cpue")
       matrix_dt.list = as.list(rep(NA,length(matrix_var)))
       for(i in 1:length(matrix_dt.list)){
             matrix_dt.list[[i]] = as.data.table(get(matrix_var[i])) %>%

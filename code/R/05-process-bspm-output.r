@@ -24,7 +24,7 @@
     dir_helper_fns = file.path(proj_dir,"code","R","helper-fns")
     dir_plot_fns = file.path(proj_dir,"code","R","plot-fns")
     dir_model_runs = file.path(proj_dir,"data","output","model_runs")
-    dir_plots = file.path(proj_dir,"plots","sens-0005")
+    dir_plots = file.path(proj_dir,"plots","sens-0006")
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # source helper functions
@@ -50,9 +50,8 @@
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # define model directories
     model_list = c(
-        "0003-2024cpueFPrior_0",
-        "0004-2024cpueShapePrior_0",
-        "0005-2024cpueMVPrior_0"
+        "0005-2024cpueMVPrior_0",
+        "0006-2024cpueEffortQeff_0"
     )
     
     model_dirs = file.path(dir_model_runs, model_list)
@@ -68,7 +67,7 @@
     custom_params = get_default_params()
     
     # HMC diagnostics
-    custom_params$hmc$leading_params = c("logK", "x0", "r", "sigmao_add", "sigmap", "shape", "sigmaf")  # Any combination
+    custom_params$hmc$leading_params = c("logK", "r", "sigmao_add", "sigmap", "shape", "sigmaf","qeff","rho","sigma_qdev")  # Any combination
     custom_params$hmc$raw = FALSE  # TRUE (transformed) | FALSE (raw)
     custom_params$hmc$diag = "Divergences"  # "None" | "Divergences" | "Max. treedepth"
     custom_params$hmc$eps = FALSE  # TRUE | FALSE
@@ -92,21 +91,21 @@
     custom_params$fits$resid = "PIT"  # "Ordinary" | "Standardized" | "PIT"
 
     # Prior-posterior parameters
-    custom_params$ppp$leading_params = c("logK", "x0", "r", "sigmao_add", "sigmap", "shape", "sigmaf")  # Any combination
+    custom_params$ppp$leading_params = c("logK", "r", "sigmao_add", "sigmap", "shape", "sigmaf","qeff","rho","sigma_qdev")  # Any combination
     custom_params$ppp$raw = TRUE  # TRUE (transformed) | FALSE (raw)
     custom_params$ppp$show = "Both"  # "Prior" | "Posterior" | "Both"
     custom_params$ppp$combine = FALSE  # TRUE | FALSE
     custom_params$ppp$ncol = 3
-    custom_params$ppp$nrow = 2
+    custom_params$ppp$nrow = 4
 
     # Time series
-    custom_params$ppts$var = c("Depletion (D)", "Population (P)", "D_Dmsy", "F_Fmsy", "Removals", "Process error")  # Any combination
+    custom_params$ppts$var = c("Depletion (D)", "Population (P)", "D_Dmsy", "F_Fmsy", "Removals", "Process error","Nominal CPUE","Effort deviate","Catchability deviate")  # Any combination
     custom_params$ppts$show = "Posterior"  # "Prior" | "Posterior" | "Both"
     custom_params$ppts$combine = FALSE  # TRUE | FALSE
     custom_params$ppts$prop = 0.25  # 0.01 to 1.00 (increments of 0.05)
     custom_params$ppts$quants = 95  # 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100
     custom_params$ppts$ncol = 3
-    custom_params$ppts$nrow = 2  # Let ggplot calculate rows
+    custom_params$ppts$nrow = 3  # Let ggplot calculate rows
 
     # Kobe & Majuro
     custom_params$kbmj$show = "Posterior"  # "Prior" | "Posterior" | "Both"
@@ -147,17 +146,8 @@
         height = 10,
         dpi = 300,
         parallel = TRUE,
-        n_cores = 3
-    )
-
-#________________________________________________________________________________________________________________________________________________________________________________________________________
-# create summary report
-    cat("\nGenerating summary report...\n")
-    
-    report_file = create_plot_report(
-        model_dirs = model_dirs,
-        output_dir = dir_plots,
-        report_file = file.path(dir_plots, "SSP_Model_Analysis_Report.qmd")
+        n_cores = 2,
+        comparison_only = FALSE
     )
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
@@ -197,8 +187,6 @@
     cat("Models analyzed:", length(model_dirs), "\n")
     cat("Total plots generated:", 
         length(list.files(dir_plots, pattern = "\\.png$", recursive = TRUE)), "\n")
-    cat("Output directory:", dir_plots, "\n")
-    cat("Summary report:", report_file, "\n")
     cat("Analysis metadata saved to: analysis_metadata.rds\n")
     cat("\nKey output files:\n")
     cat("- Individual model diagnostics: ./", basename(dir_plots), "/[model_name]/\n", sep = "")
