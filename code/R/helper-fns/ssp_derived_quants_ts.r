@@ -1,8 +1,7 @@
-    
-
 # ISC SHARKWG
 # 2024/06/11
 # Time series of derived quantities
+# Modified to handle F estimation scenarios
 
 # Copyright (c) 2024 ISC SHARKWG
 # You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -32,6 +31,9 @@ ssp_derived_quants_ts = function(ssp_summary,samples_dt,stan_data,settings,sub_s
       Umsy = as.numeric(m / Dmsy)
       Fmsy = as.numeric(-log(-Umsy+1))
 
+      # Check if F is estimated in the model
+      F_estimated <- "F" %in% unique(samples_dt$name)
+
       if(!("removals" %in% unique(samples_dt$name))){
             removals = matrix(NA,nrow=nrow(D),ncol=ncol(D))
             for(i in 1:nrow(removals)){
@@ -46,14 +48,38 @@ ssp_derived_quants_ts = function(ssp_summary,samples_dt,stan_data,settings,sub_s
            }
       }
 
+      # Extract F values if estimated
+      if(F_estimated){
+            F_estimated_matrix = dcast(samples_dt[name=="F",.(iter,row,value)],iter~row) %>% .[,iter:=NULL] %>% as.matrix(.)
+            # Pad with NA for time T since F only goes to T-1
+            F_estimated_matrix = cbind(F_estimated_matrix, NA)
+      }
+
       epsp = dev = matrix(NA,nrow=nrow(raw_epsp),ncol=ncol(raw_epsp))
       surplus_production = epsilon_p = D_Dmsy=P_Pmsy=U_Umsy=F_Fmsy=F=U = P = matrix(NA,nrow=nrow(D),ncol=ncol(D))
+      
       for(i in 1:nrow(raw_epsp)){
          dev[i,] = raw_epsp[i,] * sigmap[i]
          
          P[i,] = exp(logK[i]) * D[i,]
+         
          for(j in 1:ncol(U)){
-            U[i,j] = as.numeric(min(c(removals[i,j]/P[i,j],0.9999)))
+            if(F_estimated){
+                  # Use estimated F values and calculate U from F
+                  if(j < T){
+                        F[i,j] = F_estimated_matrix[i,j]
+                        U[i,j] = 1 - exp(-F[i,j])
+                  } else {
+                        # Set F[T] and U[T] to NA
+                        F[i,j] = NA
+                        U[i,j] = NA
+                  }
+            } else {
+                  # Calculate U from removals/population, then F from U
+                  U[i,j] = as.numeric(min(c(removals[i,j]/P[i,j],0.9999)))
+                  F[i,j] = as.numeric(-log(-U[i,j]+1))
+            }
+            
             if(j<ncol(U)){
                   epsilon_p[i,j] = epsp[i,j] = exp(dev[i,j]-sigmap2[i]/2)
             } else {
@@ -66,7 +92,8 @@ ssp_derived_quants_ts = function(ssp_summary,samples_dt,stan_data,settings,sub_s
                   surplus_production[i,j] = g[i] * m[i] * D[i,j] * (1 - D[i,j]^(n[i]-1)) * epsilon_p[i,j]
             }
          }
-         F[i,] = as.numeric(-log(-U[i,]+1))
+         
+         # Calculate ratios (handling NAs appropriately)
          F_Fmsy[i,] = as.numeric(F[i,]/Fmsy[i])
          U_Umsy[i,] = as.numeric(U[i,]/Umsy[i])
          P_Pmsy[i,] = P[i,]/Pmsy[i]
@@ -93,4 +120,4 @@ ssp_derived_quants_ts = function(ssp_summary,samples_dt,stan_data,settings,sub_s
       out = rbindlist(matrix_dt.list)
 
       return(out)
-}    
+}

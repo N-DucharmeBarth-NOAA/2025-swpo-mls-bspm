@@ -1,8 +1,7 @@
-    
-
 # Nicholas Ducharme-Barth
 # 2024/03/04
 # Calculate stochastic surplus production model derived quantities from hmc samples
+# Modified to handle F estimation scenarios
 
 # Copyright (c) 2024 Nicholas Ducharme-Barth
 # You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -19,6 +18,7 @@ ssp_derived_quants = function(hmc_samples,stan_data,output="percentiles",percent
               .[,.(run_id,iter,msy,Dmsy,Pmsy,Umsy,Fmsy)] 
         
         if(!("removals" %in% unique(hmc_samples$name))){
+            # Scenario 1: Neither removals nor F estimated - use observed catch
             tmp2 = hmc_samples[,.(run_id,iter,variable,name,value)] %>%
                   .[variable%in%c("x[1]","logK")] %>%
                   .[,.(run_id,iter,name,value)] %>%
@@ -62,67 +62,56 @@ ssp_derived_quants = function(hmc_samples,stan_data,output="percentiles",percent
                         .[,recent_D:=(depletion_T3+depletion_T2+depletion_T1+latest_depletion)/4] %>%
                         .[,.(run_id,iter,recent_U,recent_F,recent_P,recent_D)]
         } else {
-            removals_1 = hmc_samples[name=="removals"&row==1,.(run_id,iter,value)] %>%
-                        setnames(.,"value","removals_1")
-            removals_T = hmc_samples[name=="removals"&row==stan_data[name=="T"]$value,.(run_id,iter,value)] %>%
-                        setnames(.,"value","removals_T")
-            removals_T1 = hmc_samples[name=="removals"&row==stan_data[name=="T"]$value-1,.(run_id,iter,value)] %>%
-                        setnames(.,"value","removals_T1")
-            removals_T2 = hmc_samples[name=="removals"&row==stan_data[name=="T"]$value-2,.(run_id,iter,value)] %>%
-                        setnames(.,"value","removals_T2")
-            removals_T3 = hmc_samples[name=="removals"&row==stan_data[name=="T"]$value-3,.(run_id,iter,value)] %>%
-                        setnames(.,"value","removals_T3")
-            removals_T4 = hmc_samples[name=="removals"&row==stan_data[name=="T"]$value-4,.(run_id,iter,value)] %>%
-                        setnames(.,"value","removals_T4")
-            removals_Tm = merge(removals_T1,removals_T2,by=c("run_id","iter")) %>%
-                          merge(.,removals_T3,by=c("run_id","iter")) %>%
-                          merge(.,removals_T4) %>%
-                          melt(.,id.vars=c("run_id","iter"))
-
-            if(nrow(removals_T)==0){
-                  # get catch for last year
-                  removals_T = copy(removals_1) %>% setnames(.,"removals_1","removals_T")
-                  set.seed(123)
-                  sigmac = stan_data[name=="sigmac"]$value
-                  mu_catch = log(stan_data[name=="obs_removals"&row==T]$value) - 0.5*sigmac^2
-                  removals_T$removals_T = rlnorm(nrow(removals_1),mu_catch,sigmac)
-            }
+            # Scenario 2: Both removals AND F estimated - use estimated F values
+            initial_F = hmc_samples[name=="F"&row==1,.(run_id,iter,value)] %>%
+                       setnames(.,"value","initial_F")
+            latest_F = hmc_samples[name=="F"&row==(stan_data[name=="T"]$value-1),.(run_id,iter,value)] %>%
+                      setnames(.,"value","latest_F")
+            
             tmp2 = hmc_samples[,.(run_id,iter,variable,name,value)] %>%
                   .[variable%in%c("x[1]","logK")] %>%
                   .[,.(run_id,iter,name,value)] %>%
                   dcast(.,run_id+iter~name) %>%
                   .[,initial_population:=x*exp(logK)] %>%
                   .[,initial_depletion:=x] %>%
-                  merge(.,removals_1,by=c("run_id","iter")) %>%
-                  .[,initial_U:=ifelse(removals_1/initial_population>1,0.9999,removals_1/initial_population)] %>%
-                  .[,initial_F:=-log(-initial_U+1)] %>%
+                  merge(.,initial_F,by=c("run_id","iter")) %>%
+                  .[,initial_U:=1-exp(-initial_F)] %>%
                   .[,.(run_id,iter,initial_population,initial_depletion,initial_U,initial_F)]
 
+            # note that latest F only corresponds to T-1
             tmp3 = hmc_samples[,.(run_id,iter,variable,name,value)] %>%
                   .[variable%in%c(paste0("x[",stan_data[name=="T"]$value,"]"),"logK")] %>%
                   .[,.(run_id,iter,name,value)] %>%
                   dcast(.,run_id+iter~name) %>%
                   .[,latest_population:=x*exp(logK)] %>%
                   .[,latest_depletion:=x] %>%
-                  merge(.,removals_T,by=c("run_id","iter")) %>%
-                  .[,latest_U:=ifelse(removals_T/latest_population>1,0.9999,removals_T/latest_population)] %>%
-                  .[,latest_F:=-log(-latest_U+1)] %>%
-                  .[,.(run_id,iter,latest_population,latest_depletion,latest_U,latest_F)] 
+                  merge(.,latest_F,by=c("run_id","iter")) %>%
+                  .[,latest_U:=1-exp(-latest_F)] %>%
+                  .[,.(run_id,iter,latest_population,latest_depletion,latest_U,latest_F)]
 
+            # For recent calculations, extract F values for the last 5 years excluding last year
+            tmp_F.list = as.list(rep(NA,4))
+            for(i in 1:4){
+                tmp_F.list[[i]] = hmc_samples[name=="F"&row==(stan_data[name=="T"]$value-i),.(run_id,iter,value)] %>%
+                                 setnames(.,"value",paste0("F_T",i))
+            }
+            
+            # extract population for last 4 years including the last year
             tmp_dt.list = as.list(rep(NA,4))
             for(i in 1:4){
                   tmp_dt.list[[i]] = hmc_samples[,.(run_id,iter,variable,name,value)] %>%
-                  .[variable%in%c(paste0("x[",stan_data[name=="T"]$value-i,"]"),"logK")] %>%
+                  .[variable%in%c(paste0("x[",stan_data[name=="T"]$value-i+1,"]"),"logK")] %>%
                   .[,.(run_id,iter,name,value)] %>%
                   dcast(.,run_id+iter~name) %>%
                   .[,population_Tm:=x*exp(logK)] %>%
                   .[,depletion_Tm:=x] %>%
-                  merge(.,removals_Tm[variable==paste0("removals_T",i)],by=c("run_id","iter")) %>%
-                  .[,U_Tm:=ifelse(value/population_Tm>1,0.9999,value/population_Tm)] %>%
-                  .[,F_Tm:=-log(-U_Tm+1)] %>%
+                  merge(.,tmp_F.list[[i]],by=c("run_id","iter")) %>%
+                  .[,F_Tm:=get(paste0("F_T",i))] %>%
+                  .[,U_Tm:=1-exp(-F_Tm)] %>%
                   .[,.(run_id,iter,population_Tm,depletion_Tm,U_Tm,F_Tm)] %>%
                   setnames(.,c("population_Tm","depletion_Tm","U_Tm","F_Tm"),paste0(c("population_T","depletion_T","U_T","F_T"),i))
             }
+            
             recent_dt = merge(tmp_dt.list[[1]],tmp_dt.list[[2]],by=c("run_id","iter")) %>%
                         merge(tmp_dt.list[[3]],by=c("run_id","iter")) %>%
                         merge(tmp_dt.list[[4]],by=c("run_id","iter")) %>%
@@ -133,7 +122,6 @@ ssp_derived_quants = function(hmc_samples,stan_data,output="percentiles",percent
                         .[,recent_D:=(depletion_T3+depletion_T2+depletion_T1+latest_depletion)/4] %>%
                         .[,.(run_id,iter,recent_U,recent_F,recent_P,recent_D)]
         }
-
 
         tmp4 = merge(tmp1,tmp3,by=c("run_id","iter")) %>%
                .[,latest_P_Pmsy := latest_population/Pmsy] %>%
@@ -164,4 +152,4 @@ ssp_derived_quants = function(hmc_samples,stan_data,output="percentiles",percent
                     dcast(.,run_id~variable)          
         }
     return(tmp)
-}    
+}

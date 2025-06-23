@@ -36,7 +36,7 @@
         # rstan_options(auto_write = TRUE)
 
         # define run characteristics
-            if(length(grep("-ppc",test,fixed=TRUE))>0){
+            if(length(grep("-ppc",run_label,fixed=TRUE))>0){
                 copy_run_label = run_label
                 copy_run_label = gsub("-ppc","",copy_run_label)
             } else {
@@ -351,10 +351,12 @@
                           .[lambda>0] %>%
                           na.omit(.) %>%
                           .[,value:=value*lambda] %>%
-                          .[,.(tll=sum(value)),by=.(I,iter)]
+                          .[,.(tll=sum(value)),by=.(iter)]
                 fit_summary$total_ll = median(total_ll$tll)
+                # catch ll
+                fit_summary$catch_ll = tmp_likelihood[I==0,.(sum(value)),by=iter]$median
                 # index_ll
-                index_ll = tmp_likelihood %>% 
+                index_ll = tmp_likelihood[I>0] %>% 
                           na.omit(.) %>%
                           .[,.(index_ll=sum(value)),by=.(I,iter)] %>%
                           .[,.(index_ll = median(index_ll)),by=I] %>%
@@ -369,11 +371,14 @@
                 # index_rmse
                 tmp_rmse = ssp_calc_rmse(hmc_samples,stan_data) %>% .[order(I)]
                 
-                fit_summary$median_rmse = median(tmp_rmse[lambdas>0,.(mean(rmse)),by=iter]$V1)
+                fit_summary$median_index_rmse = median(tmp_rmse[type=="index"&lambdas>0,.(mean(rmse)),by=iter]$V1)
 
-                index_rmse = as.data.table(matrix(tmp_rmse[,.(median(rmse)),by=I]$V1,ncol=max(tmp_rmse$I)))
+                index_rmse = as.data.table(matrix(tmp_rmse[type=="index",.(median(rmse)),by=I]$V1,ncol=max(tmp_rmse$I)))
                 colnames(index_rmse) = paste0("index_rmse_",1:ncol(index_rmse))
                 fit_summary = cbind(fit_summary,index_rmse)
+
+                # catch rmse
+                fit_summary$median_catch_rmse = median(tmp_rmse[type=="catch",.(mean(rmse)),by=iter]$V1)
 
 
             fit_summary = merge(fit_summary,tmp_leading,by="run_id") %>%

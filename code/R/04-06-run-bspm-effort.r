@@ -162,7 +162,7 @@
         effort = catch_effort_annual$effort_scaled,
         n_step = as.integer(n_step),
         n_periods = as.integer(n_periods),
-        sigma_edev = 0.5,  # Prior SD for effort deviations
+        sigma_edev = 0.3,  # Prior SD for effort deviations
         
         # Observation error parameters
         sigmao_input = mean_se,
@@ -183,7 +183,7 @@
                     seed = 321,
                     chains = 5,
                     n_thin = 10,
-                    iter_keep = 200,
+                    iter_keep = 1000,
                     burnin.prop = 0.5,
                     adapt_delta = 0.99,
                     max_treedepth = 12,
