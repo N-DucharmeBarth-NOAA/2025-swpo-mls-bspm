@@ -234,17 +234,7 @@
     for(i in 1:5){
         run_label_stem = paste0("2024cpueEffortQeff_",i)
         
-        # Adjust data for retrospective (remove last i years)
-        retro_years = n_years - i
-        retro_data = stan.data
-        retro_data$T = as.integer(retro_years)
-        retro_data$index = index_mat[1:retro_years, , drop = FALSE]
-        retro_data$sigmao_mat = se_mat[1:retro_years, , drop = FALSE]
-        retro_data$obs_removals = catch_effort_annual$total_catch[1:retro_years]
-        retro_data$effort = catch_effort_annual$effort_scaled[1:retro_years]
-        retro_data$n_periods = as.integer(ceiling((retro_years-1) / n_step))
-        
-        fit = fit_rstan(retro_data,
+        fit = fit_rstan(stan.data,
                         stan_c,
                         run_label = paste0(run_number,"-",run_label_stem),
                         exec_name = exec_name,

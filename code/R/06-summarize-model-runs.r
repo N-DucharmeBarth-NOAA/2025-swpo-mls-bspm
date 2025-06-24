@@ -31,6 +31,9 @@
     all_dirs = list.files(model_stem,recursive = TRUE)
     all_dirs = all_dirs[grep("fit_summary.csv",all_dirs,fixed=TRUE)]
     all_dirs = gsub("fit_summary.csv","",all_dirs,fixed=TRUE)
+    if(length(grep("-ppc",all_dirs,fixed=TRUE))>0){
+        all_dirs = all_dirs[-grep("-ppc",all_dirs,fixed=TRUE)]
+    }
 
     summary_df.list = lapply(all_dirs,function(x)as.data.frame(fread(file.path(model_stem,x,"fit_summary.csv"))))
 
@@ -80,25 +83,25 @@
                             if(retro_peels[j] == 0){
                                  pmsy_l95 = retro_dt.list[[j]] %>%
                                     .[name=="P_Pmsy"] %>%
-                                    .[,.(l95=quantile(value,probs=0.025)),by=.(run_id,name,row)]
+                                    .[,.(l95=quantile(value,probs=0.025,na.rm=TRUE)),by=.(run_id,name,row)]
                                  pmsy_u95 = retro_dt.list[[j]] %>%
                                     .[name=="P_Pmsy"] %>%
-                                    .[,.(u95=quantile(value,probs=0.975)),by=.(run_id,name,row)]
+                                    .[,.(u95=quantile(value,probs=0.975,na.rm=TRUE)),by=.(run_id,name,row)]
                                 cover_range_pmsy[,1] = rev(tail(pmsy_l95$l95,n=max(retro_peels)+1))
                                 cover_range_pmsy[,2] = rev(tail(pmsy_u95$u95,n=max(retro_peels)+1))
                                  fmsy_l95 = retro_dt.list[[j]] %>%
                                     .[name=="F_Fmsy"] %>%
-                                    .[,.(l95=quantile(value,probs=0.025)),by=.(run_id,name,row)]
+                                    .[,.(l95=quantile(value,probs=0.025,na.rm=TRUE)),by=.(run_id,name,row)]
                                  fmsy_u95 = retro_dt.list[[j]] %>%
                                     .[name=="F_Fmsy"] %>%
-                                    .[,.(u95=quantile(value,probs=0.975)),by=.(run_id,name,row)]
+                                    .[,.(u95=quantile(value,probs=0.975,na.rm=TRUE)),by=.(run_id,name,row)]
                                 cover_range_fmsy[,1] = rev(tail(fmsy_l95$l95,n=max(retro_peels)+1))
                                 cover_range_fmsy[,2] = rev(tail(fmsy_u95$u95,n=max(retro_peels)+1))
                             }
 
                             med = retro_dt.list[[j]] %>%
                                     .[name%in%c("P_Pmsy","F_Fmsy")] %>%
-                                    .[,.(median=quantile(value,probs=0.5)),by=.(run_id,name,row)] %>%
+                                    .[,.(median=quantile(value,probs=0.5,na.rm=TRUE)),by=.(run_id,name,row)] %>%
                                     .[row==max(row)-retro_peels[j]]
                             med_pmsy[j] = med[name=="P_Pmsy"]$median
                             med_fmsy[j] = med[name=="F_Fmsy"]$median
@@ -161,7 +164,7 @@
                     # look at coverage for P/Pmsy and F/Fmsy  
                     cover_vec_pmsy = rep(NA,length(med_pmsy))
                     cover_vec_fmsy = rep(NA,length(med_fmsy))
-                    for(j in 1:length(med_pmsy)){
+                    for(j in 2:length(med_pmsy)){
                         if(med_pmsy[j]>cover_range_pmsy[j,1]&med_pmsy[j]<cover_range_pmsy[j,2]){
                             cover_vec_pmsy[j] = 1
                         } else {
