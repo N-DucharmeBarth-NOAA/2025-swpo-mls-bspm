@@ -220,7 +220,11 @@
     t[n_eff<500|Rhat>1.01]
 
     # make prior-posterior plot
-
+    prior_samples = generate_prior_samples(stan.data, n_samples = 1000)
+    p = compare_marginals_pairs(ppc, fit, prior_samples = prior_samples, 
+                            type_levels = c("Initial prior", "Realized prior", "Posterior"),
+                            params = c("logK", "r", "shape", "sigmap", "sigmao_add", "qeff", "rho", "sigma_qdev"))
+    ggsave(file.path("plots","pushforward","q", "priors.initial_realized.png"), p, width = 12, height = 9, dpi = 300)
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # save results
     saveRDS(fit, file.path(proj_dir,"data","output","model_runs",paste0(run_number,"-",run_label_stem,"-fit.rds")))
