@@ -27,6 +27,15 @@
 # read data
     bio_params_dt = fread(file.path(proj_dir,"data","output","bspm_parameter_priors_filtered.csv"))
 
+    # replace logK values
+    # original: log(rlnorm(n_generate,log(1e6),0.5))
+    set.seed(777)
+    old_logK = bio_params_dt$logK
+    bio_params_dt$logK = log(rlnorm(nrow(bio_params_dt),log(2e6),1.25))
+    
+    # plot(density(bio_params_dt$logK))
+    # lines(density(old_logK),col="red")
+
     catch_dt = fread(file.path(proj_dir,"data","input","catch.csv")) %>%
                .[,Time := floor(Time)] %>%
                .[Time >= 1952, .(catch_n = sum(Obs * 1000)), by = Time] %>%
@@ -157,8 +166,8 @@
 # develop initial catchability prior based on nominal scaled cpue and preliminary estimates of population scale
     scaled_cpue = (catch_effort_dt$catch_n/(catch_effort_dt$effort_scaled))
     
-    min_pop = 250000 # from preliminary runs
-    max_pop = 1500000 # from preliminary runs
+    min_pop = 250000 # from preliminary runs; with buffer
+    max_pop = 3000000 # from preliminary runs; with buffer
     nsim_q = 1e4
 
     scaled_q = sample(scaled_cpue,nsim_q,replace=TRUE)/runif(nsim_q,min_pop,max_pop) 

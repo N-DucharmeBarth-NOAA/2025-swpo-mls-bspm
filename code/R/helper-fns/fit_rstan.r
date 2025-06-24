@@ -354,7 +354,7 @@
                           .[,.(tll=sum(value)),by=.(iter)]
                 fit_summary$total_ll = median(total_ll$tll)
                 # catch ll
-                fit_summary$catch_ll = tmp_likelihood[I==0,.(sum(value)),by=iter]$median
+                fit_summary$catch_ll = median(tmp_likelihood[I==0,.(value=sum(value)),by=iter]$value)
                 # index_ll
                 index_ll = tmp_likelihood[I>0] %>% 
                           na.omit(.) %>%
@@ -371,9 +371,9 @@
                 # index_rmse
                 tmp_rmse = ssp_calc_rmse(hmc_samples,stan_data) %>% .[order(I)]
                 
-                fit_summary$median_index_rmse = median(tmp_rmse[type=="index"&lambdas>0,.(mean(rmse)),by=iter]$V1)
+                fit_summary$median_index_rmse = median(tmp_rmse[type=="index"&lambda>0,.(mean(rmse)),by=iter]$V1)
 
-                index_rmse = as.data.table(matrix(tmp_rmse[type=="index",.(median(rmse)),by=I]$V1,ncol=max(tmp_rmse$I)))
+                index_rmse = as.data.table(matrix(tmp_rmse[type=="index",.(median(rmse)),by=I]$V1,ncol=max(tmp_rmse$I,na.rm=TRUE)))
                 colnames(index_rmse) = paste0("index_rmse_",1:ncol(index_rmse))
                 fit_summary = cbind(fit_summary,index_rmse)
 
