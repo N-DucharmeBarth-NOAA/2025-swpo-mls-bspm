@@ -1,20 +1,22 @@
 # build-shiny.R - Build script for local Shiny deployment
 
-#' Create Symlink with Cross-Platform Support
+#' Create Symlink with Cross-Platform Support for Files and Directories
 #' 
-#' Creates symbolic links (or junctions on Windows) with robust error handling
-#' and fallback to directory copying if symlink creation fails
+#' Creates symbolic links with robust error handling and appropriate fallbacks
 #' 
-#' @param target Path to target directory (source)
+#' @param target Path to target file or directory (source)
 #' @param link Path where symlink should be created (destination)
 create_symlink <- function(target, link) {
-  # Ensure target exists
-  if (!dir.exists(target)) {
-    warning("Target directory does not exist: ", target)
+  # Detect if target is file or directory
+  is_file <- file.exists(target) && !dir.exists(target)
+  is_dir <- dir.exists(target)
+  
+  if (!is_file && !is_dir) {
+    warning("Target does not exist: ", target)
     return(FALSE)
   }
   
-  # Remove existing link/directory if it exists
+  # Remove existing link if it exists
   if (file.exists(link) || dir.exists(link)) {
     unlink(link, recursive = TRUE, force = TRUE)
   }
@@ -23,33 +25,45 @@ create_symlink <- function(target, link) {
   dir.create(dirname(link), recursive = TRUE, showWarnings = FALSE)
   
   if (.Platform$OS.type == "windows") {
-    # Windows: Try multiple approaches
     success <- FALSE
     
-    # Method 1: Try mklink through cmd with full path
+    # Choose appropriate mklink flag
+    mklink_flag <- if (is_file) "" else "/J"  # No flag for files, /J for directories
+    
+    # Method 1: Try mklink through cmd
     tryCatch({
-      result <- system2("cmd", 
-                       args = c("/c", "mklink", "/J", shQuote(link), shQuote(target)),
-                       stdout = TRUE, stderr = TRUE)
+      args <- if (is_file) {
+        c("/c", "mklink", shQuote(link), shQuote(target))
+      } else {
+        c("/c", "mklink", "/J", shQuote(link), shQuote(target))
+      }
+      
+      result <- system2("cmd", args = args, stdout = TRUE, stderr = TRUE)
       if (attr(result, "status") == 0 || is.null(attr(result, "status"))) {
         success <- TRUE
-        cat("  ✓ Windows junction created:", basename(link), "\n")
+        type_name <- if (is_file) "file link" else "junction"
+        cat("  ✓ Windows", type_name, "created:", basename(link), "\n")
       }
     }, error = function(e) {
       # Continue to next method
     })
     
-    # Method 2: Try with Sys.which to find cmd
+    # Method 2: Try with Sys.which
     if (!success) {
       tryCatch({
         cmd_path <- Sys.which("cmd")
         if (cmd_path != "") {
-          result <- system2(cmd_path, 
-                           args = c("/c", "mklink", "/J", shQuote(link), shQuote(target)),
-                           stdout = TRUE, stderr = TRUE)
+          args <- if (is_file) {
+            c("/c", "mklink", shQuote(link), shQuote(target))
+          } else {
+            c("/c", "mklink", "/J", shQuote(link), shQuote(target))
+          }
+          
+          result <- system2(cmd_path, args = args, stdout = TRUE, stderr = TRUE)
           if (attr(result, "status") == 0 || is.null(attr(result, "status"))) {
             success <- TRUE
-            cat("  ✓ Windows junction created:", basename(link), "\n")
+            type_name <- if (is_file) "file link" else "junction"
+            cat("  ✓ Windows", type_name, "created:", basename(link), "\n")
           }
         }
       }, error = function(e) {
@@ -57,32 +71,24 @@ create_symlink <- function(target, link) {
       })
     }
     
-    # Method 3: Try using shell
+    # Fallback: Copy file or directory
     if (!success) {
+      type_name <- if (is_file) "file" else "directory"
+      cat("  ! Symlink creation failed, copying", type_name, "instead:", basename(link), "\n")
+      
       tryCatch({
-        result <- shell(paste("mklink /J", shQuote(link), shQuote(target)), 
-                       intern = TRUE)
-        if (dir.exists(link)) {
-          success <- TRUE
-          cat("  ✓ Windows junction created via shell:", basename(link), "\n")
-        }
-      }, error = function(e) {
-        # Continue to fallback
-      })
-    }
-    
-    # Fallback: Copy directory
-    if (!success) {
-      cat("  ! Symlink creation failed, copying directory instead:", basename(link), "\n")
-      tryCatch({
-        file.copy(target, dirname(link), recursive = TRUE)
-        if (basename(target) != basename(link)) {
-          file.rename(file.path(dirname(link), basename(target)), link)
+        if (is_file) {
+          file.copy(target, link)
+        } else {
+          file.copy(target, dirname(link), recursive = TRUE)
+          if (basename(target) != basename(link)) {
+            file.rename(file.path(dirname(link), basename(target)), link)
+          }
         }
         success <- TRUE
-        cat("  ✓ Directory copied:", basename(link), "\n")
+        cat("  ✓", stringr::str_to_title(type_name), "copied:", basename(link), "\n")
       }, error = function(e) {
-        warning("Failed to create symlink or copy directory: ", e$message)
+        warning("Failed to create symlink or copy ", type_name, ": ", e$message)
         return(FALSE)
       })
     }
@@ -90,25 +96,32 @@ create_symlink <- function(target, link) {
     return(success)
     
   } else {
-    # Unix/Linux/Mac: Use standard symlink
+    # Unix/Linux/Mac: Use standard symlink (works for both files and directories)
     tryCatch({
       file.symlink(target, link)
-      cat("  ✓ Symlink created:", basename(link), "\n")
+      type_name <- if (is_file) "file" else "directory"
+      cat("  ✓ Symlink created for", type_name, ":", basename(link), "\n")
       return(TRUE)
     }, error = function(e) {
       warning("Failed to create symlink: ", e$message)
       
-      # Fallback: Copy directory
-      cat("  ! Symlink creation failed, copying directory instead:", basename(link), "\n")
+      # Fallback: Copy
+      type_name <- if (is_file) "file" else "directory"
+      cat("  ! Symlink creation failed, copying", type_name, "instead:", basename(link), "\n")
+      
       tryCatch({
-        file.copy(target, dirname(link), recursive = TRUE)
-        if (basename(target) != basename(link)) {
-          file.rename(file.path(dirname(link), basename(target)), link)
+        if (is_file) {
+          file.copy(target, link)
+        } else {
+          file.copy(target, dirname(link), recursive = TRUE)
+          if (basename(target) != basename(link)) {
+            file.rename(file.path(dirname(link), basename(target)), link)
+          }
         }
-        cat("  ✓ Directory copied:", basename(link), "\n")
+        cat("  ✓", stringr::str_to_title(type_name), "copied:", basename(link), "\n")
         return(TRUE)
       }, error = function(e2) {
-        warning("Failed to copy directory: ", e2$message)
+        warning("Failed to copy ", type_name, ": ", e2$message)
         return(FALSE)
       })
     })
@@ -147,7 +160,7 @@ build_local_shiny <- function(proj_dir = this.path::this.proj(),
   
   dir.create(shiny_path, showWarnings = FALSE, recursive = TRUE)
   dir.create(file.path(shiny_path, "R"), showWarnings = FALSE)
-  dir.create(file.path(shiny_path, "data"), showWarnings = FALSE)
+  dir.create(file.path(shiny_path, "data","output"), showWarnings = FALSE)
   
   cat("Creating Shiny application structure...\n")
   
@@ -168,12 +181,44 @@ build_local_shiny <- function(proj_dir = this.path::this.proj(),
   } else {
     warning("Helper functions directory not found at: ", file.path(code_dir, "helper-fns"))
   }
+
+  # Create symlinks to shiny functions
+  cat("Creating symlinks to Shiny app code...\n")
+  shiny_app_dir <- file.path(code_dir, "shiny-app")
+  if (dir.exists(shiny_app_dir)) {
+    # Get all files in the shiny-app directory
+    shiny_files <- list.files(shiny_app_dir, full.names = TRUE, recursive = FALSE)
+    # Filter to only files (not subdirectories)
+    shiny_files <- shiny_files[file.info(shiny_files)$isdir == FALSE]
+    
+    if (length(shiny_files) > 0) {
+      cat("  Found", length(shiny_files), "files to link\n")
+      
+      # Create symlinks for each file
+      success_count <- 0
+      for (file_path in shiny_files) {
+        file_name <- basename(file_path)
+        target_path <- normalizePath(file_path)
+        link_path <- file.path(shiny_path, file_name)
+        
+        if (create_symlink(target_path, link_path)) {
+          success_count <- success_count + 1
+        }
+      }
+      
+      cat("  Successfully linked", success_count, "of", length(shiny_files), "files\n")
+    } else {
+      warning("No files found in shiny-app directory")
+    }
+  } else {
+    warning("Shiny app code directory not found at: ", shiny_app_dir)
+  }
   
   # Create symlink to model outputs (local deployment)
   cat("Creating data symlinks...\n")
   if (dir.exists(data_dir)) {
     create_symlink(normalizePath(data_dir), 
-                   file.path(shiny_path, "data", "model_runs"))
+                   file.path(shiny_path, "data","output", "model_runs"))
   } else {
     warning("Model runs directory not found at: ", data_dir)
   }
@@ -328,7 +373,7 @@ create_summary_data <- function(proj_dir, shiny_path) {
   # Read and combine summaries with robust parsing
   summary_df.list <- lapply(all_dirs, function(x) {
     dt <- fread(file.path(model_runs_path, x, "fit_summary.csv"))
-    dt[, model_id := run_id]  # Use run_id as model_id
+    dt[, model_id := run_label]
     
     # Parse run components for each row
     parsed_components <- lapply(dt$run_number, parse_run_components)
@@ -391,7 +436,7 @@ validate_shiny_structure <- function(shiny_path) {
   required_dirs <- c(
     "R",
     "data",
-    "data/model_runs"
+    "data/output/model_runs"
   )
   
   missing_files <- character(0)

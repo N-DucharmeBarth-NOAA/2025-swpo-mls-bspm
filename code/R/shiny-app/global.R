@@ -20,19 +20,19 @@ library(rstantools)
 # library(DT)
 
 # Source helper functions
-helper_files <- list.files("R/helper-fns", full.names = TRUE, pattern = "\\.r$|\\.R$")
+helper_files <- list.files(file.path("R","helper-fns"), full.names = TRUE, pattern = "\\.r$|\\.R$")
 if(length(helper_files) > 0) {
   sapply(helper_files, source)
 }
 
 # Source plot functions
-plot_files <- list.files("R/plot-fns", full.names = TRUE, pattern = "\\.r$|\\.R$")
+plot_files <- list.files(file.path("R","plot-fns"), full.names = TRUE, pattern = "\\.r$|\\.R$")
 if(length(plot_files) > 0) {
   sapply(plot_files, source)
 }
 
 # Load and format summary data
-summary_dt <- fread("data/summary_dt.csv")
+summary_dt <- fread(file.path("data","summary_dt.csv")) %>% .[run_num>6]
 
 # Format numeric columns for display
 if("max_rhat" %in% colnames(summary_dt)) {
@@ -43,7 +43,7 @@ if("min_neff" %in% colnames(summary_dt)) {
 }
 
 # Discover available model directories
-model_stem <- "data/model_runs"
+model_stem <- file.path("data","output","model_runs")
 all_dirs <- list.files(model_stem, recursive = FALSE)
 
 # Filter to directories that contain required files
@@ -52,12 +52,13 @@ valid_dirs <- all_dirs[sapply(all_dirs, function(x) {
   file.exists(file.path(dir_path, "hmc_samples.csv")) && 
   file.exists(file.path(dir_path, "fit_summary.csv"))
 })]
+valid_dirs = valid_dirs[valid_dirs %in% summary_dt$model_id]
 
 # Configure global settings for plot functions
 if(exists("set_global_config")) {
   set_global_config(
     year_one = 1952,  # Adjust based on your data
-    index_names = c("DWFN CPUE", "DWFN CPUE"),  # Adjust based on your indices
+    index_names = c("dwfn","au","nz","obs"),  # Adjust based on your indices
     model_stem = model_stem,
     height_per_panel = 350
   )
