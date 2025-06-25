@@ -5,30 +5,19 @@ server <- function(input, output, session) {
   # Helper function for null operator
   `%||%` <- function(x, y) if (is.null(x) || length(x) == 0) y else x
   
-  # Model selection reactive using your table logic
-  selected_model_ids <- reactive({
-    if (!is.null(input$summarytable_rows_selected) && exists("ref_table_reduced")) {
-      keep_models <- ref_table_reduced[input$summarytable_rows_selected, ]$run_label
-      return(keep_models)
-    } else if (exists("summary_dt") && nrow(summary_dt) > 0) {
-      # Default to first model if nothing selected
-      return(summary_dt$run_label[1])
-    } else {
-      return(NULL)
-    }
-  })
-  
-  # Filtered ID reactive (your existing logic)
-  filtered_id <- reactive({
-    req(input$summarytable_rows_selected)
-    keep_models <- c(ref_table_reduced[input$summarytable_rows_selected, ]$run_label)
+  ref_table_reduced = summary_dt %>% as.data.frame(.)
+
+  # One reactive that does exactly what's needed
+  filtered_id = reactive({
+    req(input$summary_table_rows_selected)  # Correct table name
+    keep_models = c(ref_table_reduced[input$summary_table_rows_selected, ]$run_label)
     return(keep_models)  
   })
-  
+
   # Get model directories for selected models
   selected_model_dirs <- reactive({
-    req(selected_model_ids())
-    file.path("data","output","model_runs", selected_model_ids())
+    req(filtered_id())
+    file.path("data","output","model_runs", filtered_id())
   })
   
   # Parameter builders - convert UI inputs to function parameters
@@ -113,10 +102,17 @@ server <- function(input, output, session) {
   render_plot <- function(plot_func, params_func = NULL, single_only = FALSE, 
                          default_params = NULL, output_name = "Plot") {
     renderPlot({
-      req(selected_model_ids(), length(selected_model_ids()) > 0)
+      # Check if models are selected
+      if (is.null(filtered_id()) || length(filtered_id()) == 0) {
+        return(ggplot() + 
+              annotate("text", x = 0.5, y = 0.5, 
+                      label = "Please select one or more models from the summary table",
+                      hjust = 0.5, vjust = 0.5, size = 5) +
+              theme_void())
+      }
       
       # Handle single-only plots
-      if(single_only && length(selected_model_ids()) > 1) {
+      if(single_only && length(filtered_id()) > 1) {
         return(ggplot() + 
                annotate("text", x = 0.5, y = 0.5, 
                        label = paste("Select only one model for", output_name),
@@ -149,24 +145,17 @@ server <- function(input, output, session) {
   }
   
   # =============================================================================
-  # MODEL SUMMARY TABLE (using your logic)
+  # MODEL SUMMARY TABLE 
   # =============================================================================
   
-  output$summarytable <- DT::renderDataTable({
+  output$summary_table <- DT::renderDataTable({
     summary_df <- summary_dt %>%
                  as.data.frame(., stringsAsFactors = FALSE)
     summary_DT <- DT::datatable(summary_df, filter = 'top', rownames = FALSE,
     options = list(scrollX = TRUE, search = list(regex = TRUE, caseInsensitive = FALSE), pageLength = 25))
     return(summary_DT)
   })
-  outputOptions(output, "summarytable", suspendWhenHidden = FALSE)
-  
-  # Your commented filtered_table reactive (preserved for reference)
-  # filtered_table = reactive({
-  #   req(input$summarytable_rows_selected)
-  #   keep_models = c(ref_table_reduced[input$summarytable_rows_selected, ]$id)
-  #   return(as.data.frame(summary_dt[id%in%keep_models],stringsAsFactors=FALSE))  
-  # })
+  outputOptions(output, "summary_table", suspendWhenHidden = FALSE)
   
   # =============================================================================
   # HMC DIAGNOSTICS
@@ -279,22 +268,6 @@ server <- function(input, output, session) {
   # =============================================================================
   # SESSION MANAGEMENT
   # =============================================================================
-  
-  # Initialize model selection on app start
-  observe({
-    if (exists("summary_dt") && nrow(summary_dt) > 0) {
-      # Auto-select first model if none selected
-      if (is.null(input$summary_table_rows_selected)) {
-        DT::selectRows(DT::dataTableProxy("summary_table"), 1)
-      }
-    }
-  })
-  
-  # Handle table row selection for model selection
-  observeEvent(input$summary_table_rows_selected, {
-    # This will be used to update selected_model_ids() reactive
-    # You may need to implement additional logic here based on your data structure
-  })
   
   # Track current tab for debugging
   observeEvent(input$sidebarmenu, {

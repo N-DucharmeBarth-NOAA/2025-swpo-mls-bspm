@@ -3,7 +3,6 @@
 # Load required packages
 library(shiny)
 library(shinydashboard)
-library(shinyWidgets)
 library(data.table)
 library(markdown)
 library(magrittr)
@@ -17,6 +16,7 @@ library(MASS)
 library(randtests)
 library(loo)
 library(rstantools)
+library(shinyWidgets)
 # library(DT)
 
 # Source helper functions
@@ -41,18 +41,6 @@ if("max_rhat" %in% colnames(summary_dt)) {
 if("min_neff" %in% colnames(summary_dt)) {
   summary_dt$min_neff <- round(summary_dt$min_neff)
 }
-
-# Discover available model directories
-model_stem <- file.path("data","output","model_runs")
-all_dirs <- list.files(model_stem, recursive = FALSE)
-
-# Filter to directories that contain required files
-valid_dirs <- all_dirs[sapply(all_dirs, function(x) {
-  dir_path <- file.path(model_stem, x)
-  file.exists(file.path(dir_path, "hmc_samples.csv")) && 
-  file.exists(file.path(dir_path, "fit_summary.csv"))
-})]
-valid_dirs = valid_dirs[valid_dirs %in% summary_dt$model_id]
 
 # Configure global settings for plot functions
 if(exists("set_global_config")) {

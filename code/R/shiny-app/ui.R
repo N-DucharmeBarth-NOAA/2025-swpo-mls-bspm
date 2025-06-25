@@ -397,7 +397,7 @@ ui <- dashboardPage(
         h2("Summary table"),
         fluidRow(
           box(title = "Model metrics", collapsed = FALSE, solidHeader = TRUE, collapsible = TRUE, status = "primary", width = 12,
-            DT::dataTableOutput("summarytable")
+            DT::dataTableOutput("summary_table")
           )
         )
       ),
