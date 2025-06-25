@@ -26,7 +26,8 @@ ui <- dashboardPage(
       menuItem("Pr. & Post: params", tabName = "plots_tab_ppp"),
       menuItem("Pr. & Post: time-series", tabName = "plots_tab_ppts"),
       menuItem("Kobe & Majuro", tabName = "plots_tab_kbmj"),
-      menuItem("Forecasts", tabName = "plots_tab_forecasts")
+      menuItem("Forecasts", tabName = "plots_tab_forecasts"),
+      selected = "introduction"  # Add this to set default selection
     ),
     
     # HMC Diagnostics Controls
@@ -379,6 +380,17 @@ ui <- dashboardPage(
   ), # End of sidebar
 
   body = dashboardBody(
+    # Force sidebar-tab connection with JavaScript
+    tags$script(HTML("
+      $(document).ready(function(){
+        $('.sidebar-menu a').on('click', function(){
+          var tabName = $(this).attr('data-value');
+          if(tabName){
+            Shiny.setInputValue('sidebarmenu', tabName);
+          }
+        });
+      });
+    ")),
     tags$head(tags$style(HTML('.wrapper {height: auto !important; position:relative; overflow-x:hidden; overflow-y:hidden}'))),
     tags$head(tags$style(css)),
     
