@@ -42,7 +42,11 @@ get_default_params <- function() {
       obs = TRUE,
       type = "Median",
       quants = 95,
-      resid = "PIT"
+      resid = "PIT",
+      ncol = NULL,  # NEW: auto-calculate if NULL
+      nrow = NULL,   # NEW: auto-calculate if NULL
+      resid_ncol = NULL,  # NEW: auto-calculate if NULL
+      resid_nrow = NULL   # NEW: auto-calculate if NULL
     ),
     ppp = list(
       leading_params = c("logK","x0","r"),

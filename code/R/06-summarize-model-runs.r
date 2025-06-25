@@ -50,7 +50,21 @@
     #     summary_df.list[[i]] = as.data.table(summary_df.list[[i]])
     # }
 
-    summary_dt = rbindlist(summary_df.list,fill=TRUE) %>% .[run_retro == 0]
+    summary_dt = rbindlist(summary_df.list,fill=TRUE) %>% .[run_retro == 0] 
+    ncol(summary_dt)
+    select_cols = c("run_id","exec","run_label","run_number","run_name","run_retro","run_time_total","run_time_avg","n_par",
+                    "low_bfmi","divergent","treedepth","max_rhat","min_neff","prop_rhat_105","prop_rhat_101","prop_neff_01","prop_neff_400",
+                    "n_obs","looic","p_loo","elpd_loo","prop_pareto_k","total_ll","catch_ll","index_ll_1","index_ll_2","index_ll_3","index_ll_4",
+                    "median_rmse","median_catch_rmse","median_index_rmse","index_rmse_1","index_rmse_2","index_rmse_3","index_rmse_4","logK","r",
+                    "sigmao","sigmap","shape","msy-p0.5","Dmsy-p0.5","Pmsy-p0.5","Umsy-p0.5","Fmsy-p0.5","initial_population-p0.5",
+                    "initial_depletion-p0.5","initial_U-p0.5","initial_F-p0.5","latest_population-p0.5","latest_depletion-p0.5","latest_U-p0.5",
+                    "latest_F-p0.5","latest_P_Pmsy-p0.5","latest_D_Dmsy-p0.5","latest_U_Umsy-p0.5","latest_F_Fmsy-p0.5","recent_P_Pmsy-p0.5",
+                    "recent_D_Dmsy-p0.5","recent_U_Umsy-p0.5","recent_F_Fmsy-p0.5","PriorMean_logK","PriorMean_logr","PriorMean_logshape",
+                    "PriorMean_logsigmap","PriorMean_logsigmao","PriorSD_logK","PriorSD_logr","PriorSD_logshape","PriorSD_logsigmap",
+                    "PriorSD_logsigmao","PriorMin_logk","PriorMax_logk","PriorSD_sigmaf","PriorSD_sigmao_add")
+    summary_dt = summary_dt %>%
+                 .[,.SD, .SDcols = select_cols]
+    ncol(summary_dt)
     fwrite(summary_dt,file=file.path("data","output","summary.csv"))
 
 #_____________________________________________________________________________________________________________________________

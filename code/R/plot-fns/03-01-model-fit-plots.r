@@ -83,12 +83,16 @@ generate_index_fit <- function(model_dirs, params = NULL) {
       .[, .(median = median(value), upper = quantile(value, probs = 1 - obs_quant), lower = quantile(value, probs = obs_quant)), by = .(run_label, index, row, year)]
   }
   
-  # Check for consistent observations across models
-  if (length(model_dirs) > 1 && mean(table(obs_cpue_dt$id2) %% uniqueN(obs_cpue_dt$run_id) == 0) != 1 && !params$obs) {
-    stop("Observed CPUE not identical between models. Choose models with the same CPUE or only a single model.")
-  } else if (length(model_dirs) > 1 && mean(table(obs_cpue_dt$id2) %% uniqueN(obs_cpue_dt$run_id) == 0) != 1 && params$obs) {
-    if (mean(table(obs_cpue_dt$id3) %% uniqueN(obs_cpue_dt$run_id) == 0) != 1) {
-      stop("Observation error is selected to be plotted however it is not identical. Turn off observation error plotting, choose models with the same observation error or choose a single model.")
+  # Check for consistent observations across models (only for shared index-year combinations)
+  if (length(model_dirs) > 1 && !params$obs) {
+    shared_combinations <- obs_cpue_dt[, .N, by = .(index, year)][N > 1]
+    if (nrow(shared_combinations) > 0) {
+      inconsistent <- obs_cpue_dt[shared_combinations, on = .(index, year)][
+        , .(unique_obs = uniqueN(obs)), by = .(index, year)
+      ][unique_obs > 1]
+      if (nrow(inconsistent) > 0) {
+        stop("Observed CPUE not identical between models for shared index-year combinations.")
+      }
     }
   }
   
@@ -112,7 +116,9 @@ generate_index_fit <- function(model_dirs, params = NULL) {
     ylab("Index") +
     xlab("Year") +
     geom_hline(yintercept = 1, linetype = "dashed") +
-    facet_wrap(~index, ncol = min(c(3, uniqueN(obs_cpue_dt$index))))
+      facet_wrap(~index, 
+           ncol = if(is.null(params$ncol)) min(c(3, uniqueN(plot_dt$name))) else params$ncol,
+           nrow = params$nrow)
   
   # Add observation error bars if requested
   if (params$obs) {
@@ -204,12 +210,16 @@ generate_index_fit_ppd <- function(model_dirs, params = NULL) {
       .[, .(median = median(value), upper = quantile(value, probs = 1 - obs_quant), lower = quantile(value, probs = obs_quant)), by = .(run_label, index, row, year)]
   }
   
-  # Check consistency and process observations (same as index_fit)
-  if (length(model_dirs) > 1 && mean(table(obs_cpue_dt$id2) %% uniqueN(obs_cpue_dt$run_id) == 0) != 1 && !params$obs) {
-    stop("Observed CPUE not identical between models. Choose models with the same CPUE or only a single model.")
-  } else if (length(model_dirs) > 1 && mean(table(obs_cpue_dt$id2) %% uniqueN(obs_cpue_dt$run_id) == 0) != 1 && params$obs) {
-    if (mean(table(obs_cpue_dt$id3) %% uniqueN(obs_cpue_dt$run_id) == 0) != 1) {
-      stop("Observation error is selected to be plotted however it is not identical. Turn off observation error plotting, choose models with the same observation error or choose a single model.")
+  # Check for consistent observations across models (only for shared index-year combinations)
+  if (length(model_dirs) > 1 && !params$obs) {
+    shared_combinations <- obs_cpue_dt[, .N, by = .(index, year)][N > 1]
+    if (nrow(shared_combinations) > 0) {
+      inconsistent <- obs_cpue_dt[shared_combinations, on = .(index, year)][
+        , .(unique_obs = uniqueN(obs)), by = .(index, year)
+      ][unique_obs > 1]
+      if (nrow(inconsistent) > 0) {
+        stop("Observed CPUE not identical between models for shared index-year combinations.")
+      }
     }
   }
   
@@ -232,7 +242,9 @@ generate_index_fit_ppd <- function(model_dirs, params = NULL) {
     ylab("Index") +
     xlab("Year") +
     geom_hline(yintercept = 1, linetype = "dashed") +
-    facet_wrap(~index, ncol = min(c(3, uniqueN(obs_cpue_dt$index))))
+      facet_wrap(~index, 
+           ncol = if(is.null(params$ncol)) min(c(3, uniqueN(plot_dt$name))) else params$ncol,
+           nrow = params$nrow)
   
   if (params$obs) {
     p <- p + geom_segment(data = obs_cpue_dt, aes(x = year, xend = year, y = lower, yend = upper), linewidth = 1.05)
@@ -360,7 +372,9 @@ generate_index_fit_residuals <- function(model_dirs, params = NULL) {
       ylab(ylab_txt) +
       xlab("Year") +
       geom_hline(yintercept = 0) +
-      facet_wrap(~index, ncol = min(c(3, uniqueN(plot_dt$index)))) +
+      facet_wrap(~index, 
+           ncol = if(is.null(params$resid_ncol)) min(c(3, uniqueN(plot_dt$name))) else params$resid_ncol,
+           nrow = params$resid_nrow) +
       geom_segment(aes(x = year, xend = year, y = 0, yend = value, color = run_label, group = group_id), linewidth = 1.05) +
       geom_point(aes(x = year, y = value, fill = run_label, group = group_id), color = "black", shape = 21, size = 3, alpha = 0.5) +
       viridis::scale_color_viridis("Model run", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE, drop = FALSE) +
@@ -373,7 +387,9 @@ generate_index_fit_residuals <- function(model_dirs, params = NULL) {
       xlab("Year") +
       ylim(0, 1) +
       geom_hline(yintercept = 0.5) +
-      facet_wrap(~index, ncol = min(c(3, uniqueN(plot_dt$index)))) +
+      facet_wrap(~index, 
+           ncol = if(is.null(params$resid_ncol)) min(c(3, uniqueN(plot_dt$name))) else params$resid_ncol,
+           nrow = params$resid_nrow) +
       geom_segment(aes(x = year, xend = year, y = 0.5, yend = value, color = run_label, group = group_id), linewidth = 1.05) +
       geom_point(aes(x = year, y = value, fill = run_label, group = group_id), color = "black", shape = 21, size = 3, alpha = 0.5) +
       viridis::scale_color_viridis("Model run", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE, drop = FALSE) +

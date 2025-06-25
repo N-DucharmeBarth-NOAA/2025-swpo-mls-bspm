@@ -24,7 +24,7 @@
     dir_helper_fns = file.path(proj_dir,"code","R","helper-fns")
     dir_plot_fns = file.path(proj_dir,"code","R","plot-fns")
     dir_model_runs = file.path(proj_dir,"data","output","model_runs")
-    dir_plots = file.path(proj_dir,"plots","sens-0006")
+    dir_plots = file.path(proj_dir,"plots","sens-0006-index-v2")
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # source helper functions
@@ -42,7 +42,7 @@
 # configure global settings
     set_global_config(
         year_one = 1952,
-        index_names = c("DWFN CPUE", "DWFN CPUE"),
+        index_names = c("dwfn","au", "nz","obs"),
         model_stem = dir_model_runs,
         height_per_panel = 350
     )
@@ -50,8 +50,10 @@
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # define model directories
     model_list = c(
-        "0005-2024cpueMVPrior_0",
-        "0006-2024cpueEffortQeff_0"
+        "0029-dwfn-c0.2-e0.3-s5_0",
+        "0007-au-c0.2-e0.3-s5_0",
+        "0008-nz-c0.2-e0.3-s5_0",
+        "0009-obs-c0.2-e0.3-s5_0"
     )
     
     model_dirs = file.path(dir_model_runs, model_list)
@@ -89,6 +91,10 @@
     custom_params$fits$type = "Quantile"  # "Median" | "Spaghetti" | "Quantile"
     custom_params$fits$quants = 95  # 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100
     custom_params$fits$resid = "PIT"  # "Ordinary" | "Standardized" | "PIT"
+    custom_params$fits$ncol = 2
+    custom_params$fits$nrow = 2
+    custom_params$fits$resid_ncol = 1
+    custom_params$fits$resid_nrow = 4
 
     # Prior-posterior parameters
     custom_params$ppp$leading_params = c("logK", "r", "sigmao_add", "sigmap", "shape", "sigmaf","qeff","rho","sigma_qdev")  # Any combination
@@ -146,8 +152,8 @@
         height = 10,
         dpi = 300,
         parallel = TRUE,
-        n_cores = 2,
-        comparison_only = FALSE
+        n_cores = 1,
+        comparison_only = TRUE
     )
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
