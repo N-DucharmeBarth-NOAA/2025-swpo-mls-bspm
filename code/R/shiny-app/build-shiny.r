@@ -1,0 +1,462 @@
+# build-shiny.R - Build script for local Shiny deployment
+
+#' Create Symlink with Cross-Platform Support
+#' 
+#' Creates symbolic links (or junctions on Windows) with robust error handling
+#' and fallback to directory copying if symlink creation fails
+#' 
+#' @param target Path to target directory (source)
+#' @param link Path where symlink should be created (destination)
+create_symlink <- function(target, link) {
+  # Ensure target exists
+  if (!dir.exists(target)) {
+    warning("Target directory does not exist: ", target)
+    return(FALSE)
+  }
+  
+  # Remove existing link/directory if it exists
+  if (file.exists(link) || dir.exists(link)) {
+    unlink(link, recursive = TRUE, force = TRUE)
+  }
+  
+  # Ensure parent directory exists
+  dir.create(dirname(link), recursive = TRUE, showWarnings = FALSE)
+  
+  if (.Platform$OS.type == "windows") {
+    # Windows: Try multiple approaches
+    success <- FALSE
+    
+    # Method 1: Try mklink through cmd with full path
+    tryCatch({
+      result <- system2("cmd", 
+                       args = c("/c", "mklink", "/J", shQuote(link), shQuote(target)),
+                       stdout = TRUE, stderr = TRUE)
+      if (attr(result, "status") == 0 || is.null(attr(result, "status"))) {
+        success <- TRUE
+        cat("  ✓ Windows junction created:", basename(link), "\n")
+      }
+    }, error = function(e) {
+      # Continue to next method
+    })
+    
+    # Method 2: Try with Sys.which to find cmd
+    if (!success) {
+      tryCatch({
+        cmd_path <- Sys.which("cmd")
+        if (cmd_path != "") {
+          result <- system2(cmd_path, 
+                           args = c("/c", "mklink", "/J", shQuote(link), shQuote(target)),
+                           stdout = TRUE, stderr = TRUE)
+          if (attr(result, "status") == 0 || is.null(attr(result, "status"))) {
+            success <- TRUE
+            cat("  ✓ Windows junction created:", basename(link), "\n")
+          }
+        }
+      }, error = function(e) {
+        # Continue to fallback
+      })
+    }
+    
+    # Method 3: Try using shell
+    if (!success) {
+      tryCatch({
+        result <- shell(paste("mklink /J", shQuote(link), shQuote(target)), 
+                       intern = TRUE)
+        if (dir.exists(link)) {
+          success <- TRUE
+          cat("  ✓ Windows junction created via shell:", basename(link), "\n")
+        }
+      }, error = function(e) {
+        # Continue to fallback
+      })
+    }
+    
+    # Fallback: Copy directory
+    if (!success) {
+      cat("  ! Symlink creation failed, copying directory instead:", basename(link), "\n")
+      tryCatch({
+        file.copy(target, dirname(link), recursive = TRUE)
+        if (basename(target) != basename(link)) {
+          file.rename(file.path(dirname(link), basename(target)), link)
+        }
+        success <- TRUE
+        cat("  ✓ Directory copied:", basename(link), "\n")
+      }, error = function(e) {
+        warning("Failed to create symlink or copy directory: ", e$message)
+        return(FALSE)
+      })
+    }
+    
+    return(success)
+    
+  } else {
+    # Unix/Linux/Mac: Use standard symlink
+    tryCatch({
+      file.symlink(target, link)
+      cat("  ✓ Symlink created:", basename(link), "\n")
+      return(TRUE)
+    }, error = function(e) {
+      warning("Failed to create symlink: ", e$message)
+      
+      # Fallback: Copy directory
+      cat("  ! Symlink creation failed, copying directory instead:", basename(link), "\n")
+      tryCatch({
+        file.copy(target, dirname(link), recursive = TRUE)
+        if (basename(target) != basename(link)) {
+          file.rename(file.path(dirname(link), basename(target)), link)
+        }
+        cat("  ✓ Directory copied:", basename(link), "\n")
+        return(TRUE)
+      }, error = function(e2) {
+        warning("Failed to copy directory: ", e2$message)
+        return(FALSE)
+      })
+    })
+  }
+}
+
+#' Build Local Shiny Application
+#' 
+#' Creates a self-contained Shiny app directory with all necessary files
+#' for local deployment using your existing plot functions and data
+#' 
+#' @param proj_dir Project root directory (default: current project)
+#' @param shiny_dir Target shiny directory (default: "shiny")
+#' @param force Whether to overwrite existing shiny directory
+build_local_shiny <- function(proj_dir = this.path::this.proj(), 
+                             shiny_dir = "shiny", 
+                             force = FALSE) {
+  
+  library(data.table)
+  library(magrittr)
+  
+  # Setup paths
+  shiny_path <- file.path(proj_dir, shiny_dir)
+  code_dir <- file.path(proj_dir, "code", "R")
+  data_dir <- file.path(proj_dir, "data", "output", "model_runs")
+  
+  # Check if shiny directory exists
+  if (dir.exists(shiny_path) && !force) {
+    stop("Shiny directory already exists. Use force = TRUE to overwrite.")
+  }
+  
+  # Create shiny directory structure
+  if (dir.exists(shiny_path) && force) {
+    unlink(shiny_path, recursive = TRUE)
+  }
+  
+  dir.create(shiny_path, showWarnings = FALSE, recursive = TRUE)
+  dir.create(file.path(shiny_path, "R"), showWarnings = FALSE)
+  dir.create(file.path(shiny_path, "data"), showWarnings = FALSE)
+  
+  cat("Creating Shiny application structure...\n")
+  
+  # Create symlinks to plot functions
+  cat("Creating symlinks to plot functions...\n")
+  if (dir.exists(file.path(code_dir, "plot-fns"))) {
+    create_symlink(normalizePath(file.path(code_dir, "plot-fns")), 
+                   file.path(shiny_path, "R", "plot-fns"))
+  } else {
+    warning("Plot functions directory not found at: ", file.path(code_dir, "plot-fns"))
+  }
+  
+  # Create symlinks to helper functions
+  cat("Creating symlinks to helper functions...\n")
+  if (dir.exists(file.path(code_dir, "helper-fns"))) {
+    create_symlink(normalizePath(file.path(code_dir, "helper-fns")), 
+                   file.path(shiny_path, "R", "helper-fns"))
+  } else {
+    warning("Helper functions directory not found at: ", file.path(code_dir, "helper-fns"))
+  }
+  
+  # Create symlink to model outputs (local deployment)
+  cat("Creating data symlinks...\n")
+  if (dir.exists(data_dir)) {
+    create_symlink(normalizePath(data_dir), 
+                   file.path(shiny_path, "data", "model_runs"))
+  } else {
+    warning("Model runs directory not found at: ", data_dir)
+  }
+  
+  # Generate summary data for the app
+  cat("Generating summary data...\n")
+  create_summary_data(proj_dir, shiny_path)
+  
+  cat("Shiny application built successfully at:", shiny_path, "\n")
+  cat("To run the app, navigate to the shiny directory and run app.R\n")
+  
+  return(invisible(shiny_path))
+}
+
+#' Parse Run Number Components with Robust Pattern Matching
+#' 
+#' Extracts model configuration components from run_number using multiple
+#' parsing strategies to handle different naming conventions
+#' 
+#' @param run_number Character string containing the run identifier
+#' @return List with extracted components and parsing method used
+parse_run_components <- function(run_number) {
+  # Initialize result with defaults
+  result <- list(
+    run_num = NA_character_,
+    cpue_index = NA_character_,
+    sigma_catch = NA_real_,
+    sigma_edev = NA_real_,
+    n_step = NA_integer_,
+    parsing_method = "unknown"
+  )
+  
+  # Extract run number (always first numeric part)
+  run_match <- regexpr("^([0-9]+)", run_number)
+  if (run_match > 0) {
+    result$run_num <- regmatches(run_number, run_match)
+  }
+  
+  # Extract everything after first dash as the stem
+  stem_match <- regexpr("^[0-9]+-(.*)$", run_number)
+  if (stem_match < 0) return(result)
+  
+  stem <- sub("^[0-9]+-", "", run_number)
+  
+  # Strategy 1: Modern systematic pattern (cpue-c{val}-e{val}-s{val})
+  systematic_pattern <- "^([^-]+)-c([0-9.]+)-e([0-9.]+)-s([0-9]+)"
+  if (grepl(systematic_pattern, stem)) {
+    matches <- regmatches(stem, regexec(systematic_pattern, stem))[[1]]
+    if (length(matches) == 5) {
+      result$cpue_index <- matches[2]
+      result$sigma_catch <- as.numeric(matches[3])
+      result$sigma_edev <- as.numeric(matches[4])
+      result$n_step <- as.integer(matches[5])
+      result$parsing_method <- "systematic"
+      return(result)
+    }
+  }
+  
+  # Strategy 2: Legacy prior pattern (e.g., "2024cpueFPrior_0")
+  prior_pattern <- "^([0-9]+)cpue([A-Za-z]+)Prior"
+  if (grepl(prior_pattern, stem)) {
+    matches <- regmatches(stem, regexec(prior_pattern, stem))[[1]]
+    if (length(matches) == 3) {
+      result$cpue_index <- tolower(matches[3])  # Convert to lowercase for consistency
+      result$parsing_method <- "legacy_prior"
+      return(result)
+    }
+  }
+  
+  # Strategy 3: Effort pattern (e.g., "2024cpueEffortQeff_0")
+  effort_pattern <- "^([0-9]+)cpue([A-Za-z]+)([A-Za-z]+)"
+  if (grepl(effort_pattern, stem)) {
+    matches <- regmatches(stem, regexec(effort_pattern, stem))[[1]]
+    if (length(matches) == 4) {
+      result$cpue_index <- tolower(matches[3])
+      result$parsing_method <- "legacy_effort"
+      return(result)
+    }
+  }
+  
+  # Strategy 4: Fallback - extract any recognizable components
+  # Look for individual patterns anywhere in the string
+  
+  # Extract cpue index if it's a known value
+  known_indices <- c("au", "nz", "obs", "dwfn", "effort")
+  for (idx in known_indices) {
+    if (grepl(paste0("\\b", idx, "\\b"), stem, ignore.case = TRUE)) {
+      result$cpue_index <- idx
+      break
+    }
+  }
+  
+  # Extract catch error if present
+  catch_match <- regexpr("c([0-9.]+)", stem)
+  if (catch_match > 0) {
+    result$sigma_catch <- as.numeric(sub("c([0-9.]+).*", "\\1", 
+                                       regmatches(stem, catch_match)))
+  }
+  
+  # Extract effort dev if present
+  edev_match <- regexpr("e([0-9.]+)", stem)
+  if (edev_match > 0) {
+    result$sigma_edev <- as.numeric(sub("e([0-9.]+).*", "\\1", 
+                                      regmatches(stem, edev_match)))
+  }
+  
+  # Extract step size if present
+  step_match <- regexpr("s([0-9]+)", stem)
+  if (step_match > 0) {
+    result$n_step <- as.integer(sub("s([0-9]+).*", "\\1", 
+                                  regmatches(stem, step_match)))
+  }
+  
+  result$parsing_method <- "fallback"
+  return(result)
+}
+
+#' Create Summary Data for Shiny App with Enhanced Parsing
+#' 
+#' Generates a summary CSV file from all model runs for the model selection interface
+#' with robust parsing of run components and comprehensive error handling
+#' 
+#' @param proj_dir Project root directory
+#' @param shiny_path Target shiny application directory
+create_summary_data <- function(proj_dir, shiny_path) {
+  
+  # Path to model runs
+  model_runs_path <- file.path(proj_dir, "data", "output", "model_runs")
+  
+  if (!dir.exists(model_runs_path)) {
+    warning("Model runs directory not found. Creating empty summary.")
+    summary_dt <- data.table(model_id = character(0))
+    fwrite(summary_dt, file.path(shiny_path, "data", "summary_dt.csv"))
+    return(invisible())
+  }
+  
+  # Use proven directory discovery logic from 06-script
+  all_dirs <- list.files(model_runs_path, recursive = TRUE)
+  all_dirs <- all_dirs[grep("fit_summary.csv", all_dirs, fixed = TRUE)]
+  all_dirs <- gsub("fit_summary.csv", "", all_dirs, fixed = TRUE)
+  if (length(grep("-ppc", all_dirs, fixed = TRUE)) > 0) {
+    all_dirs <- all_dirs[-grep("-ppc", all_dirs, fixed = TRUE)]
+  }
+  
+  if (length(all_dirs) == 0) {
+    warning("No valid model directories found. Creating empty summary.")
+    summary_dt <- data.table(model_id = character(0))
+    fwrite(summary_dt, file.path(shiny_path, "data", "summary_dt.csv"))
+    return(invisible())
+  }
+  
+  # Read and combine summaries with robust parsing
+  summary_df.list <- lapply(all_dirs, function(x) {
+    dt <- fread(file.path(model_runs_path, x, "fit_summary.csv"))
+    dt[, model_id := run_id]  # Use run_id as model_id
+    
+    # Parse run components for each row
+    parsed_components <- lapply(dt$run_number, parse_run_components)
+    
+    # Convert to data.table and bind
+    components_dt <- rbindlist(parsed_components, fill = TRUE)
+    dt <- cbind(dt, components_dt)
+    
+    return(dt)
+  })
+  
+  # Combine all summaries and filter
+  summary_dt <- rbindlist(summary_df.list, fill = TRUE) %>%
+    .[run_retro == 0]
+  
+  # Log parsing success/failure rates for monitoring
+  if ("parsing_method" %in% colnames(summary_dt)) {
+    parsing_summary <- summary_dt[, .N, by = parsing_method]
+    cat("Parsing methods used:\n")
+    print(parsing_summary)
+    
+    failed_parsing <- summary_dt[parsing_method == "unknown", run_number]
+    if (length(failed_parsing) > 0) {
+      cat("Failed to parse:", paste(failed_parsing, collapse = ", "), "\n")
+    }
+  }
+  
+  # Select columns with parsed components first
+  select_cols <- c("model_id", "run_id", "exec", "run_number", "run_num", 
+                   "cpue_index", "sigma_catch", "sigma_edev", "n_step", "parsing_method",
+                   "n_par", "low_bfmi", "divergent", "treedepth", 
+                   "max_rhat", "min_neff", "median_catch_rmse", 
+                   "index_rmse_1", "index_rmse_2", "index_rmse_3", "index_rmse_4")
+  
+  # Only select columns that actually exist (handles missing parsed columns gracefully)
+  available_cols <- intersect(select_cols, colnames(summary_dt))
+  summary_dt <- summary_dt[, .SD, .SDcols = available_cols]
+  
+  # Write summary to shiny data directory
+  fwrite(summary_dt, file.path(shiny_path, "data", "summary_dt.csv"))
+  
+  cat("Summary data created with", nrow(summary_dt), "rows from", length(all_dirs), "models\n")
+  cat("Available columns:", paste(available_cols, collapse = ", "), "\n")
+}
+
+#' Validate Shiny Directory Structure
+#' 
+#' Checks that all required files are present for the Shiny app to run
+validate_shiny_structure <- function(shiny_path) {
+  
+  required_files <- c(
+    "app.R",
+    "ui.R", 
+    "server.R",
+    "global.R",
+    "introduction.md",
+    "data/summary_dt.csv"
+  )
+  
+  required_dirs <- c(
+    "R",
+    "data",
+    "data/model_runs"
+  )
+  
+  missing_files <- character(0)
+  missing_dirs <- character(0)
+  
+  # Check files
+  for (file in required_files) {
+    if (!file.exists(file.path(shiny_path, file))) {
+      missing_files <- c(missing_files, file)
+    }
+  }
+  
+  # Check directories
+  for (dir in required_dirs) {
+    if (!dir.exists(file.path(shiny_path, dir))) {
+      missing_dirs <- c(missing_dirs, dir)
+    }
+  }
+  
+  if (length(missing_files) > 0) {
+    cat("Missing files:\n")
+    cat(paste(" -", missing_files, collapse = "\n"), "\n")
+  }
+  
+  if (length(missing_dirs) > 0) {
+    cat("Missing directories:\n")
+    cat(paste(" -", missing_dirs, collapse = "\n"), "\n")
+  }
+  
+  if (length(missing_files) == 0 && length(missing_dirs) == 0) {
+    cat("✓ All required files and directories present\n")
+    return(TRUE)
+  } else {
+    cat("✗ Missing required files or directories\n")
+    return(FALSE)
+  }
+}
+
+#' Run Build Process
+#' 
+#' Convenience function to build and validate the Shiny app
+build_and_validate <- function(proj_dir = this.path::this.proj(), force = FALSE) {
+  
+  # Build the app
+  shiny_path <- build_local_shiny(proj_dir, force = force)
+  
+  # Validate structure
+  cat("\nValidating Shiny app structure...\n")
+  is_valid <- validate_shiny_structure(shiny_path)
+  
+  if (is_valid) {
+    cat("\n✓ Shiny app ready to run!\n")
+    cat("To start the app:\n")
+    cat("1. Navigate to:", shiny_path, "\n")
+    cat("2. Run: source('app.R') or click 'Run App' in RStudio\n")
+  } else {
+    cat("\n✗ Shiny app setup incomplete. Please check missing files.\n")
+  }
+  
+  return(invisible(shiny_path))
+}
+
+# Example usage:
+# build_and_validate()
+# 
+# Or step by step:
+# build_local_shiny()
+# validate_shiny_structure("shiny")
