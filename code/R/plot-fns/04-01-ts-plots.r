@@ -114,14 +114,19 @@ generate_ppts <- function(model_dirs, params = NULL) {
     .[row < 1, year := year_one + (row - 1)] %>%
     .[name %in% c("Process error", "Process error (raw)") & row > 0, year := year + 1]
   
+  # Define plot dims
+  facet_variable = uniqueN(plot_dt$name)
+  plot_ncol = if(is.null(params$ncol)) min(c(3, facet_variable)) else params$ncol
+  plot_nrow = ceiling(facet_variable/plot_ncol)
+  
   # Create plot
   p <- plot_dt %>%
     ggplot() +
     ylab("Metric") +
     xlab("Year") +
     facet_wrap(~name, scales = "free_y", 
-           ncol = if(is.null(params$ncol)) min(c(4, uniqueN(plot_dt$name))) else params$ncol,
-           nrow = params$nrow)
+           ncol = plot_ncol,
+           nrow = plot_nrow)
   
   if (params$show == "Prior" || params$show == "Both") {
     p <- p + geom_ribbon(data = plot_dt[type == "Prior"], 

@@ -71,9 +71,7 @@ server <- function(input, output, session) {
         quants = as.numeric(input$index_fit.quants %||% 95),
         resid = input$index_fit.resid %||% "PIT",
         ncol = as.numeric(input$index_fit.ncol %||% 2),
-        nrow = as.numeric(input$index_fit.nrow %||% 2),
-        resid_ncol = as.numeric(input$index_fit.resid_ncol %||% 1),
-        resid_nrow = as.numeric(input$index_fit.resid_nrow %||% 4)
+        resid_ncol = as.numeric(input$index_fit.resid_ncol %||% 1)
       )
     })
 

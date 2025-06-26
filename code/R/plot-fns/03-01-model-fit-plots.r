@@ -109,6 +109,11 @@ generate_index_fit <- function(model_dirs, params = NULL) {
   if (nrow(plot_dt) == 0 || nrow(obs_cpue_dt) == 0 || nrow(pred_cpue_dt) == 0) {
     stop("No data available for plotting")
   }
+
+  # Define plot dims
+  facet_variable = uniqueN(pred_cpue_dt$index)
+  plot_ncol = if(is.null(params$ncol)) min(c(3, facet_variable)) else params$ncol
+  plot_nrow = ceiling(facet_variable/plot_ncol)
   
   # Create plot
   p <- pred_cpue_dt %>%
@@ -117,8 +122,8 @@ generate_index_fit <- function(model_dirs, params = NULL) {
     xlab("Year") +
     geom_hline(yintercept = 1, linetype = "dashed") +
       facet_wrap(~index, 
-           ncol = if(is.null(params$ncol)) min(c(3, uniqueN(plot_dt$name))) else params$ncol,
-           nrow = params$nrow)
+           ncol = plot_ncol,
+           nrow = plot_nrow)
   
   # Add observation error bars if requested
   if (params$obs) {
@@ -235,6 +240,11 @@ generate_index_fit_ppd <- function(model_dirs, params = NULL) {
   if (nrow(plot_dt) == 0 || nrow(obs_cpue_dt) == 0 || nrow(pred_cpue_dt) == 0) {
     stop("No data available for plotting")
   }
+
+  # Define plot dims
+  facet_variable = uniqueN(pred_cpue_dt$index)
+  plot_ncol = if(is.null(params$ncol)) min(c(3, facet_variable)) else params$ncol
+  plot_nrow = ceiling(facet_variable/plot_ncol)
   
   # Create plot (same structure as index_fit)
   p <- pred_cpue_dt %>%
@@ -243,8 +253,8 @@ generate_index_fit_ppd <- function(model_dirs, params = NULL) {
     xlab("Year") +
     geom_hline(yintercept = 1, linetype = "dashed") +
       facet_wrap(~index, 
-           ncol = if(is.null(params$ncol)) min(c(3, uniqueN(plot_dt$name))) else params$ncol,
-           nrow = params$nrow)
+           ncol = plot_ncol,
+           nrow = plot_nrow)
   
   if (params$obs) {
     p <- p + geom_segment(data = obs_cpue_dt, aes(x = year, xend = year, y = lower, yend = upper), linewidth = 1.05)
@@ -364,6 +374,11 @@ generate_index_fit_residuals <- function(model_dirs, params = NULL) {
   } else {
     runs_dt <- NULL
   }
+
+  # Define plot dims
+  facet_variable = uniqueN(plot_dt$index)
+  plot_ncol = if(is.null(params$resid_ncol)) min(c(3, facet_variable)) else params$resid_ncol
+  plot_nrow = ceiling(facet_variable/plot_ncol)
   
   # Create residual plot
   if (params$resid != "PIT") {
@@ -373,8 +388,8 @@ generate_index_fit_residuals <- function(model_dirs, params = NULL) {
       xlab("Year") +
       geom_hline(yintercept = 0) +
       facet_wrap(~index, 
-           ncol = if(is.null(params$resid_ncol)) min(c(3, uniqueN(plot_dt$name))) else params$resid_ncol,
-           nrow = params$resid_nrow) +
+           ncol = plot_ncol,
+           nrow = plot_nrow) +
       geom_segment(aes(x = year, xend = year, y = 0, yend = value, color = run_label, group = group_id), linewidth = 1.05) +
       geom_point(aes(x = year, y = value, fill = run_label, group = group_id), color = "black", shape = 21, size = 3, alpha = 0.5) +
       viridis::scale_color_viridis("Model run", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE, drop = FALSE) +
@@ -388,8 +403,8 @@ generate_index_fit_residuals <- function(model_dirs, params = NULL) {
       ylim(0, 1) +
       geom_hline(yintercept = 0.5) +
       facet_wrap(~index, 
-           ncol = if(is.null(params$resid_ncol)) min(c(3, uniqueN(plot_dt$name))) else params$resid_ncol,
-           nrow = params$resid_nrow) +
+           ncol = plot_ncol,
+           nrow = plot_nrow) +
       geom_segment(aes(x = year, xend = year, y = 0.5, yend = value, color = run_label, group = group_id), linewidth = 1.05) +
       geom_point(aes(x = year, y = value, fill = run_label, group = group_id), color = "black", shape = 21, size = 3, alpha = 0.5) +
       viridis::scale_color_viridis("Model run", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE, drop = FALSE) +
@@ -476,6 +491,11 @@ generate_ppp <- function(model_dirs, params = NULL) {
   if (nrow(plot_dt) == 0) {
     stop("No data available for plotting")
   }
+
+  # Define plot dims
+  facet_variable = uniqueN(plot_dt$name)
+  plot_ncol = if(is.null(params$ncol)) min(c(3, facet_variable)) else params$ncol
+  plot_nrow = ceiling(facet_variable/plot_ncol)
   
   # Create plot
   p <- plot_dt %>%
@@ -483,8 +503,8 @@ generate_ppp <- function(model_dirs, params = NULL) {
     ylab("Density") +
     xlab("Parameter") +
     facet_wrap(~name, scales = "free_x", 
-           ncol = if(is.null(params$ncol)) min(c(3, uniqueN(plot_dt$name))) else params$ncol,
-           nrow = params$nrow)
+           ncol = plot_ncol,
+           nrow = plot_nrow)
   
   if (params$show == "Prior" || params$show == "Both") {
     p <- p + geom_density(data = plot_dt[variable == "Prior"], 

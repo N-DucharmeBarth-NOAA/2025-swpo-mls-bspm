@@ -43,18 +43,15 @@ get_default_params <- function() {
       type = "Median",
       quants = 95,
       resid = "PIT",
-      ncol = NULL,  # NEW: auto-calculate if NULL
-      nrow = NULL,   # NEW: auto-calculate if NULL
-      resid_ncol = NULL,  # NEW: auto-calculate if NULL
-      resid_nrow = NULL   # NEW: auto-calculate if NULL
+      ncol = NULL,  
+      resid_ncol = NULL
     ),
     ppp = list(
       leading_params = c("logK","x0","r"),
       raw = TRUE,
       show = "Both",
       combine = FALSE,
-      ncol = NULL,  # NEW: auto-calculate if NULL
-      nrow = NULL   # NEW: auto-calculate if NULL
+      ncol = NULL
     ),
     ppts = list(
       var = c("Depletion (D)","F_Fmsy","Removals","Process error (mult.)"),
@@ -62,8 +59,7 @@ get_default_params <- function() {
       combine = FALSE,
       prop = 0.25,
       quants = 95,
-      ncol = NULL,  # NEW: auto-calculate if NULL
-      nrow = NULL   # NEW: auto-calculate if NULL
+      ncol = NULL
     ),
     kbmj = list(
       show = "Both",
@@ -83,8 +79,7 @@ get_default_params <- function() {
       type = "Catch",
       avg_year = 3,
       scalar = 1,
-      ncol = NULL,  # NEW: auto-calculate if NULL
-      nrow = NULL   # NEW: auto-calculate if NULL
+      ncol = NULL
     )
   )
 }

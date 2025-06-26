@@ -216,25 +216,9 @@ ui = dashboardPage(
         step = 1
       ),
       numericInput(
-        inputId = "index_fit.nrow",
-        label = "Plot rows",
-        value = 2,
-        min = 1,
-        max = 6,
-        step = 1
-      ),
-      numericInput(
         inputId = "index_fit.resid_ncol",
         label = "Residual plot columns",
         value = 1,
-        min = 1,
-        max = 6,
-        step = 1
-      ),
-      numericInput(
-        inputId = "index_fit.resid_nrow",
-        label = "Residual plot rows",
-        value = 4,
         min = 1,
         max = 6,
         step = 1
