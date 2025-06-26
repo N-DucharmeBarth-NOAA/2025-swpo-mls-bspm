@@ -106,6 +106,17 @@ server <- function(input, output, session) {
       )
     })
 
+    get_kbmj_params <- reactive({
+      list(
+        show = input$kbmj.show %||% "Both",
+        combine = input$kbmj.combine %||% FALSE,
+        prop = as.numeric(input$kbmj.prop %||% 0.25),
+        uncertainty = input$kbmj.uncertainty %||% TRUE,
+        quants = as.numeric(input$kbmj.quants %||% 95),
+        resolution = as.numeric(input$kbmj.resolution %||% 300)
+      )
+    })
+
   # Generic plot renderer - handles all common plotting logic
   render_plot <- function(plot_func, params_func = NULL, single_only = FALSE, 
                          default_params = NULL, output_name = "Plot") {
@@ -283,5 +294,17 @@ server <- function(input, output, session) {
   
   output$plots_ppts <- render_plot(
     generate_ppts, get_ppts_params, output_name = "Prior-posterior time series"
+  )
+
+  # =============================================================================
+  # KOBE & MAJURO PLOTS
+  # =============================================================================
+  
+  output$plots_kobe <- render_plot(
+    generate_kb, get_kbmj_params, output_name = "Kobe plot"
+  )
+  
+  output$plots_majuro <- render_plot(
+    generate_mj, get_kbmj_params, output_name = "Majuro plot"
   )
 }

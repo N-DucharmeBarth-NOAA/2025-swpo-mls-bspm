@@ -101,6 +101,9 @@ generate_kb <- function(model_dirs, params = NULL) {
   if (nrow(plot_dt) == 0) {
     stop("No data available for plotting")
   }
+
+  # exclude NAs (usually only in the terminal year)
+  plot_dt =  plot_dt[!is.na(value)]
   
   # Generate uncertainty contours if requested
   contour_dt <- NULL

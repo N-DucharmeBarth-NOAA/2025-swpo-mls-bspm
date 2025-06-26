@@ -47,7 +47,7 @@ if(exists("set_global_config")) {
   set_global_config(
     year_one = 1952,  # Adjust based on your data
     index_names = c("dwfn","au","nz","obs"),  # Adjust based on your indices
-    model_stem = model_stem,
+    model_stem = file.path("data","output","model_runs"),
     height_per_panel = 350
   )
 }

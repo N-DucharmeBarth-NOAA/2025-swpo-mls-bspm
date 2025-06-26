@@ -36,6 +36,7 @@ ui = dashboardPage(
       menuItem("Model fits: Catch", tabName = "plots_catch_fit"),
       menuItem("Pr. & Post: Params", tabName = "plots_ppp"),
       menuItem("Pr. & Post: Timeseries", tabName = "plots_ppts"),
+      menuItem("Kobe & Majuro", tabName = "plots_kbmj"),
       selected = "introduction"
     ),
 
@@ -125,6 +126,55 @@ ui = dashboardPage(
         min = 1,
         max = 6,
         step = 1
+      )
+    ),
+
+    # Kobe & Majuro Controls
+    conditionalPanel(condition = "input.sidebarmenu == 'plots_kbmj'",
+      radioButtons(
+        inputId = "kbmj.show",
+        label = "Show distributions", 
+        choices = c("Prior", "Posterior", "Both"),
+        selected = "Both"
+      ),
+      switchInput(
+        inputId = "kbmj.combine",  
+        label = "Combine models?",
+        value = FALSE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      sliderTextInput(
+        inputId = "kbmj.prop",  
+        label = "Sub-sample proportion",
+        choices = c(0.01, seq(from = 0.05, to = 1, by = 0.05)),
+        selected = "0.25",
+        grid = TRUE
+      ),
+      switchInput(
+        inputId = "kbmj.uncertainty",  
+        label = "Show uncertainty contours?",
+        value = TRUE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      sliderTextInput(
+        inputId = "kbmj.quants",  
+        label = "Quantiles (%)",
+        choices = c(1, 5, seq(from = 10, to = 100, by = 5)),
+        selected = "95",
+        grid = TRUE
+      ),
+      sliderTextInput(
+        inputId = "kbmj.resolution",  
+        label = "Contour resolution",
+        choices = seq(from = 50, to = 500, by = 25),
+        selected = "300",
+        grid = TRUE
       )
     ),
 
@@ -468,7 +518,16 @@ ui = dashboardPage(
         fluidRow(
           plot_box("Time series prior-posterior comparison", "plots_ppts", collapsed = FALSE, help_text = "Compare prior and posterior distributions for time series variables.")
         )
-      ) # End of plots_ppts tab
+      ), # End of plots_ppts tab
+
+      # Kobe & Majuro Tab
+      tabItem(tabName = "plots_kbmj", 
+        h2("Kobe & Majuro Plots"),
+        fluidRow(
+          plot_box("Kobe plot", "plots_kobe", collapsed = FALSE, help_text = "Kobe plot: P/P_MSY vs F/F_MSY for stock status assessment."),
+          plot_box("Majuro plot", "plots_majuro", help_text = "Majuro plot: Depletion vs F/F_MSY for alternative stock status visualization.")
+        )
+      ) # End of plots_kbmj tab
 
     ) # End of tabItems
   ) # End of dashboardBody
