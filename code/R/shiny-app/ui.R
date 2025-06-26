@@ -8,6 +8,19 @@ css <- htmltools::HTML(
     }"
 )
 
+# Wrapper function for plot boxes to reduce repetition
+plot_box <- function(title, plot_output_id, collapsed = TRUE, help_text = "Select only one model.") {
+  box(title = title, 
+      solidHeader = TRUE, 
+      collapsible = TRUE, 
+      collapsed = collapsed, 
+      status = "primary", 
+      width = 12,
+      p(help_text),
+      plotOutput(plot_output_id, height = "auto")
+  )
+}
+
 ui = dashboardPage(
   header = dashboardHeader(title="BSPM Model Analysis"),
   sidebar = dashboardSidebar(
@@ -17,7 +30,8 @@ ui = dashboardPage(
       menuItem("Introduction", tabName="introduction"),
       menuItem("Summary table", tabName="table"),
       menuItem("Bayesian diags: Convergence", tabName="plots_hmc"),
-      menuItem("Bayesian diags: PPC", tabName = "plots_ppc_index"),
+      menuItem("Bayesian diags: PPC Index", tabName = "plots_ppc_index"),
+      menuItem("Bayesian diags: PPC Catch", tabName = "plots_ppc_catch"),
       selected = "introduction"
     ),
     # Only show these on the plotting tabs - not Introduction and Summary table tabs
@@ -68,7 +82,7 @@ ui = dashboardPage(
       )
     ),
 
-    # PPC Controls
+    # PPC Index Controls
     conditionalPanel(condition = "input.sidebarmenu == 'plots_ppc_index'",
       selectInput(
         inputId = "ppc_index.scheme",
@@ -116,6 +130,36 @@ ui = dashboardPage(
       )
     ),
 
+    # PPC Catch Controls
+    conditionalPanel(condition = "input.sidebarmenu == 'plots_ppc_catch'",
+      selectInput(
+        inputId = "ppc_catch.scheme",
+        label = "Select bayesplot color scheme", 
+        choices = c("blue", "brightblue", "gray", "darkgray", "green", "pink", "purple", "red", "teal", "yellow", "viridis", "viridisA", "viridisB", "viridisC", "viridisD", "viridisE"),
+        selected = "brightblue",
+        multiple = FALSE
+      ),
+      sliderTextInput(
+        inputId = "ppc_catch.prop",  
+        label = "Sub-sample proportion",
+        choices = c(0.01, seq(from = 0.05, to = 1, by = 0.05)),
+        selected = "0.25",
+        grid = TRUE
+      ),
+      awesomeCheckboxGroup(
+        inputId = "ppc_catch.stat",
+        label = "PPC statistic\n(choose 1 or 2)", 
+        choices = c("mean", "median", "sd", "mad"),
+        selected = "median"
+      ),
+      radioButtons(
+        inputId = "ppc_catch.qqdist",
+        label = "QQ distribution", 
+        choices = c("uniform", "normal"),
+        selected = "uniform"
+      )
+    ),
+
     br(),
     br(),
     tags$footer(
@@ -156,67 +200,42 @@ ui = dashboardPage(
       # **** Bayesian diagnostics plots ****
       tabItem(tabName="plots_hmc", h2("Bayesian diagnostics: Convergence"),
         fluidRow(
-          box(title = "Parcoord", solidHeader = TRUE, collapsible = TRUE, collapsed = FALSE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_hmc_parcoord", height = "auto")
-          ),
-          box(title = "Pairs", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_hmc_pairs", height = "auto")
-          ),
-          box(title = "Trace", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_hmc_trace", height = "auto")
-          ),
-          box(title = "Rhat", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_hmc_rhat", height = "auto")
-          ),
-          box(title = "Effective sample size", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_hmc_neff", height = "auto")
-          ),
-          box(title = "Autocorrelation plots", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_hmc_acf", height = "auto")
-          )
+          plot_box("Parcoord", "plots_hmc_parcoord", collapsed = FALSE),
+          plot_box("Pairs", "plots_hmc_pairs"),
+          plot_box("Trace", "plots_hmc_trace"),
+          plot_box("Rhat", "plots_hmc_rhat"),
+          plot_box("Effective sample size", "plots_hmc_neff"),
+          plot_box("Autocorrelation plots", "plots_hmc_acf")
         )
       ), # End of plots_hmc tab
 
-      # PPC Tab
+      # PPC Index Tab
       tabItem(tabName = "plots_ppc_index", 
-        h2("Bayesian diagnostics: Posterior Predictive Checking (PPC)"),
+        h2("Bayesian diagnostics: Posterior Predictive Checking (PPC) - Index"),
         fluidRow(
-          box(title = "Density overlay", solidHeader = TRUE, collapsible = TRUE, collapsed = FALSE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_ppc_index_dens", height = "auto")
-          ),
-          box(title = "ECDF", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_ppc_index_ecdf", height = "auto")
-          ),
-          box(title = "ECDF (PIT)", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_ppc_index_pit_ecdf", height = "auto")
-          ),
-          box(title = "Test statistics", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_ppc_index_stat", height = "auto")
-          ),
-          box(title = "LOO-PIT", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_ppc_index_loo_pit", height = "auto")
-          ),
-          box(title = "LOO-PIT QQ", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_ppc_index_loo_qq", height = "auto")
-          ),
-          box(title = "LOO Posterior Predicted Interval", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
-            p("Select only one model."),
-            plotOutput("plots_ppc_index_loo_interval", height = "auto")
-          )
+          plot_box("Density overlay", "plots_ppc_dens", collapsed = FALSE),
+          plot_box("ECDF", "plots_ppc_ecdf"),
+          plot_box("ECDF (PIT)", "plots_ppc_pit_ecdf"),
+          plot_box("Test statistics", "plots_ppc_stat"),
+          plot_box("LOO-PIT", "plots_ppc_loo_pit"),
+          plot_box("LOO-PIT QQ", "plots_ppc_loo_qq"),
+          plot_box("LOO Posterior Predicted Interval", "plots_ppc_loo_interval")
         )
-      ) # End of plots_ppc_index tab
+      ), # End of plots_ppc_index tab
+
+      # PPC Catch Tab
+      tabItem(tabName = "plots_ppc_catch", 
+        h2("Bayesian diagnostics: Posterior Predictive Checking (PPC) - Catch"),
+        fluidRow(
+          plot_box("Density overlay", "plots_ppc_catch_dens", collapsed = FALSE),
+          plot_box("ECDF", "plots_ppc_catch_ecdf"),
+          plot_box("ECDF (PIT)", "plots_ppc_catch_pit_ecdf"),
+          plot_box("Test statistics", "plots_ppc_catch_stat"),
+          plot_box("LOO-PIT", "plots_ppc_catch_loo_pit"),
+          plot_box("LOO-PIT QQ", "plots_ppc_catch_loo_qq"),
+          plot_box("LOO Posterior Predicted Interval", "plots_ppc_catch_loo_interval")
+        )
+      ) # End of plots_ppc_catch tab
 
     ) # End of tabItems
   ) # End of dashboardBody

@@ -55,6 +55,15 @@ server <- function(input, output, session) {
       )
     })
 
+    get_ppc_catch_params <- reactive({
+      list(
+        scheme = input$ppc_catch.scheme %||% "brightblue",
+        prop = as.numeric(input$ppc_catch.prop %||% 0.25),
+        stat = input$ppc_catch.stat %||% "median",
+        qqdist = input$ppc_catch.qqdist %||% "uniform"
+      )
+    })
+
   # Generic plot renderer - handles all common plotting logic
   render_plot <- function(plot_func, params_func = NULL, single_only = FALSE, 
                          default_params = NULL, output_name = "Plot") {
@@ -123,34 +132,66 @@ server <- function(input, output, session) {
   )
 
   # =============================================================================
-  # PPC PLOTS
+  # PPC INDEX PLOTS
   # =============================================================================
   
   output$plots_ppc_dens <- render_plot(
-    generate_ppc_dens, get_ppc_params, single_only = TRUE, output_name = "PPC density overlay"
+    generate_ppc_dens, get_ppc_index_params, single_only = TRUE, output_name = "PPC density overlay"
   )
   
   output$plots_ppc_ecdf <- render_plot(
-    generate_ppc_ecdf, get_ppc_params, single_only = TRUE, output_name = "PPC ECDF"
+    generate_ppc_ecdf, get_ppc_index_params, single_only = TRUE, output_name = "PPC ECDF"
   )
   
   output$plots_ppc_pit_ecdf <- render_plot(
-    generate_ppc_pit_ecdf, get_ppc_params, single_only = TRUE, output_name = "PPC PIT ECDF"
+    generate_ppc_pit_ecdf, get_ppc_index_params, single_only = TRUE, output_name = "PPC PIT ECDF"
   )
   
   output$plots_ppc_stat <- render_plot(
-    generate_ppc_stat, get_ppc_params, single_only = TRUE, output_name = "PPC test statistics"
+    generate_ppc_stat, get_ppc_index_params, single_only = TRUE, output_name = "PPC test statistics"
   )
   
   output$plots_ppc_loo_pit <- render_plot(
-    generate_ppc_loo_pit, get_ppc_params, single_only = TRUE, output_name = "LOO PIT"
+    generate_ppc_loo_pit, get_ppc_index_params, single_only = TRUE, output_name = "LOO PIT"
   )
   
   output$plots_ppc_loo_qq <- render_plot(
-    generate_ppc_loo_qq, get_ppc_params, single_only = TRUE, output_name = "LOO Q-Q"
+    generate_ppc_loo_qq, get_ppc_index_params, single_only = TRUE, output_name = "LOO Q-Q"
   )
   
   output$plots_ppc_loo_interval <- render_plot(
-    generate_ppc_loo_interval, get_ppc_params, single_only = TRUE, output_name = "LOO intervals"
+    generate_ppc_loo_interval, get_ppc_index_params, single_only = TRUE, output_name = "LOO intervals"
+  )
+
+  # =============================================================================
+  # PPC CATCH PLOTS
+  # =============================================================================
+  
+  output$plots_ppc_catch_dens <- render_plot(
+    generate_catch_ppc_dens, get_ppc_catch_params, single_only = TRUE, output_name = "Catch PPC density overlay"
+  )
+  
+  output$plots_ppc_catch_ecdf <- render_plot(
+    generate_catch_ppc_ecdf, get_ppc_catch_params, single_only = TRUE, output_name = "Catch PPC ECDF"
+  )
+  
+  output$plots_ppc_catch_pit_ecdf <- render_plot(
+    generate_catch_ppc_pit_ecdf, get_ppc_catch_params, single_only = TRUE, output_name = "Catch PPC PIT ECDF"
+  )
+  
+  output$plots_ppc_catch_stat <- render_plot(
+    generate_catch_ppc_stat, get_ppc_catch_params, single_only = TRUE, output_name = "Catch PPC test statistics"
+  )
+  
+  output$plots_ppc_catch_loo_pit <- render_plot(
+    generate_catch_ppc_loo_pit, get_ppc_catch_params, single_only = TRUE, output_name = "Catch LOO PIT"
+  )
+  
+  output$plots_ppc_catch_loo_qq <- render_plot(
+    generate_catch_ppc_loo_qq, get_ppc_catch_params, single_only = TRUE, output_name = "Catch LOO Q-Q"
+  )
+  
+  output$plots_ppc_catch_loo_interval <- render_plot(
+    generate_catch_ppc_loo_interval, get_ppc_catch_params, single_only = TRUE, output_name = "Catch LOO intervals"
   )
 }
