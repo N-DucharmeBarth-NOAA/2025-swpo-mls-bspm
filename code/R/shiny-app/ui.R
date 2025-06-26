@@ -32,6 +32,7 @@ ui = dashboardPage(
       menuItem("Bayesian diags: Convergence", tabName="plots_hmc"),
       menuItem("Bayesian diags: PPC Index", tabName = "plots_ppc_index"),
       menuItem("Bayesian diags: PPC Catch", tabName = "plots_ppc_catch"),
+      menuItem("Model fits: Index", tabName = "plots_index_fit"),
       selected = "introduction"
     ),
     # Only show these on the plotting tabs - not Introduction and Summary table tabs
@@ -160,6 +161,86 @@ ui = dashboardPage(
       )
     ),
 
+    # Index Fit Controls
+    conditionalPanel(condition = "input.sidebarmenu == 'plots_index_fit'",
+      sliderTextInput(
+        inputId = "index_fit.prop",  
+        label = "Sub-sample proportion",
+        choices = c(0.01, seq(from = 0.05, to = 1, by = 0.05)),
+        selected = "0.25",
+        grid = TRUE
+      ),
+      switchInput(
+        inputId = "index_fit.active",  
+        label = "Only fitted indices?",
+        value = TRUE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      switchInput(
+        inputId = "index_fit.obs",  
+        label = "Show observation error?",
+        value = TRUE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      radioButtons(
+        inputId = "index_fit.type",
+        label = "Plot type", 
+        choices = c("Median", "Spaghetti", "Quantile"),
+        selected = "Median"
+      ),
+      sliderTextInput(
+        inputId = "index_fit.quants",  
+        label = "Quantiles (%)",
+        choices = c(1, 5, seq(from = 10, to = 100, by = 5)),
+        selected = "95",
+        grid = TRUE
+      ),
+      radioButtons(
+        inputId = "index_fit.resid",
+        label = "Residual type", 
+        choices = c("Ordinary", "Standardized", "PIT"),
+        selected = "PIT"
+      ),
+      numericInput(
+        inputId = "index_fit.ncol",
+        label = "Plot columns",
+        value = 2,
+        min = 1,
+        max = 6,
+        step = 1
+      ),
+      numericInput(
+        inputId = "index_fit.nrow",
+        label = "Plot rows",
+        value = 2,
+        min = 1,
+        max = 6,
+        step = 1
+      ),
+      numericInput(
+        inputId = "index_fit.resid_ncol",
+        label = "Residual plot columns",
+        value = 1,
+        min = 1,
+        max = 6,
+        step = 1
+      ),
+      numericInput(
+        inputId = "index_fit.resid_nrow",
+        label = "Residual plot rows",
+        value = 4,
+        min = 1,
+        max = 6,
+        step = 1
+      )
+    ),
+
     br(),
     br(),
     tags$footer(
@@ -235,7 +316,17 @@ ui = dashboardPage(
           plot_box("LOO-PIT QQ", "plots_ppc_catch_loo_qq"),
           plot_box("LOO Posterior Predicted Interval", "plots_ppc_catch_loo_interval")
         )
-      ) # End of plots_ppc_catch tab
+      ), # End of plots_ppc_catch tab
+
+      # Index Fit Tab
+      tabItem(tabName = "plots_index_fit", 
+        h2("Model Fits: Index Fit Analysis"),
+        fluidRow(
+          plot_box("Index fit", "plots_index_fit", collapsed = FALSE),
+          plot_box("Index fit with PPD", "plots_index_fit_ppd"),
+          plot_box("Index fit residuals", "plots_index_fit_residuals")
+        )
+      ) # End of plots_index_fit tab
 
     ) # End of tabItems
   ) # End of dashboardBody

@@ -1,5 +1,3 @@
-# Minimal Server - Test basic reactivity with one plot
-
 server <- function(input, output, session) {
 
   # Helper function for null operator
@@ -61,6 +59,21 @@ server <- function(input, output, session) {
         prop = as.numeric(input$ppc_catch.prop %||% 0.25),
         stat = input$ppc_catch.stat %||% "median",
         qqdist = input$ppc_catch.qqdist %||% "uniform"
+      )
+    })
+
+    get_index_fit_params <- reactive({
+      list(
+        prop = as.numeric(input$index_fit.prop %||% 0.25),
+        active = input$index_fit.active %||% TRUE,
+        obs = input$index_fit.obs %||% TRUE,
+        type = input$index_fit.type %||% "Median",
+        quants = as.numeric(input$index_fit.quants %||% 95),
+        resid = input$index_fit.resid %||% "PIT",
+        ncol = as.numeric(input$index_fit.ncol %||% 2),
+        nrow = as.numeric(input$index_fit.nrow %||% 2),
+        resid_ncol = as.numeric(input$index_fit.resid_ncol %||% 1),
+        resid_nrow = as.numeric(input$index_fit.resid_nrow %||% 4)
       )
     })
 
@@ -193,5 +206,21 @@ server <- function(input, output, session) {
   
   output$plots_ppc_catch_loo_interval <- render_plot(
     generate_catch_ppc_loo_interval, get_ppc_catch_params, single_only = TRUE, output_name = "Catch LOO intervals"
+  )
+
+  # =============================================================================
+  # INDEX FIT PLOTS
+  # =============================================================================
+  
+  output$plots_index_fit <- render_plot(
+    generate_index_fit, get_index_fit_params, output_name = "Index fit"
+  )
+  
+  output$plots_index_fit_ppd <- render_plot(
+    generate_index_fit_ppd, get_index_fit_params, output_name = "Index fit with PPD"
+  )
+  
+  output$plots_index_fit_residuals <- render_plot(
+    generate_index_fit_residuals, get_index_fit_params, output_name = "Index fit residuals"
   )
 }
