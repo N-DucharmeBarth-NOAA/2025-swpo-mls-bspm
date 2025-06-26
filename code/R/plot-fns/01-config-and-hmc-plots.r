@@ -142,9 +142,19 @@ load_model_data <- function(model_dir) {
 # Parameter mapping
 get_parameter_map <- function() {
   map <- cbind(
-    c("logK","x0","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","sigmaf","ll_q","lp__"),
-    c("logK","x0","r","sigmao_add","sigmap","n","qeff","rho","sigma_qdev","sigmaf","ll_q","lp__"),
-    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_logqeff","raw_rho","raw_sigma_qdev","raw_sigmaf","raw_logll_q","lp__")
+    c("logK","x0","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","sigmaf","lp__"),
+    c("logK","x0","r","sigmao_add","sigmap","n","qeff","rho","sigma_qdev","sigmaf","lp__"),
+    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_logqeff","raw_rho","raw_sigma_qdev","raw_sigmaf","lp__")
+  )
+  colnames(map) <- c("input","transformed","raw")
+  return(map)
+}
+
+get_parameter_map_extended <- function() {
+  map <- cbind(
+    c("logK","x0","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","sigmaf","epsp","qdev_period","edev","lp__"),
+    c("logK","x0","r","sigmao_add","sigmap","n","qeff","rho","sigma_qdev","sigmaf","epsp","qdev_period","edev","lp__"),
+    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_logqeff","raw_rho","raw_sigma_qdev","raw_sigmaf","raw_epsp","raw_qdev_period","raw_edev","lp__")
   )
   colnames(map) <- c("input","transformed","raw")
   return(map)
@@ -404,19 +414,12 @@ generate_hmc_rhat <- function(model_dir, params = NULL) {
     stop("R-hat data not available. Ensure rhat.csv exists in the model directory.")
   }
   
-  parameter_map <- get_parameter_map()
-  
   # Handle eps parameter
   if (params$eps) {
-    parameter_map_extended <- cbind(
-      c("logK","x0","r","sigmao_add","sigmap","shape","sigmaf","ll_q","epsp","lp__"),
-      c("logK","x0","r","sigmao_add","sigmap","n","sigmaf","ll_q","epsp","lp__"),
-      c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_sigmaf","raw_logll_q","raw_epsp","lp__")
-    )
-    colnames(parameter_map_extended) <- c("input","transformed","raw")
+    parameter_map <- get_parameter_map_extended()
     target_par <- c(params$leading_params, "epsp")
-    parameter_map <- parameter_map_extended
   } else {
+    parameter_map <- get_parameter_map()
     target_par <- params$leading_params
   }
   
@@ -472,19 +475,12 @@ generate_hmc_neff <- function(model_dir, params = NULL) {
     stop("N_eff data not available. Ensure neff.csv exists in the model directory.")
   }
   
-  parameter_map <- get_parameter_map()
-  
   # Handle eps parameter
   if (params$eps) {
-    parameter_map_extended <- cbind(
-      c("logK","x0","r","sigmao_add","sigmap","shape","sigmaf","ll_q","epsp","lp__"),
-      c("logK","x0","r","sigmao_add","sigmap","n","sigmaf","ll_q","epsp","lp__"),
-      c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_sigmaf","raw_logll_q","raw_epsp","lp__")
-    )
-    colnames(parameter_map_extended) <- c("input","transformed","raw")
+    parameter_map <- get_parameter_map_extended()
     target_par <- c(params$leading_params, "epsp")
-    parameter_map <- parameter_map_extended
   } else {
+    parameter_map <- get_parameter_map()
     target_par <- params$leading_params
   }
   
