@@ -34,7 +34,8 @@ ui = dashboardPage(
       menuItem("Bayesian diags: PPC Catch", tabName = "plots_ppc_catch"),
       menuItem("Model fits: Index", tabName = "plots_index_fit"),
       menuItem("Model fits: Catch", tabName = "plots_catch_fit"),
-      menuItem("Pr. & Post: params", tabName = "plots_ppp"),
+      menuItem("Pr. & Post: Params", tabName = "plots_ppp"),
+      menuItem("Pr. & Post: Timeseries", tabName = "plots_ppts"),
       selected = "introduction"
     ),
 
@@ -79,6 +80,54 @@ ui = dashboardPage(
         step = 1
       )
     ),
+
+    # Prior-Posterior Time Series Controls
+    conditionalPanel(condition = "input.sidebarmenu == 'plots_ppts'",
+      awesomeCheckboxGroup(
+        inputId = "ppts.var",
+        label = "Time series variable", 
+        choices = c("Depletion (D)", "Population (P)", "U", "F", "D_Dmsy", "P_Pmsy", "U_Umsy", "F_Fmsy", "Removals", "Process error", "Process error (raw)", "Process error (mult.)", "Surplus production", "Effort deviate", "Catchability deviate", "Nominal CPUE"),
+        selected = c("Depletion (D)", "Population (P)")
+      ),
+      radioButtons(
+        inputId = "ppts.show",
+        label = "Show distributions", 
+        choices = c("Prior", "Posterior", "Both"),
+        selected = "Both"
+      ),
+      switchInput(
+        inputId = "ppts.combine",  
+        label = "Combine models?",
+        value = FALSE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      sliderTextInput(
+        inputId = "ppts.prop",  
+        label = "Sub-sample proportion",
+        choices = c(0.01, seq(from = 0.05, to = 1, by = 0.05)),
+        selected = "0.25",
+        grid = TRUE
+      ),
+      sliderTextInput(
+        inputId = "ppts.quants",  
+        label = "Quantiles (%)",
+        choices = c(1, 5, seq(from = 10, to = 100, by = 5)),
+        selected = "95",
+        grid = TRUE
+      ),
+      numericInput(
+        inputId = "ppts.ncol",
+        label = "Plot columns",
+        value = 3,
+        min = 1,
+        max = 6,
+        step = 1
+      )
+    ),
+
     # Only show these on the plotting tabs - not Introduction and Summary table tabs
     conditionalPanel(condition="input.sidebarmenu == 'plots_hmc'",
      awesomeCheckboxGroup(
@@ -387,7 +436,7 @@ ui = dashboardPage(
 
       # Index Fit Tab
       tabItem(tabName = "plots_index_fit", 
-        h2("Model Fits: Index Fit Analysis"),
+        h2("Model Fits: Index Fit"),
         fluidRow(
           plot_box("Index fit", "plots_index_fit", collapsed = FALSE),
           plot_box("Index fit with PPD", "plots_index_fit_ppd"),
@@ -397,7 +446,7 @@ ui = dashboardPage(
 
       # Catch Fit Tab
       tabItem(tabName = "plots_catch_fit", 
-        h2("Model Fits: Catch Fit Analysis"),
+        h2("Model Fits: Catch Fit"),
         fluidRow(
           plot_box("Catch fit", "plots_catch_fit", collapsed = FALSE, help_text = "Observed vs predicted catch data."),
           plot_box("Catch fit with PPD", "plots_catch_fit_ppd", help_text = "Catch fits using posterior predictive distributions."),
@@ -411,7 +460,15 @@ ui = dashboardPage(
         fluidRow(
           plot_box("Parameter prior-posterior distributions", "plots_ppp", collapsed = FALSE, help_text = "Compare prior and posterior distributions for model parameters.")
         )
-      ) # End of plots_ppp tab
+      ), # End of plots_ppp tab
+
+      # Prior-Posterior Time Series Tab
+      tabItem(tabName = "plots_ppts", 
+        h2("Prior & Posterior: Time series"),
+        fluidRow(
+          plot_box("Time series prior-posterior comparison", "plots_ppts", collapsed = FALSE, help_text = "Compare prior and posterior distributions for time series variables.")
+        )
+      ) # End of plots_ppts tab
 
     ) # End of tabItems
   ) # End of dashboardBody

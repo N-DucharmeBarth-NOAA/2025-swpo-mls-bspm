@@ -95,6 +95,17 @@ server <- function(input, output, session) {
       )
     })
 
+    get_ppts_params <- reactive({
+      list(
+        var = input$ppts.var %||% c("Depletion (D)", "Population (P)"),
+        show = input$ppts.show %||% "Both",
+        combine = input$ppts.combine %||% FALSE,
+        prop = as.numeric(input$ppts.prop %||% 0.25),
+        quants = as.numeric(input$ppts.quants %||% 95),
+        ncol = as.numeric(input$ppts.ncol %||% 3)
+      )
+    })
+
   # Generic plot renderer - handles all common plotting logic
   render_plot <- function(plot_func, params_func = NULL, single_only = FALSE, 
                          default_params = NULL, output_name = "Plot") {
@@ -264,5 +275,13 @@ server <- function(input, output, session) {
   
   output$plots_ppp <- render_plot(
     generate_ppp, get_ppp_params, output_name = "Prior-posterior parameter comparison"
+  )
+
+  # =============================================================================
+  # PRIOR-POSTERIOR TIME SERIES PLOTS
+  # =============================================================================
+  
+  output$plots_ppts <- render_plot(
+    generate_ppts, get_ppts_params, output_name = "Prior-posterior time series"
   )
 }
