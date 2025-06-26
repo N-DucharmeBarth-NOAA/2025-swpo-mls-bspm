@@ -33,16 +33,27 @@ server <- function(input, output, session) {
   })
   
   # Parameter builders - convert UI inputs to function parameters
-  get_hmc_params <- reactive({
-    list(
-      leading_params = input$hmc.leading_params %||% c("logK", "shape", "r"),
-      raw = input$hmc.raw %||% TRUE,
-      diag = input$hmc.diag %||% "None",
-      eps = input$hmc.eps %||% TRUE,
-      lags = as.numeric(input$hmc.lags %||% 30),
-      scheme = input$hmc.scheme %||% "brightblue"
-    )
-  })
+    get_hmc_params <- reactive({
+      list(
+        leading_params = input$hmc.leading_params %||% c("logK", "shape", "r"),
+        raw = input$hmc.raw %||% TRUE,
+        diag = input$hmc.diag %||% "None",
+        eps = input$hmc.eps %||% TRUE,
+        lags = as.numeric(input$hmc.lags %||% 30),
+        scheme = input$hmc.scheme %||% "brightblue"
+      )
+    })
+
+    get_ppc_index_params <- reactive({
+      list(
+        scheme = input$ppc_index.scheme %||% "brightblue",
+        prop = as.numeric(input$ppc_index.prop %||% 0.25),
+        active = input$ppc_index.active %||% TRUE,
+        group = input$ppc_index.group %||% TRUE,
+        stat = input$ppc_index.stat %||% "median",
+        qqdist = input$ppc_index.qqdist %||% "uniform"
+      )
+    })
 
   # Generic plot renderer - handles all common plotting logic
   render_plot <- function(plot_func, params_func = NULL, single_only = FALSE, 
@@ -109,5 +120,37 @@ server <- function(input, output, session) {
   
   output$plots_hmc_acf <- render_plot(
     generate_hmc_acf, get_hmc_params, single_only = TRUE, output_name = "Autocorrelation plots"
+  )
+
+  # =============================================================================
+  # PPC PLOTS
+  # =============================================================================
+  
+  output$plots_ppc_dens <- render_plot(
+    generate_ppc_dens, get_ppc_params, single_only = TRUE, output_name = "PPC density overlay"
+  )
+  
+  output$plots_ppc_ecdf <- render_plot(
+    generate_ppc_ecdf, get_ppc_params, single_only = TRUE, output_name = "PPC ECDF"
+  )
+  
+  output$plots_ppc_pit_ecdf <- render_plot(
+    generate_ppc_pit_ecdf, get_ppc_params, single_only = TRUE, output_name = "PPC PIT ECDF"
+  )
+  
+  output$plots_ppc_stat <- render_plot(
+    generate_ppc_stat, get_ppc_params, single_only = TRUE, output_name = "PPC test statistics"
+  )
+  
+  output$plots_ppc_loo_pit <- render_plot(
+    generate_ppc_loo_pit, get_ppc_params, single_only = TRUE, output_name = "LOO PIT"
+  )
+  
+  output$plots_ppc_loo_qq <- render_plot(
+    generate_ppc_loo_qq, get_ppc_params, single_only = TRUE, output_name = "LOO Q-Q"
+  )
+  
+  output$plots_ppc_loo_interval <- render_plot(
+    generate_ppc_loo_interval, get_ppc_params, single_only = TRUE, output_name = "LOO intervals"
   )
 }

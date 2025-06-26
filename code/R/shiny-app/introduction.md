@@ -1,6 +1,6 @@
 # BSPM Model Analysis - Interactive Explorer
 
-This Shiny application provides comprehensive interactive visualization and comparison of Bayesian Surplus Production Model (BSPM) runs for your stock assessment analysis.
+This Shiny application provides comprehensive interactive visualization and comparison of Bayesian Surplus Production Model (BSPM) runs.
 
 ## Features
 
@@ -57,11 +57,3 @@ Standard fisheries management visualizations:
 ## Important Notes
 
 - **Single vs Multiple Models**: Some diagnostic plots (HMC diagnostics, LOO analyses) are only available when a single model is selected
-
-## Navigation Structure
-
-The app is organized into logical categories:
-- **HMC Diagnostics** → Main plots and Convergence assessments
-- **Posterior Predictive** → Separate CPUE and Catch validation
-- **Model Fits** → Index and Catch performance evaluation  
-- **Management** → Stock status and forecasting

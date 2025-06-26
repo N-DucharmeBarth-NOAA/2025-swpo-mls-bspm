@@ -17,6 +17,7 @@ ui = dashboardPage(
       menuItem("Introduction", tabName="introduction"),
       menuItem("Summary table", tabName="table"),
       menuItem("Bayesian diags: Convergence", tabName="plots_hmc"),
+      menuItem("Bayesian diags: PPC", tabName = "plots_ppc_index"),
       selected = "introduction"
     ),
     # Only show these on the plotting tabs - not Introduction and Summary table tabs
@@ -66,6 +67,55 @@ ui = dashboardPage(
         multiple = FALSE
       )
     ),
+
+    # PPC Controls
+    conditionalPanel(condition = "input.sidebarmenu == 'plots_ppc_index'",
+      selectInput(
+        inputId = "ppc_index.scheme",
+        label = "Select bayesplot color scheme", 
+        choices = c("blue", "brightblue", "gray", "darkgray", "green", "pink", "purple", "red", "teal", "yellow", "viridis", "viridisA", "viridisB", "viridisC", "viridisD", "viridisE"),
+        selected = "brightblue",
+        multiple = FALSE
+      ),
+      sliderTextInput(
+        inputId = "ppc_index.prop",  
+        label = "Sub-sample proportion",
+        choices = c(0.01, seq(from = 0.05, to = 1, by = 0.05)),
+        selected = "0.25",
+        grid = TRUE
+      ),
+      switchInput(
+        inputId = "ppc_index.active",  
+        label = "Only fitted indices?",
+        value = TRUE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      switchInput(
+        inputId = "ppc_index.group",  
+        label = "Aggregate observations for PPC?",
+        value = TRUE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      awesomeCheckboxGroup(
+        inputId = "ppc_index.stat",
+        label = "PPC statistic\n(choose 1 or 2)", 
+        choices = c("mean", "median", "sd", "mad"),
+        selected = "median"
+      ),
+      radioButtons(
+        inputId = "ppc_index.qqdist",
+        label = "QQ distribution", 
+        choices = c("uniform", "normal"),
+        selected = "uniform"
+      )
+    ),
+
     br(),
     br(),
     tags$footer(
@@ -131,7 +181,43 @@ ui = dashboardPage(
             plotOutput("plots_hmc_acf", height = "auto")
           )
         )
-      ) # End of plots.hmc tab
+      ), # End of plots_hmc tab
+
+      # PPC Tab
+      tabItem(tabName = "plots_ppc_index", 
+        h2("Bayesian diagnostics: Posterior Predictive Checking (PPC)"),
+        fluidRow(
+          box(title = "Density overlay", solidHeader = TRUE, collapsible = TRUE, collapsed = FALSE, status = "primary", width = 12,
+            p("Select only one model."),
+            plotOutput("plots_ppc_index_dens", height = "auto")
+          ),
+          box(title = "ECDF", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
+            p("Select only one model."),
+            plotOutput("plots_ppc_index_ecdf", height = "auto")
+          ),
+          box(title = "ECDF (PIT)", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
+            p("Select only one model."),
+            plotOutput("plots_ppc_index_pit_ecdf", height = "auto")
+          ),
+          box(title = "Test statistics", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
+            p("Select only one model."),
+            plotOutput("plots_ppc_index_stat", height = "auto")
+          ),
+          box(title = "LOO-PIT", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
+            p("Select only one model."),
+            plotOutput("plots_ppc_index_loo_pit", height = "auto")
+          ),
+          box(title = "LOO-PIT QQ", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
+            p("Select only one model."),
+            plotOutput("plots_ppc_index_loo_qq", height = "auto")
+          ),
+          box(title = "LOO Posterior Predicted Interval", solidHeader = TRUE, collapsible = TRUE, collapsed = TRUE, status = "primary", width = 12,
+            p("Select only one model."),
+            plotOutput("plots_ppc_index_loo_interval", height = "auto")
+          )
+        )
+      ) # End of plots_ppc_index tab
+
     ) # End of tabItems
   ) # End of dashboardBody
 )
