@@ -34,7 +34,50 @@ ui = dashboardPage(
       menuItem("Bayesian diags: PPC Catch", tabName = "plots_ppc_catch"),
       menuItem("Model fits: Index", tabName = "plots_index_fit"),
       menuItem("Model fits: Catch", tabName = "plots_catch_fit"),
+      menuItem("Pr. & Post: params", tabName = "plots_ppp"),
       selected = "introduction"
+    ),
+
+    # Prior-Posterior Parameter Controls
+    conditionalPanel(condition = "input.sidebarmenu == 'plots_ppp'",
+      awesomeCheckboxGroup(
+        inputId = "ppp.leading_params",
+        label = "Parameter", 
+        choices = c("logK","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev"),
+        selected = c("logK", "r")
+      ),
+      switchInput(
+        inputId = "ppp.raw",  
+        label = "Transform parameter?",
+        value = TRUE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      radioButtons(
+        inputId = "ppp.show",
+        label = "Show distributions", 
+        choices = c("Prior", "Posterior", "Both"),
+        selected = "Both"
+      ),
+      switchInput(
+        inputId = "ppp.combine",  
+        label = "Combine models?",
+        value = FALSE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      numericInput(
+        inputId = "ppp.ncol",
+        label = "Plot columns",
+        value = 3,
+        min = 1,
+        max = 6,
+        step = 1
+      )
     ),
     # Only show these on the plotting tabs - not Introduction and Summary table tabs
     conditionalPanel(condition="input.sidebarmenu == 'plots_hmc'",
@@ -344,7 +387,7 @@ ui = dashboardPage(
 
       # Index Fit Tab
       tabItem(tabName = "plots_index_fit", 
-        h2("Model Fits: Index Fit"),
+        h2("Model Fits: Index Fit Analysis"),
         fluidRow(
           plot_box("Index fit", "plots_index_fit", collapsed = FALSE),
           plot_box("Index fit with PPD", "plots_index_fit_ppd"),
@@ -354,13 +397,21 @@ ui = dashboardPage(
 
       # Catch Fit Tab
       tabItem(tabName = "plots_catch_fit", 
-        h2("Model Fits: Catch Fit"),
+        h2("Model Fits: Catch Fit Analysis"),
         fluidRow(
           plot_box("Catch fit", "plots_catch_fit", collapsed = FALSE, help_text = "Observed vs predicted catch data."),
           plot_box("Catch fit with PPD", "plots_catch_fit_ppd", help_text = "Catch fits using posterior predictive distributions."),
           plot_box("Catch fit residuals", "plots_catch_fit_residuals", help_text = "Residual analysis for catch data.")
         )
-      ) # End of plots_catch_fit tab
+      ), # End of plots_catch_fit tab
+
+      # Prior-Posterior Parameter Tab
+      tabItem(tabName = "plots_ppp", 
+        h2("Prior & Posterior: Leading parameters"),
+        fluidRow(
+          plot_box("Parameter prior-posterior distributions", "plots_ppp", collapsed = FALSE, help_text = "Compare prior and posterior distributions for model parameters.")
+        )
+      ) # End of plots_ppp tab
 
     ) # End of tabItems
   ) # End of dashboardBody

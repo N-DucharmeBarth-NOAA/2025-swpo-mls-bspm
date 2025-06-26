@@ -85,6 +85,16 @@ server <- function(input, output, session) {
       )
     })
 
+    get_ppp_params <- reactive({
+      list(
+        leading_params = input$ppp.leading_params %||% c("logK", "r"),
+        raw = input$ppp.raw %||% TRUE,
+        show = input$ppp.show %||% "Both",
+        combine = input$ppp.combine %||% FALSE,
+        ncol = as.numeric(input$ppp.ncol %||% 3)
+      )
+    })
+
   # Generic plot renderer - handles all common plotting logic
   render_plot <- function(plot_func, params_func = NULL, single_only = FALSE, 
                          default_params = NULL, output_name = "Plot") {
@@ -246,5 +256,13 @@ server <- function(input, output, session) {
   
   output$plots_catch_fit_residuals <- render_plot(
     generate_catch_fit_residuals, get_catch_fit_params, output_name = "Catch fit residuals"
+  )
+
+  # =============================================================================
+  # PRIOR-POSTERIOR PARAMETER PLOTS
+  # =============================================================================
+  
+  output$plots_ppp <- render_plot(
+    generate_ppp, get_ppp_params, output_name = "Prior-posterior parameter comparison"
   )
 }
