@@ -33,6 +33,7 @@ ui = dashboardPage(
       menuItem("Bayesian diags: PPC Index", tabName = "plots_ppc_index"),
       menuItem("Bayesian diags: PPC Catch", tabName = "plots_ppc_catch"),
       menuItem("Model fits: Index", tabName = "plots_index_fit"),
+      menuItem("Model fits: Catch", tabName = "plots_catch_fit"),
       selected = "introduction"
     ),
     # Only show these on the plotting tabs - not Introduction and Summary table tabs
@@ -225,6 +226,45 @@ ui = dashboardPage(
       )
     ),
 
+    # Catch Fit Controls
+    conditionalPanel(condition = "input.sidebarmenu == 'plots_catch_fit'",
+      sliderTextInput(
+        inputId = "catch_fit.prop",  
+        label = "Sub-sample proportion",
+        choices = c(0.01, seq(from = 0.05, to = 1, by = 0.05)),
+        selected = "0.25",
+        grid = TRUE
+      ),
+      switchInput(
+        inputId = "catch_fit.obs",  
+        label = "Show observation error?",
+        value = TRUE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      radioButtons(
+        inputId = "catch_fit.type",
+        label = "Plot type", 
+        choices = c("Median", "Spaghetti", "Quantile"),
+        selected = "Median"
+      ),
+      sliderTextInput(
+        inputId = "catch_fit.quants",  
+        label = "Quantiles (%)",
+        choices = c(1, 5, seq(from = 10, to = 100, by = 5)),
+        selected = "95",
+        grid = TRUE
+      ),
+      radioButtons(
+        inputId = "catch_fit.resid",
+        label = "Residual type", 
+        choices = c("Ordinary", "Standardized", "PIT"),
+        selected = "PIT"
+      )
+    ),
+
     br(),
     br(),
     tags$footer(
@@ -304,13 +344,23 @@ ui = dashboardPage(
 
       # Index Fit Tab
       tabItem(tabName = "plots_index_fit", 
-        h2("Model Fits: Index Fit Analysis"),
+        h2("Model Fits: Index Fit"),
         fluidRow(
           plot_box("Index fit", "plots_index_fit", collapsed = FALSE),
           plot_box("Index fit with PPD", "plots_index_fit_ppd"),
           plot_box("Index fit residuals", "plots_index_fit_residuals")
         )
-      ) # End of plots_index_fit tab
+      ), # End of plots_index_fit tab
+
+      # Catch Fit Tab
+      tabItem(tabName = "plots_catch_fit", 
+        h2("Model Fits: Catch Fit"),
+        fluidRow(
+          plot_box("Catch fit", "plots_catch_fit", collapsed = FALSE, help_text = "Observed vs predicted catch data."),
+          plot_box("Catch fit with PPD", "plots_catch_fit_ppd", help_text = "Catch fits using posterior predictive distributions."),
+          plot_box("Catch fit residuals", "plots_catch_fit_residuals", help_text = "Residual analysis for catch data.")
+        )
+      ) # End of plots_catch_fit tab
 
     ) # End of tabItems
   ) # End of dashboardBody

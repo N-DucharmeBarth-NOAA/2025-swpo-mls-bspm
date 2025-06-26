@@ -75,6 +75,16 @@ server <- function(input, output, session) {
       )
     })
 
+    get_catch_fit_params <- reactive({
+      list(
+        prop = as.numeric(input$catch_fit.prop %||% 0.25),
+        obs = input$catch_fit.obs %||% TRUE,
+        type = input$catch_fit.type %||% "Median",
+        quants = as.numeric(input$catch_fit.quants %||% 95),
+        resid = input$catch_fit.resid %||% "PIT"
+      )
+    })
+
   # Generic plot renderer - handles all common plotting logic
   render_plot <- function(plot_func, params_func = NULL, single_only = FALSE, 
                          default_params = NULL, output_name = "Plot") {
@@ -220,5 +230,21 @@ server <- function(input, output, session) {
   
   output$plots_index_fit_residuals <- render_plot(
     generate_index_fit_residuals, get_index_fit_params, output_name = "Index fit residuals"
+  )
+
+  # =============================================================================
+  # CATCH FIT PLOTS
+  # =============================================================================
+  
+  output$plots_catch_fit <- render_plot(
+    generate_catch_fit, get_catch_fit_params, output_name = "Catch fit"
+  )
+  
+  output$plots_catch_fit_ppd <- render_plot(
+    generate_catch_fit_ppd, get_catch_fit_params, output_name = "Catch fit with PPD"
+  )
+  
+  output$plots_catch_fit_residuals <- render_plot(
+    generate_catch_fit_residuals, get_catch_fit_params, output_name = "Catch fit residuals"
   )
 }
