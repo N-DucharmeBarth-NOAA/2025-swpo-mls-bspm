@@ -63,7 +63,9 @@
 # load additional cpue indices
     au_cpue_dt = fread(file.path(proj_dir,"data","input","AU_cpue.csv"))
     nz_cpue_dt = fread(file.path(proj_dir,"data","input","NZ_cpue.csv"))
-    obs_cpue_dt = fread(file.path(proj_dir,"data","input","obs-idx.csv"))
+    obs_cpue_dt = fread(file.path(proj_dir,"data","input","obs-idx-with_OP.csv"))
+    obs_cpue_no_PF_dt = fread(file.path(proj_dir,"data","input","obs-idx-with_OP_no_PF.csv"))
+    obs_cpue_PF_only_dt = fread(file.path(proj_dir,"data","input","obs-idx-with_OP_PF_only.csv"))
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # prepare data matrices
@@ -81,9 +83,9 @@
     time_years = catch_effort_annual$year
     n_years = length(time_years)
     
-    index_mat = matrix(-999, nrow = n_years, ncol = 4)
-    se_mat = matrix(-999, nrow = n_years, ncol = 4)
-    mean_se = rep(NA,4)
+    index_mat = matrix(-999, nrow = n_years, ncol = 6)
+    se_mat = matrix(-999, nrow = n_years, ncol = 6)
+    mean_se = rep(NA,6)
 
     # dwfn cpue
     cpue_years = floor(cpue_dt$Time)
@@ -128,6 +130,27 @@
         }
     }
 
+    # calc SE from quantiles
+    obs_cpue_no_PF_dt[, se_from_quantiles := (Q97.5 - Q2.5) / (2 * 1.96)]
+    mean_se[5] = mean(obs_cpue_no_PF_dt$se_from_quantiles,na.rm=TRUE)
+    for(i in 1:nrow(obs_cpue_no_PF_dt)) {
+        year_idx = which(time_years == obs_cpue_no_PF_dt$Year[i])
+        if(length(year_idx) > 0) {
+            index_mat[year_idx, 5] = obs_cpue_no_PF_dt$Estimate[i]/mean(obs_cpue_no_PF_dt$Estimate)
+            se_mat[year_idx, 5] = obs_cpue_no_PF_dt$se_from_quantiles[i]/mean_se[5]
+        }
+    }
+
+    # calc SE from quantiles
+    obs_cpue_PF_only_dt[, se_from_quantiles := (Q97.5 - Q2.5) / (2 * 1.96)]
+    mean_se[6] = mean(obs_cpue_PF_only_dt$se_from_quantiles,na.rm=TRUE)
+    for(i in 1:nrow(obs_cpue_PF_only_dt)) {
+        year_idx = which(time_years == obs_cpue_PF_only_dt$Year[i])
+        if(length(year_idx) > 0) {
+            index_mat[year_idx, 6] = obs_cpue_PF_only_dt$Estimate[i]/mean(obs_cpue_PF_only_dt$Estimate)
+            se_mat[year_idx, 6] = obs_cpue_PF_only_dt$se_from_quantiles[i]/mean_se[6]
+        }
+    }
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # prepare multivariate prior parameters
     # Extract standard deviations from covariance matrix (3D now)
@@ -154,18 +177,14 @@
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # develop model grid
-    model_config_df = rbind( expand.grid(cpue=c("au","nz","obs"),
+    model_config_df = rbind( expand.grid(cpue=c("au","nz","obs","obsNoPF","obsPFonly"),
                                   sigma_catch = c(0.2),
                                   sigma_edev = c(0.3),
                                   n_step=5),
                             expand.grid(cpue=c("dwfn"),
                                   sigma_catch = c(0.1,0.2,0.4),
-                                  sigma_edev = c(0.3,0.5),
-                                  n_step=c(2,3,4,5)),
-                            expand.grid(cpue=c("dwfn"),
-                                  sigma_catch = c(0.1),
-                                  sigma_edev = c(0.3,0.4,0.5),
-                                  n_step=5)
+                                  sigma_edev = c(0.3,0.5,1,2),
+                                  n_step=c(2,5))
     )
 
     model_config_df = unique(model_config_df)
@@ -183,17 +202,23 @@ for(i in 1:nrow(model_config_df)){
         }
 
         if(model_config_df$cpue[i]=="dwfn"){
-            lambda_vec = c(1,0,0,0)
+            lambda_vec = c(1,0,0,0,0,0)
             sigmao_input = mean_se[1]
         } else if(model_config_df$cpue[i]=="au"){
-            lambda_vec = c(0,1,0,0)
+            lambda_vec = c(0,1,0,0,0,0)
             sigmao_input = mean_se[2]
         } else if(model_config_df$cpue[i]=="nz"){
-            lambda_vec = c(0,0,1,0)
+            lambda_vec = c(0,0,1,0,0,0)
             sigmao_input = mean_se[3]
-        } else {
-            lambda_vec = c(0,0,0,1)
+        } else if(model_config_df$cpue[i]=="obs"){
+            lambda_vec = c(0,0,0,1,0,0)
             sigmao_input = mean_se[4]
+        } else if(model_config_df$cpue[i]=="obsNoPF"){
+            lambda_vec = c(0,0,0,0,1,0)
+            sigmao_input = mean_se[5]
+        } else {
+            lambda_vec = c(0,0,0,0,0,1)
+            sigmao_input = mean_se[6]
         }
 
  # Define effort parameters
