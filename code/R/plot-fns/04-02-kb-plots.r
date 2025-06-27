@@ -102,8 +102,8 @@ generate_kb <- function(model_dirs, params = NULL) {
     stop("No data available for plotting")
   }
 
-  # exclude NAs (usually only in the terminal year)
-  plot_dt =  plot_dt[!is.na(value)]
+  # remove last time step as F values are not available
+  plot_dt = plot_dt[row<max(plot_dt$row)]
   
   # Generate uncertainty contours if requested
   contour_dt <- NULL
@@ -117,7 +117,7 @@ generate_kb <- function(model_dirs, params = NULL) {
     contour_dt_list <- list()
     
     for (i in seq_along(unique_id)) {
-      tmp_contour <- contour_points_dt[group_id == unique_id[i]]
+      tmp_contour <- contour_points_dt[group_id == unique_id[i]] %>% na.omit(.)
       
       if (nrow(tmp_contour) > 10) {  # Need enough points for contours
         tryCatch({
@@ -166,7 +166,7 @@ generate_kb <- function(model_dirs, params = NULL) {
       contour_dt <- rbindlist(contour_dt_list, fill = TRUE) %>%
         .[, plot_id := paste0(group_id, "-", cntr_id)] %>%
         .[, type := sapply(group_id, function(x) strsplit(x, "-")[[1]][1])] %>%
-        .[, run_label := sapply(group_id, function(x) strsplit(x, "-")[[1]][2])] %>%
+        .[, run_label := gsub("Prior-","",gsub("Posterior-","",group_id))] %>%
         .[, type := factor(type, levels = c("Prior", "Posterior"))]
       
       if (params$combine) {
