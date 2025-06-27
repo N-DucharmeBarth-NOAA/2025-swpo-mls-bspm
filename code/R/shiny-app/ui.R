@@ -37,6 +37,7 @@ ui = dashboardPage(
       menuItem("Pr. & Post: Params", tabName = "plots_ppp"),
       menuItem("Pr. & Post: Timeseries", tabName = "plots_ppts"),
       menuItem("Kobe & Majuro", tabName = "plots_kbmj"),
+      menuItem("Forecasts", tabName = "plots_forecasts"),
       selected = "introduction"
     ),
 
@@ -175,6 +176,77 @@ ui = dashboardPage(
         choices = seq(from = 50, to = 500, by = 25),
         selected = "300",
         grid = TRUE
+      )
+    ),
+
+    # Forecast Controls
+    conditionalPanel(condition = "input.sidebarmenu == 'plots_forecasts'",
+      awesomeCheckboxGroup(
+        inputId = "forecast.var",
+        label = "Forecast variables", 
+        choices = c("Depletion (D)", "Population (P)", "U", "F", "D_Dmsy", "P_Pmsy", "U_Umsy", "F_Fmsy", "Removals", "Process error", "Process error (raw)", "Surplus production"),
+        selected = c("Depletion (D)", "Removals")
+      ),
+      switchInput(
+        inputId = "forecast.combine",  
+        label = "Combine models?",
+        value = FALSE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      sliderTextInput(
+        inputId = "forecast.prop",  
+        label = "Sub-sample proportion",
+        choices = c(0.01, seq(from = 0.05, to = 1, by = 0.05)),
+        selected = "0.25",
+        grid = TRUE
+      ),
+      sliderTextInput(
+        inputId = "forecast.quants",  
+        label = "Quantiles (%)",
+        choices = c(1, 5, seq(from = 10, to = 100, by = 5)),
+        selected = "95",
+        grid = TRUE
+      ),
+      sliderTextInput(
+        inputId = "forecast.nyears",  
+        label = "Forecast years",
+        choices = seq(from = 1, to = 20, by = 1),
+        selected = "10",
+        grid = TRUE
+      ),
+      switchInput(
+        inputId = "forecast.resample_epsp",  
+        label = "Resample process error?",
+        value = TRUE,
+        onLabel = "TRUE",
+        offLabel = "FALSE",
+        onStatus = "success", 
+        offStatus = "danger"
+      ),
+      sliderTextInput(
+        inputId = "forecast.avg_year",  
+        label = "Average years for forecast",
+        choices = seq(from = 1, to = 10, by = 1),
+        selected = "5",
+        grid = TRUE
+      ),
+      sliderTextInput(
+        inputId = "forecast.scalar",  
+        label = "Forecast scalar",
+        choices = seq(from = 0.1, to = 5.0, by = 0.1),
+        selected = "1",
+        grid = TRUE
+      ),
+      numericInput(
+        inputId = "forecast.ncol",
+        label = "Plot columns",
+        value = 3,
+        min = 1,
+        max = 6,
+        step = 1
       )
     ),
 
@@ -527,7 +599,15 @@ ui = dashboardPage(
           plot_box("Kobe plot", "plots_kobe", collapsed = FALSE, help_text = "Kobe plot: P/P_MSY vs F/F_MSY for stock status assessment."),
           plot_box("Majuro plot", "plots_majuro", help_text = "Majuro plot: Depletion vs F/F_MSY for alternative stock status visualization.")
         )
-      ) # End of plots_kbmj tab
+      ), # End of plots_kbmj tab
+
+      # Forecasts Tab
+      tabItem(tabName = "plots_forecasts", 
+        h2("Catch-based forecasts"),
+        fluidRow(
+          plot_box("Forecast projections", "plots_forecast", collapsed = FALSE, help_text = "Model forecasts showing projected future population dynamics and management metrics.")
+        )
+      ) # End of plots_forecasts tab
 
     ) # End of tabItems
   ) # End of dashboardBody

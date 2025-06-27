@@ -117,6 +117,21 @@ server <- function(input, output, session) {
       )
     })
 
+    get_forecast_params <- reactive({
+      list(
+        var = input$forecast.var %||% c("Depletion (D)", "Population (P)"),
+        combine = input$forecast.combine %||% FALSE,
+        prop = as.numeric(input$forecast.prop %||% 0.25),
+        quants = as.numeric(input$forecast.quants %||% 95),
+        nyears = as.numeric(input$forecast.nyears %||% 10),
+        resample_epsp = input$forecast.resample_epsp %||% TRUE,
+        type = "Catch",
+        avg_year = as.numeric(input$forecast.avg_year %||% 5),
+        scalar = as.numeric(input$forecast.scalar %||% 1.0),
+        ncol = as.numeric(input$forecast.ncol %||% 3)
+      )
+    })
+
   # Generic plot renderer - handles all common plotting logic
   render_plot <- function(plot_func, params_func = NULL, single_only = FALSE, 
                          default_params = NULL, output_name = "Plot") {
@@ -306,5 +321,13 @@ server <- function(input, output, session) {
   
   output$plots_majuro <- render_plot(
     generate_mj, get_kbmj_params, output_name = "Majuro plot"
+  )
+
+  # =============================================================================
+  # FORECAST PLOTS
+  # =============================================================================
+  
+  output$plots_forecast <- render_plot(
+    generate_fcast, get_forecast_params, output_name = "Forecast plots"
   )
 }
