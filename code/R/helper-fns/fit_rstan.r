@@ -253,7 +253,7 @@
                                 run_time_avg=mean(rowSums(get_elapsed_time(fit))),
                                 n_par = n_par,
                                 n_chains = chains,
-                                total_samples = iter.keep * chains,
+                                total_samples = iter_keep * chains,
                                 low_bfmi = length(get_low_bfmi_chains(fit))/chains,
                                 divergent = get_num_divergent(fit)/(chains*iter_keep),
                                 treedepth = get_num_max_treedepth(fit)/(chains*iter_keep),
