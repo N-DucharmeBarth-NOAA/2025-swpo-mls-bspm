@@ -402,7 +402,7 @@ create_summary_data <- function(proj_dir, shiny_path) {
   }
   
   # Select columns with parsed components first
-  select_cols <- c("run_label","model_id", "run_id", "exec", "run_number", "run_num", 
+  select_cols <- c("run_label","run_id", "run_num", 
                    "cpue_index", "sigma_catch", "sigma_edev", "n_step", "parsing_method",
                    "n_par", "low_bfmi", "divergent", "treedepth", 
                    "max_rhat", "min_neff", "median_catch_rmse", 

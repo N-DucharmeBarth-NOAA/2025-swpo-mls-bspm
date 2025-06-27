@@ -560,9 +560,9 @@ ui = dashboardPage(
       tabItem(tabName = "plots_index_fit", 
         h2("Model Fits: Index Fit"),
         fluidRow(
-          plot_box("Index fit", "plots_index_fit", collapsed = FALSE),
-          plot_box("Index fit with PPD", "plots_index_fit_ppd"),
-          plot_box("Index fit residuals", "plots_index_fit_residuals")
+          plot_box("Index fit", "plots_index_fit", collapsed = FALSE, help_text = "Select one or more models.\nObserved vs predicted index data."),
+          plot_box("Index fit with PPD", "plots_index_fit_ppd", help_text = "Select one or more models.\nIndex fits using posterior predictive distributions."),
+          plot_box("Index fit residuals", "plots_index_fit_residuals", help_text = "Select one or more models.\nResidual analysis for index data.")
         )
       ), # End of plots_index_fit tab
 
@@ -570,9 +570,9 @@ ui = dashboardPage(
       tabItem(tabName = "plots_catch_fit", 
         h2("Model Fits: Catch Fit"),
         fluidRow(
-          plot_box("Catch fit", "plots_catch_fit", collapsed = FALSE, help_text = "Observed vs predicted catch data."),
-          plot_box("Catch fit with PPD", "plots_catch_fit_ppd", help_text = "Catch fits using posterior predictive distributions."),
-          plot_box("Catch fit residuals", "plots_catch_fit_residuals", help_text = "Residual analysis for catch data.")
+          plot_box("Catch fit", "plots_catch_fit", collapsed = FALSE, help_text = "Select one or more models.\nObserved vs predicted catch data."),
+          plot_box("Catch fit with PPD", "plots_catch_fit_ppd", help_text = "Select one or more models.\nCatch fits using posterior predictive distributions."),
+          plot_box("Catch fit residuals", "plots_catch_fit_residuals", help_text = "Select one or more models.\nResidual analysis for catch data.")
         )
       ), # End of plots_catch_fit tab
 
@@ -580,7 +580,7 @@ ui = dashboardPage(
       tabItem(tabName = "plots_ppp", 
         h2("Prior & Posterior: Leading parameters"),
         fluidRow(
-          plot_box("Parameter prior-posterior distributions", "plots_ppp", collapsed = FALSE, help_text = "Compare prior and posterior distributions for model parameters.")
+          plot_box("Parameter prior-posterior distributions", "plots_ppp", collapsed = FALSE, help_text = "Select one or more models.\nCompare prior and posterior distributions for model parameters.")
         )
       ), # End of plots_ppp tab
 
@@ -588,7 +588,7 @@ ui = dashboardPage(
       tabItem(tabName = "plots_ppts", 
         h2("Prior & Posterior: Time series"),
         fluidRow(
-          plot_box("Time series prior-posterior comparison", "plots_ppts", collapsed = FALSE, help_text = "Compare prior and posterior distributions for time series variables.")
+          plot_box("Time series prior-posterior comparison", "plots_ppts", collapsed = FALSE, help_text = "Select one or more models.\nCompare prior and posterior distributions for time series variables.")
         )
       ), # End of plots_ppts tab
 
@@ -596,8 +596,8 @@ ui = dashboardPage(
       tabItem(tabName = "plots_kbmj", 
         h2("Kobe & Majuro Plots"),
         fluidRow(
-          plot_box("Kobe plot", "plots_kobe", collapsed = FALSE, help_text = "Kobe plot: P/P_MSY vs F/F_MSY for stock status assessment."),
-          plot_box("Majuro plot", "plots_majuro", help_text = "Majuro plot: Depletion vs F/F_MSY for alternative stock status visualization.")
+          plot_box("Kobe plot", "plots_kobe", collapsed = FALSE, help_text = "Select one or more models.\nKobe plot: P/P_MSY vs F/F_MSY for stock status assessment."),
+          plot_box("Majuro plot", "plots_majuro", help_text = "Select one or more models.\nMajuro plot: Depletion vs F/F_MSY for alternative stock status visualization.")
         )
       ), # End of plots_kbmj tab
 
@@ -605,7 +605,7 @@ ui = dashboardPage(
       tabItem(tabName = "plots_forecasts", 
         h2("Catch-based forecasts"),
         fluidRow(
-          plot_box("Forecast projections", "plots_forecast", collapsed = FALSE, help_text = "Model forecasts showing projected future population dynamics and management metrics.")
+          plot_box("Forecast projections", "plots_forecast", collapsed = FALSE, help_text = "Select one or more models.\nModel forecasts showing projected future population dynamics and management metrics.")
         )
       ) # End of plots_forecasts tab
 
