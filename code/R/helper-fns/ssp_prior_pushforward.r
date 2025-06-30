@@ -2,6 +2,7 @@
 # 2024/06/11
 # Robust prior pushforward for stochastic surplus production model
 # Handles multiple Stan model structures including effort-based models
+# Updated to support 4D multivariate prior with x0 parameter
 
 # Copyright (c) 2024 ISC SHARKWG
 # You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
@@ -45,14 +46,14 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
     has_effort_params = param_exists("effort") || param_exists("n_periods")
     has_qeff = param_exists("prior_qeff_meanlog")
     
-    # Initialize parameter storage
-    logK = log_r = log_shape = r = shape = NULL
-    raw_logK = raw_logr = raw_logshape = NULL
+    # Initialize parameter storage (updated to include x0 parameters)
+    logK = log_r = log_shape = log_x0 = r = shape = x0 = NULL
+    raw_logK = raw_logr = raw_logshape = raw_logx0 = NULL
     logqeff = qeff = rho = sigma_qdev = NULL
     raw_logqeff = raw_rho = raw_sigma_qdev = NULL
     
     #--------------------------------------------------------------------
-    # 1. Handle main multivariate prior (logK, log_r, log_shape)
+    # 1. Handle main multivariate prior (logK, log_r, log_shape, log_x0)
     #--------------------------------------------------------------------
     if (has_mv_prior) {
         mv_mean = get_stan_param("mv_prior_mean")
@@ -81,11 +82,29 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
         raw_logK = (logK - mv_mean[1]) / mv_sd[1]
         raw_logr = (log_r - mv_mean[2]) / mv_sd[2]
         
-        # Handle shape parameter (3rd dimension or separate)
-        if (length(mv_mean) >= 3) {
+        # Handle shape parameter (3rd dimension) and x0 parameter (4th dimension if present)
+        if (length(mv_mean) >= 4) {
+            # Handle 4D multivariate prior (logK, log_r, log_shape, log_x0)
             log_shape = mv_samples[, 3]
             shape = exp(log_shape)
             raw_logshape = (log_shape - mv_mean[3]) / mv_sd[3]
+            
+            # Handle x0 parameter (4th dimension)
+            log_x0 = mv_samples[, 4]
+            x0 = exp(log_x0)
+            raw_logx0 = (log_x0 - mv_mean[4]) / mv_sd[4]
+            
+        } else if (length(mv_mean) >= 3) {
+            # Handle 3D multivariate prior (logK, log_r, log_shape)
+            log_shape = mv_samples[, 3]
+            shape = exp(log_shape)
+            raw_logshape = (log_shape - mv_mean[3]) / mv_sd[3]
+            
+            # Default x0 for 3D models
+            x0 = rep(1.0, n_samples)
+            log_x0 = rep(0.0, n_samples)
+            raw_logx0 = rep(0.0, n_samples)
+            
         } else {
             # Fallback for separate shape parameter
             if (param_exists("logshape", "PriorMean")) {
@@ -100,6 +119,11 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
                 shape = exp(log_shape)
                 raw_logshape = log_shape / 0.5
             }
+            
+            # Default x0 for non-multivariate models
+            x0 = rep(1.0, n_samples)
+            log_x0 = rep(0.0, n_samples)
+            raw_logx0 = rep(0.0, n_samples)
         }
         
     } else {
@@ -131,6 +155,11 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
             shape = exp(log_shape)
             raw_logshape = log_shape / 0.5
         }
+        
+        # Default x0 for non-multivariate models  
+        x0 = rep(1.0, n_samples)
+        log_x0 = rep(0.0, n_samples)
+        raw_logx0 = rep(0.0, n_samples)
     }
     
     #--------------------------------------------------------------------
@@ -249,63 +278,80 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
     sigmaf = raw_sigmaf * sigmaf_sd
     
     #--------------------------------------------------------------------
-    # 6. Generate time series and population dynamics
+    # 6. Generate derived time series and population dynamics
     #--------------------------------------------------------------------
     
+    # Get time dimensions
     T = get_stan_param("T", default_val = 30)
     Tm1 = T - 1
     
-    # Process error
-    raw_epsp = epsp = matrix(NA, nrow = n_samples, ncol = T)
-    for(j in 1:T) {
-        epsp[, j] = rlnorm(n_samples, log(1.0) - (sigmap^2) / 2, sigmap)
-    }
-    raw_epsp = (log(epsp) - (sigmap^2) / 2) / sigmap
+    # Generate process error time series 
+    raw_epsp = matrix(rnorm(n_samples * T, 0, 1), nrow = n_samples, ncol = T)
     
-    # Fishing mortality
-    F_matrix = matrix(NA, nrow = n_samples, ncol = Tm1)
-    
-    if (has_effort_params && !is.null(effort) && !is.null(qeff)) {
-        # Effort-based F calculation
-        for (i in 1:n_samples) {
-            for (t in 1:Tm1) {
-                qdev_val = if (!is.null(qdev)) qdev[i, t] else 0
-                edev_val = if (!is.null(edev)) edev[i, t] else 0
-                F_matrix[i, t] = qeff[i] * exp(qdev_val) * effort[t] * 
-                               exp(edev_val - sigma_edev^2 / 2)
-            }
-        }
-    } else {
-        # Standard F estimation
-        raw_F = matrix(abs(rnorm(n_samples * Tm1)), nrow = n_samples, ncol = Tm1)
-        F_matrix = raw_F * sigmaf
+    # Generate fishing mortality (if not effort-based)
+    raw_F = F_matrix = NULL
+    if (!has_effort_params) {
+        raw_F = matrix(abs(rnorm(n_samples * Tm1, 0, 1)), nrow = n_samples, ncol = Tm1)
+        F_matrix = raw_F * matrix(rep(sigmaf, Tm1), nrow = n_samples, ncol = Tm1)
     }
     
-    # Derived parameters
+    # Population dynamics (biomass time series)
+    x = matrix(NA, nrow = n_samples, ncol = T)
+    removals = matrix(NA, nrow = n_samples, ncol = T-1)
+    
+    # Calculate derived parameters
     n = shape
-    dmsy = (1 / n)^(1 / (n - 1))
+    dmsy = (1/n)^(1/(n-1))
     h = 2 * dmsy
     m = r * h / 4
-    g = (n^(n / (n - 1))) / (n - 1)
+    g = n^(n/(n-1)) / (n-1)
     
-    # Population dynamics
-    x = matrix(NA, nrow = n_samples, ncol = T)
-    x[, 1] = epsp[, 1]
-    removals = matrix(NA, nrow = n_samples, ncol = Tm1)
-    
-    for(i in 1:n_samples) {
-        for(t in 2:T) {
-            if(x[i, t-1] <= dmsy[i]) {
-                x[i, t] = (x[i, t-1] + r[i] * x[i, t-1] * (1 - x[i, t-1] / h[i])) * 
-                         (exp(-F_matrix[i, t-1])) * epsp[i, t]
-                removals[i, t-1] = ((x[i, t-1] + r[i] * x[i, t-1] * (1 - x[i, t-1] / h[i]))) * 
-                                  epsp[i, t] * (1 - exp(-F_matrix[i, t-1])) * exp(logK[i])
+    # Calculate population dynamics for each sample
+    for (i in 1:n_samples) {
+        # Initial population - depends on whether x0 is estimated
+        epsp_1 = exp(raw_epsp[i, 1] * sigmap[i] - sigmap2[i]/2)
+        
+        if (length(mv_mean) >= 4) {
+            # 4D model: use estimated x0
+            x[i, 1] = x0[i] * epsp_1
+        } else {
+            # 3D model: assume unfished start (x0 = 1.0 implicitly)
+            x[i, 1] = epsp_1
+        }
+        
+        for (t in 2:T) {
+            if (has_effort_params && !is.null(qdev)) {
+                # Effort-based fishing mortality
+                if (!is.null(effort) && !is.null(qeff)) {
+                    F_t = qeff[i] * exp(qdev[i, t-1]) * effort[t-1] * exp(edev[i, t-1] - sigma_edev^2/2)
+                } else {
+                    F_t = 0.1  # Default F
+                }
+            } else if (!is.null(F_matrix)) {
+                # Direct F estimation
+                F_t = F_matrix[i, t-1]
             } else {
-                x[i, t] = (x[i, t-1] + g[i] * m[i] * x[i, t-1] * (1 - x[i, t-1]^(n[i] - 1))) * 
-                         (exp(-F_matrix[i, t-1])) * epsp[i, t]
-                removals[i, t-1] = ((x[i, t-1] + g[i] * m[i] * x[i, t-1] * (1 - x[i, t-1]^(n[i] - 1)))) * 
-                                  epsp[i, t] * (1 - exp(-F_matrix[i, t-1])) * exp(logK[i])
+                F_t = 0.1  # Default F
             }
+            
+            # Process error
+            epsp_t = exp(raw_epsp[i, t] * sigmap[i] - sigmap2[i]/2)
+            
+            # Population dynamics (Fletcher-Schaefer)
+            if (x[i, t-1] <= dmsy) {
+                # Low density growth
+                x_before_fishing = x[i, t-1] + r[i] * x[i, t-1] * (1 - x[i, t-1]/h)
+                x[i, t] = x_before_fishing * epsp_t * exp(-F_t)
+                removals[i, t-1] = x_before_fishing * epsp_t * (1 - exp(-F_t)) * exp(logK[i])
+            } else {
+                # High density growth
+                x_before_fishing = x[i, t-1] + g * m[i] * x[i, t-1] * (1 - (x[i, t-1])^(n[i]-1))
+                x[i, t] = x_before_fishing * epsp_t * exp(-F_t)
+                removals[i, t-1] = x_before_fishing * epsp_t * (1 - exp(-F_t)) * exp(logK[i])
+            }
+            
+            # Ensure population doesn't go negative
+            x[i, t] = max(x[i, t], 0.001)
         }
     }
     
@@ -314,11 +360,11 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
     #--------------------------------------------------------------------
     
     # Vector variables (only include those that exist)
-    potential_vector_vars = c("raw_logK", "raw_logr", "raw_logsigmap", "raw_logshape", 
+    potential_vector_vars = c("raw_logK", "raw_logr", "raw_logsigmap", "raw_logshape", "raw_logx0",
                              "logK", "r", "m", "sigmap", "sigmap2", "sigmao_sc", 
                              "shape", "n", "dmsy", "h", "g", "sigmao_add", "sigmaf",
                              "raw_logqeff", "logqeff", "qeff", "raw_rho", "raw_sigma_qdev", 
-                             "rho", "sigma_qdev")
+                             "rho", "sigma_qdev", "x0", "log_x0")
     
     vector_vars = potential_vector_vars[sapply(potential_vector_vars, function(v) {
         exists(v) && !is.null(get(v)) && is.vector(get(v))

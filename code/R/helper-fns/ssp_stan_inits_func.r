@@ -48,6 +48,20 @@ stan_inits_func = function(Tm1, n_periods = NULL, model_type = "auto") {
             raw_qdev_period = rnorm(n_periods, 0, 0.25),  # Period-specific catchability deviations
             raw_edev = rnorm(Tm1, 0, 0.25)  # Annual effort deviations
         )
+    } else if(model_type %in% c("bspm_estq_softdep_mvprior_x0")) {
+        # Effort-based models with full parameter set
+        if(is.null(n_periods)) {
+            n_step = 3  # default
+            n_periods = ceiling(Tm1 / n_step)
+        }
+        
+        specific_inits = list(
+            raw_mv_params = rnorm(4, 0, 0.25),  # 3D multivariate for logK, log_r, log_shape, log_x0
+            raw_logqeff = rnorm(1, 0, 0.25),  # Independent qeff parameter
+            raw_qdev_params = rnorm(2, 0, 0.25),  # Bivariate rho/sigma_qdev
+            raw_qdev_period = rnorm(n_periods, 0, 0.25),  # Period-specific catchability deviations
+            raw_edev = rnorm(Tm1, 0, 0.25)  # Annual effort deviations
+        )
     } else {
         stop("Unknown model_type: ", model_type)
     }
