@@ -34,7 +34,7 @@ stan_inits_func = function(Tm1, n_periods = NULL, model_type = "auto") {
             raw_sigmaf = abs(rnorm(1, 0, 0.25)),
             raw_F = abs(rnorm(Tm1, 0, 0.25))
         )
-    } else if(model_type %in% c("effort", "bspm_estq_softdep_mvprior", "bspm_estq_optimized")) {
+    } else if(model_type %in% c("effort", "bspm_estq_softdep_mvprior", "bspm_estq_flex")) {
         # Effort-based models with full parameter set
         if(is.null(n_periods)) {
             n_step = 3  # default
@@ -48,7 +48,7 @@ stan_inits_func = function(Tm1, n_periods = NULL, model_type = "auto") {
             raw_qdev_period = rnorm(n_periods, 0, 0.25),  # Period-specific catchability deviations
             raw_edev = rnorm(Tm1, 0, 0.25)  # Annual effort deviations
         )
-    } else if(model_type %in% c("bspm_estq_softdep_mvprior_x0")) {
+    } else if(model_type %in% c("bspm_estq_softdep_mvprior_x0", "bspm_estq_flex_x0")) {
         # Effort-based models with full parameter set
         if(is.null(n_periods)) {
             n_step = 3  # default

@@ -3,6 +3,7 @@
 // - 3D multivariate prior for logK, log_r, log_shape  
 // - Independent qeff parameter
 // - Correlated rho and sigma_qdev parameters
+// - more flexible qdev and sigmac[T]
 
 data {
     int T; // time dimension
@@ -12,7 +13,7 @@ data {
     real sigmao_mat[T,I]; // observation error corresponding to each index (scaled to mean 1)
     real sigmao_input; // observation error
     int lambdas[I]; // lambdas for CPUE
-    real sigmac; // observation error for catch
+    real sigmac[T]; // observation error for catch
     real sigma_edev; // effort dev variation
     int t_dep; // year of depletion prior
     int use_depletion_prior; // boolean flag (0/1) to control depletion prior
@@ -20,8 +21,8 @@ data {
 
     // New effort-based parameters  
     real effort[T]; // effort time series
-    int n_step; // years per period (e.g., 3-5 years)
     int n_periods; // number of catchability periods
+    int<lower=1, upper=n_periods> q_period_index[T]; // used to match qdevs to the right time step, must be monotonically non-decreasing integers no greater than n_periods, timestep Tm1 must equal n_periods
 
     // Updated multivariate priors (now 4-dimensional: logK, log_r, log_shape, log_x0)
     vector[4] mv_prior_mean; // mean vector [logK, log_r, log_shape, log_x0]
@@ -48,11 +49,35 @@ data {
 transformed data{
     int Tm1;
     Tm1 = T-1;
+
+    // Validate q_period_index meets all requirements
+    // 1. Bounds check
+    for(t in 1:T) {
+        if(q_period_index[t] < 1 || q_period_index[t] > n_periods) {
+            reject("q_period_index[", t, "] = ", q_period_index[t], 
+                   " violates bounds [1, ", n_periods, "]");
+        }
+    }
+    
+    // 2. Monotonically non-decreasing check
+    for(t in 2:T) {
+        if(q_period_index[t] < q_period_index[t-1]) {
+            reject("q_period_index must be monotonically non-decreasing. ",
+                   "Position ", t, " value ", q_period_index[t], 
+                   " < position ", t-1, " value ", q_period_index[t-1]);
+        }
+    }
+    
+    // 3. Final timestep must equal n_periods
+    if(q_period_index[Tm1] != n_periods) {
+        reject("q_period_index[Tm1=", Tm1, "] = ", q_period_index[Tm1], 
+               " must equal n_periods = ", n_periods);
+    }
 }
 
 parameters {
     // Updated multivariate parameters (now 3-dimensional)
-    vector[4] raw_mv_params; // [raw_logK, raw_log_r, raw_log_shape, raw_log_x0]
+    vector[3] raw_mv_params; // [raw_logK, raw_log_r, raw_log_shape]
 
     // Independent qeff parameter
     real raw_logqeff; // raw log effort catchability
@@ -137,9 +162,7 @@ transformed parameters {
     
     // Assign period-based qdev with temporal structure
     for(t in 1:Tm1) {
-        int period = ((t-1) / n_step) + 1; // integer division
-        period = min(period, n_periods); // safer bound checking
-        qdev[t] = qdev_period[period];
+        qdev[t] = qdev_period[q_period_index[t]];
     }
     
     // Independent annual effort deviations (non-centered)
@@ -251,26 +274,20 @@ model {
     }
     
     // observation model - uses analytical q[i]
-    real mu_index;
-    for(i in 1:I){
-        if(lambdas[i]==1){
-            for(t in 1:T){
-                if(index[t,i]>0.0 && x[t]>0.0 && q[i]>0.0) {
-                    mu_index = log(q[i]*x[t]) - sigmao2[t,i]/2;
-                    if(fit_to_data == 1) {
-                        target += lognormal_lpdf(index[t,i] | mu_index,sigmao[t,i]);
+    if(fit_to_data == 1) {
+        for(i in 1:I){
+            if(lambdas[i]==1){
+                for(t in 1:T){
+                    if(index[t,i]>0.0 && x[t]>0.0 && q[i]>0.0) {
+                        target += lognormal_lpdf(index[t,i] | log(q[i]*x[t]) - sigmao2[t,i]/2,sigmao[t,i]);
                     }
                 }
             }
         }
-    }
 
-    // Catch observation model uses F derived from effort-based qeff
-    real mu_catch;
-    for(t in 1:Tm1){
-        mu_catch = log(removals[t]) - 0.5*sigmac^2;
-        if(fit_to_data == 1) {
-            target += lognormal_lpdf(obs_removals[t]|mu_catch,sigmac);
+        // Catch observation model uses F derived from effort-based qeff
+        for(t in 1:Tm1){
+            target += lognormal_lpdf(obs_removals[t]|log(removals[t]) - 0.5*sigmac[t]^2,sigmac[t]);
         }
     }
 }
