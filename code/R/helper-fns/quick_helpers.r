@@ -18,6 +18,10 @@ quick_diagnostics <- function(fit) {
   # Divergences
   div <- sum(get_divergent_iterations(fit))
   cat("Divergent transitions:", div, "\n")
+
+  # Max tree depth
+  tree <- sum(get_max_treedepth_iterations(fit))
+  cat("Transitions exceeding max treedepth:", tree, "\n")
   
   # Energy diagnostics
   sampler_params <- get_sampler_params(fit, inc_warmup = FALSE)
