@@ -241,13 +241,17 @@ build_local_shiny <- function(proj_dir = this.path::this.proj(),
 #' @param run_number Character string containing the run identifier
 #' @return List with extracted components and parsing method used
 parse_run_components <- function(run_number) {
-  # Initialize result with defaults
+  # Initialize result with defaults - EXPANDED for new fields
   result <- list(
     run_num = NA_character_,
     cpue_index = NA_character_,
     sigma_catch = NA_real_,
     sigma_edev = NA_real_,
     n_step = NA_integer_,
+    exec = NA_character_,           # NEW: executable type (B, BF, BX, BFX)
+    start_year = NA_integer_,       # NEW: start year
+    catch_scenario = NA_character_, # NEW: catch scenario (e.g., "0.2flat")
+    step_scenario = NA_character_,  # NEW: step scenario (e.g., "5reg")
     parsing_method = "unknown"
   )
   
@@ -263,7 +267,37 @@ parse_run_components <- function(run_number) {
   
   stem <- sub("^[0-9]+-", "", run_number)
   
-  # Strategy 1: Modern systematic pattern (cpue-c{val}-e{val}-s{val})
+  # Strategy 1: NEW Complex scenario pattern (cpue-exe{X}-sy{YEAR}-cs{SCENARIO}-e{VAL}-ss{SCENARIO})
+  complex_pattern <- "^([^-]+)-exe([A-Z]+)-sy([0-9]+)-cs([^-]+)-e([0-9.]+)-ss([^_]+)"
+  if (grepl(complex_pattern, stem)) {
+    matches <- regmatches(stem, regexec(complex_pattern, stem))[[1]]
+    if (length(matches) == 7) {
+      result$cpue_index <- matches[2]
+      result$exec <- matches[3]
+      result$start_year <- as.integer(matches[4])
+      result$catch_scenario <- matches[5]
+      result$sigma_edev <- as.numeric(matches[6])
+      result$step_scenario <- matches[7]
+      
+      # Extract numeric part from catch scenario if present
+      catch_num_match <- regexpr("^([0-9.]+)", result$catch_scenario)
+      if (catch_num_match > 0) {
+        result$sigma_catch <- as.numeric(regmatches(result$catch_scenario, catch_num_match))
+      }
+      
+      # Extract numeric part from step scenario if present
+      step_num_match <- regexpr("^([0-9]+)", result$step_scenario)
+      if (step_num_match > 0) {
+        result$n_step <- as.integer(regmatches(result$step_scenario, step_num_match))
+      }
+      
+      result$parsing_method <- "complex_scenario"
+      return(result)
+    }
+  }
+  
+  # Strategy 2: Modern systematic pattern (cpue-c{val}-e{val}-s{val})
+  # Translate to new format using provided guidance
   systematic_pattern <- "^([^-]+)-c([0-9.]+)-e([0-9.]+)-s([0-9]+)"
   if (grepl(systematic_pattern, stem)) {
     matches <- regmatches(stem, regexec(systematic_pattern, stem))[[1]]
@@ -272,12 +306,19 @@ parse_run_components <- function(run_number) {
       result$sigma_catch <- as.numeric(matches[3])
       result$sigma_edev <- as.numeric(matches[4])
       result$n_step <- as.integer(matches[5])
+      
+      # Translate to new format structure
+      result$exec <- "B"                                    # Default for old systematic
+      result$start_year <- 1952L                           # Default for old systematic  
+      result$catch_scenario <- paste0(result$sigma_catch, "flat")
+      result$step_scenario <- paste0(result$n_step, "reg")
+      
       result$parsing_method <- "systematic"
       return(result)
     }
   }
   
-  # Strategy 2: Legacy prior pattern (e.g., "2024cpueFPrior_0")
+  # Strategy 3: Legacy prior pattern (e.g., "2024cpueFPrior_0")
   prior_pattern <- "^([0-9]+)cpue([A-Za-z]+)Prior"
   if (grepl(prior_pattern, stem)) {
     matches <- regmatches(stem, regexec(prior_pattern, stem))[[1]]
@@ -288,7 +329,7 @@ parse_run_components <- function(run_number) {
     }
   }
   
-  # Strategy 3: Effort pattern (e.g., "2024cpueEffortQeff_0")
+  # Strategy 4: Effort pattern (e.g., "2024cpueEffortQeff_0")
   effort_pattern <- "^([0-9]+)cpue([A-Za-z]+)([A-Za-z]+)"
   if (grepl(effort_pattern, stem)) {
     matches <- regmatches(stem, regexec(effort_pattern, stem))[[1]]
@@ -299,11 +340,11 @@ parse_run_components <- function(run_number) {
     }
   }
   
-  # Strategy 4: Fallback - extract any recognizable components
+  # Strategy 5: Fallback - extract any recognizable components
   # Look for individual patterns anywhere in the string
   
   # Extract cpue index if it's a known value
-  known_indices <- c("au", "nz", "obs", "dwfn", "effort")
+  known_indices <- c("au", "nz", "obs", "dwfn", "effort", "obsNoPF", "obsPFonly")
   for (idx in known_indices) {
     if (grepl(paste0("\\b", idx, "\\b"), stem, ignore.case = TRUE)) {
       result$cpue_index <- idx
@@ -311,25 +352,65 @@ parse_run_components <- function(run_number) {
     }
   }
   
-  # Extract catch error if present
-  catch_match <- regexpr("c([0-9.]+)", stem)
-  if (catch_match > 0) {
-    result$sigma_catch <- as.numeric(sub("c([0-9.]+).*", "\\1", 
-                                       regmatches(stem, catch_match)))
+  # Extract executive type if present
+  exec_match <- regexpr("exe([A-Z]+)", stem)
+  if (exec_match > 0) {
+    result$exec <- sub("exe([A-Z]+).*", "\\1", regmatches(stem, exec_match))
   }
   
-  # Extract effort dev if present
-  edev_match <- regexpr("e([0-9.]+)", stem)
-  if (edev_match > 0) {
-    result$sigma_edev <- as.numeric(sub("e([0-9.]+).*", "\\1", 
-                                      regmatches(stem, edev_match)))
+  # Extract start year if present
+  sy_match <- regexpr("sy([0-9]+)", stem)
+  if (sy_match > 0) {
+    result$start_year <- as.integer(sub("sy([0-9]+).*", "\\1", regmatches(stem, sy_match)))
   }
   
-  # Extract step size if present
-  step_match <- regexpr("s([0-9]+)", stem)
-  if (step_match > 0) {
-    result$n_step <- as.integer(sub("s([0-9]+).*", "\\1", 
-                                  regmatches(stem, step_match)))
+  # Extract catch scenario if present
+  cs_match <- regexpr("cs([^-]+)", stem)
+  if (cs_match > 0) {
+    result$catch_scenario <- sub("cs([^-]+).*", "\\1", regmatches(stem, cs_match))
+    # Try to extract numeric part
+    catch_num_match <- regexpr("^([0-9.]+)", result$catch_scenario)
+    if (catch_num_match > 0) {
+      result$sigma_catch <- as.numeric(regmatches(result$catch_scenario, catch_num_match))
+    }
+  }
+  
+  # Extract step scenario if present
+  ss_match <- regexpr("ss([^_]+)", stem)
+  if (ss_match > 0) {
+    result$step_scenario <- sub("ss([^_]+).*", "\\1", regmatches(stem, ss_match))
+    # Try to extract numeric part
+    step_num_match <- regexpr("^([0-9]+)", result$step_scenario)
+    if (step_num_match > 0) {
+      result$n_step <- as.integer(regmatches(result$step_scenario, step_num_match))
+    }
+  }
+  
+  # Extract catch error if present (standalone)
+  if (is.na(result$sigma_catch)) {
+    catch_match <- regexpr("c([0-9.]+)", stem)
+    if (catch_match > 0) {
+      result$sigma_catch <- as.numeric(sub("c([0-9.]+).*", "\\1", 
+                                         regmatches(stem, catch_match)))
+    }
+  }
+  
+  # Extract effort dev if present (standalone)
+  if (is.na(result$sigma_edev)) {
+    edev_match <- regexpr("e([0-9.]+)", stem)
+    if (edev_match > 0) {
+      result$sigma_edev <- as.numeric(sub("e([0-9.]+).*", "\\1", 
+                                        regmatches(stem, edev_match)))
+    }
+  }
+  
+  # Extract step size if present (standalone)
+  if (is.na(result$n_step)) {
+    step_match <- regexpr("s([0-9]+)", stem)
+    if (step_match > 0) {
+      result$n_step <- as.integer(sub("s([0-9]+).*", "\\1", 
+                                    regmatches(stem, step_match)))
+    }
   }
   
   result$parsing_method <- "fallback"
