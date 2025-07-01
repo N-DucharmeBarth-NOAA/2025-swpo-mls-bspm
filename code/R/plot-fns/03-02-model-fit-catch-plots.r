@@ -32,23 +32,13 @@ generate_catch_fit <- function(model_dirs, params = NULL) {
   plot_dt_a <- rbindlist(fit_dt_list) %>%
     merge(., tmp_summary[, .(run_id, run_label)], by = "run_id") %>%
     .[, group_id := paste0(run_id, "-catch")] %>%
-    .[metric %in% c("obs_catch", "pred_catch")] %>%
+    .[metric %in% c("obs_catch", "pred_catch","sigmac")] %>%
     na.omit(.) %>%
     .[row >= 1, year := year_one + (row - 1)] %>%
     .[row < 1, year := year_one + (row - 1)]
   
-  plot_dt_b <- rbindlist(fit_dt_list) %>%
-    merge(., tmp_summary[, .(run_id, run_label)], by = "run_id") %>%
-    .[, group_id := paste0(run_id, "-catch")] %>%
-    .[metric %in% c("sigmac")] %>%
-    na.omit(.) %>%
-    .[row >= 1, year := year_one + (row - 1)] %>%
-    .[row < 1, year := year_one + (row - 1)] %>%
-    .[, .(value = median(value)), by = .(run_id, metric, row, run_label, group_id, year)] %>%
-    .[, iter := 0] %>%
-    .[, .(run_id, metric, iter, row, value, run_label, group_id, year)]
   
-  plot_dt <- rbind(plot_dt_a, plot_dt_b)
+  plot_dt <- rbind(plot_dt_a)
   
   # Process observation error data
   obs_se_dt <- plot_dt[metric == "sigmac"] %>%

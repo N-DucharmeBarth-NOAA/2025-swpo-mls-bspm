@@ -86,15 +86,22 @@ ssp_calc_likelihood = function(hmc_samples,stan_data){
                     .[,row:=NULL] %>%
                     as.matrix(.)
                 ll_catch = array(NA,dim=c(max(hmc_samples[name=="removals"]$row,na.rm=TRUE),max_iter))
-                sigmac = stan_data[name=="sigmac"]$value
                 removals = dcast(hmc_samples[name%in%c("removals"),.(iter,row,value)],row~iter) %>%
                     .[,row:=NULL] %>%
                     as.matrix(.)
+                sigmac_data = stan_data[name=="sigmac"]
+                if(nrow(sigmac_data) == 1) {
+                    # Single value case: replicate to length T
+                    sigmac = rep(sigmac_data$value, stan_data[name=="T"]$value)
+                } else {
+                    # Time-varying case: extract vector in row order
+                    sigmac = sigmac_data[order(row)]$value
+                }
 
                 for(j in 1:max_iter){
                     for(t in 1:max(hmc_samples[name=="removals"]$row,na.rm=TRUE)){
-                        mu_catch = log(removals[t,j]) - 0.5*sigmac^2
-                        ll_catch[t,j] = dlnorm(obs_removals[t,1],mu_catch,sigmac,log=TRUE)
+                        mu_catch = log(removals[t,j]) - 0.5*sigmac[t]^2
+                        ll_catch[t,j] = dlnorm(obs_removals[t,1],mu_catch,sigmac[t],log=TRUE)
                     }
                 }
                     ll_catch_dt = as.data.table(ll_catch) %>%

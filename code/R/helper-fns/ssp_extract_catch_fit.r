@@ -18,12 +18,17 @@ ssp_extract_catch_fit = function(ssp_summary, samples_dt, stan_data, settings, s
                     .[value==-999,value:=NA]
       
       # Get observation error for catch
-      sigmac = stan_data[name=="sigmac"]$value
+      sigmac_data = stan_data[name=="sigmac"]
+      if(nrow(sigmac_data) == 1) {
+      sigmac = rep(sigmac_data$value, stan_data[name=="T"]$value)
+      } else {
+      sigmac = sigmac_data[order(row)]$value
+      }
       obs_se_dt = data.table(run_id=ssp_summary$run_id,
-                            metric="sigmac",
-                            iter=0,
-                            row=obs_catch_dt$row,
-                            value=sigmac)
+                      metric="sigmac",
+                      iter=0,
+                      row=obs_catch_dt$row,
+                      value=sigmac[obs_catch_dt$row])
       
       # Get predicted catch
       pred_catch_dt = samples_dt[name=="removals",.(run_id,iter,row,value)] %>%
@@ -36,8 +41,8 @@ ssp_extract_catch_fit = function(ssp_summary, samples_dt, stan_data, settings, s
             iter_val = iter_sampled[i]
             pred_vals = pred_catch_dt[iter==iter_val]$value
             ppd_vals = rlnorm(length(pred_vals), 
-                             log(pred_vals) - 0.5*sigmac^2, 
-                             sigmac)
+                 log(pred_vals) - 0.5*sigmac[1:length(pred_vals)]^2, 
+                 sigmac[1:length(pred_vals)])
             
             ppd_catch_list[[i]] = data.table(run_id=ssp_summary$run_id,
                                            metric="ppd_catch",

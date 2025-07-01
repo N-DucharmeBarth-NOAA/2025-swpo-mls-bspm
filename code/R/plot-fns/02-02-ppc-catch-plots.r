@@ -445,7 +445,12 @@ generate_catch_ppc_loo_interval <- function(model_dir, params = NULL) {
 ssp_calc_catch_likelihood <- function(samples_dt, stan_data) {
   # Extract relevant data
   obs_removals <- stan_data[name == "obs_removals"]$value
-  sigmac <- stan_data[name == "sigmac"]$value
+  sigmac_data = stan_data[name=="sigmac"]
+  if(nrow(sigmac_data) == 1) {
+      sigmac = rep(sigmac_data$value, stan_data[name=="T"]$value)
+  } else {
+      sigmac = sigmac_data[order(row)]$value
+  }
   
   # Get predicted removals
   removals_dt <- samples_dt[name == "removals", .(iter, row, value)]
@@ -454,8 +459,8 @@ ssp_calc_catch_likelihood <- function(samples_dt, stan_data) {
   # Note: removals has one fewer observation than obs_removals (no terminal year prediction)
   ll_dt <- removals_dt[, {
     if (row <= length(obs_removals)) {  # Ensure we don't exceed obs_removals length
-      mu_catch <- log(value) - 0.5 * sigmac^2
-      ll <- dlnorm(obs_removals[row], meanlog = mu_catch, sdlog = sigmac, log = TRUE)
+      mu_catch <- log(value) - 0.5 * sigmac[row]^2
+      ll <- dlnorm(obs_removals[row], meanlog = mu_catch, sdlog = sigmac[row], log = TRUE)
       .(T = row, ll = ll)
     } else {
       .(T = integer(0), ll = numeric(0))  # Return empty if row exceeds observations

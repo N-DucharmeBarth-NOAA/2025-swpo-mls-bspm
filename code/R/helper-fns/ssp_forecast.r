@@ -30,9 +30,14 @@ ssp_forecast = function(ssp_summary,samples_dt,stan_data,settings,sub_sample_pro
       # Handle removals matrix
       removals_mat_a = dcast(sub_samples_dt[name=="removals",.(iter,row,value)],iter~row) %>% .[,iter:=NULL] %>% as.matrix(.)
       if(ncol(removals_mat_a)==T-1){
-            sigmac = stan_data[name=="sigmac"]$value
-            mu_catch = log(stan_data[name=="obs_removals"&row==T]$value) - 0.5*sigmac^2
-            removals_mat_a = cbind(removals_mat_a,rlnorm(nrow(removals_mat_a),mu_catch,sigmac))
+            sigmac_data = stan_data[name=="sigmac"]
+            if(nrow(sigmac_data) == 1) {
+            sigmac = rep(sigmac_data$value, stan_data[name=="T"]$value)
+            } else {
+            sigmac = sigmac_data[order(row)]$value
+            }
+            mu_catch = log(stan_data[name=="obs_removals"&row==T]$value) - 0.5*sigmac[T]^2
+            removals_mat_a = cbind(removals_mat_a,rlnorm(nrow(removals_mat_a),mu_catch,sigmac[T]))
       }
       removals_mat = cbind(removals_mat_a,matrix(NA,nrow=length(iter_sampled),ncol=forecast_years))
 
