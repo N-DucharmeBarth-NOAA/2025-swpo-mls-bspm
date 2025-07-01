@@ -77,7 +77,7 @@ transformed data{
 
 parameters {
     // Updated multivariate parameters (now 3-dimensional)
-    vector[3] raw_mv_params; // [raw_logK, raw_log_r, raw_log_shape]
+    vector[4] raw_mv_params; // [raw_logK, raw_log_r, raw_log_shape]
 
     // Independent qeff parameter
     real raw_logqeff; // raw log effort catchability

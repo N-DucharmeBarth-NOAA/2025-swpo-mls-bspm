@@ -70,7 +70,7 @@
 
             # Use the auto-detection version
             stan.inits = replicate(chains, 
-                                stan_inits_func_auto(Tm1 = (stan.data$T-1), 
+                                stan_inits_func(Tm1 = (stan.data$T-1), 
                                                     n_periods = n_periods_val,
                                                     exec_name = exec_name), 
                                 simplify=FALSE)

@@ -46,7 +46,7 @@ ui = dashboardPage(
       awesomeCheckboxGroup(
         inputId = "ppp.leading_params",
         label = "Parameter", 
-        choices = c("logK","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev"),
+        choices = c("logK","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","x0"),
         selected = c("logK", "r")
       ),
       switchInput(

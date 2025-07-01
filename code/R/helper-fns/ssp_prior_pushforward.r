@@ -338,14 +338,14 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
             epsp_t = exp(raw_epsp[i, t] * sigmap[i] - sigmap2[i]/2)
             
             # Population dynamics (Fletcher-Schaefer)
-            if (x[i, t-1] <= dmsy) {
+            if (x[i, t-1] <= dmsy[i]) {
                 # Low density growth
-                x_before_fishing = x[i, t-1] + r[i] * x[i, t-1] * (1 - x[i, t-1]/h)
+                x_before_fishing = x[i, t-1] + r[i] * x[i, t-1] * (1 - x[i, t-1]/h[i])
                 x[i, t] = x_before_fishing * epsp_t * exp(-F_t)
                 removals[i, t-1] = x_before_fishing * epsp_t * (1 - exp(-F_t)) * exp(logK[i])
             } else {
                 # High density growth
-                x_before_fishing = x[i, t-1] + g * m[i] * x[i, t-1] * (1 - (x[i, t-1])^(n[i]-1))
+                x_before_fishing = x[i, t-1] + g[i] * m[i] * x[i, t-1] * (1 - (x[i, t-1])^(n[i]-1))
                 x[i, t] = x_before_fishing * epsp_t * exp(-F_t)
                 removals[i, t-1] = x_before_fishing * epsp_t * (1 - exp(-F_t)) * exp(logK[i])
             }
