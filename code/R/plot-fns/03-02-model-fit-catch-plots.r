@@ -27,6 +27,10 @@ generate_catch_fit <- function(model_dirs, params = NULL) {
       calc_std = "FALSE"
     )
   }
+
+  yo_dt = tmp_summary[,.(run_label)] %>%
+          unique(.) %>%
+          .[,year_one:=extract_model_start_year(run_label)]
   
   # Combine and process data
   plot_dt_a <- rbindlist(fit_dt_list) %>%
@@ -34,6 +38,7 @@ generate_catch_fit <- function(model_dirs, params = NULL) {
     .[, group_id := paste0(run_id, "-catch")] %>%
     .[metric %in% c("obs_catch", "pred_catch","sigmac")] %>%
     na.omit(.) %>%
+    merge(.,yo_dt,by="run_label") %>% 
     .[row >= 1, year := year_one + (row - 1)] %>%
     .[row < 1, year := year_one + (row - 1)]
   
@@ -148,13 +153,18 @@ generate_catch_fit_ppd <- function(model_dirs, params = NULL) {
       calc_std = "FALSE"
     )
   }
-  
+
+  yo_dt = tmp_summary[,.(run_label)] %>%
+          unique(.) %>%
+          .[,year_one:=extract_model_start_year(run_label)]
+
   # Process data (similar to catch_fit but using ppd_catch instead of pred_catch)
   plot_dt <- rbindlist(fit_dt_list) %>%
     merge(., tmp_summary[, .(run_id, run_label)], by = "run_id") %>%
     .[, group_id := paste0(run_id, "-catch")] %>%
     .[metric %in% c("obs_catch", "sigmac", "ppd_catch")] %>%
     na.omit(.) %>%
+    merge(.,yo_dt,by="run_label") %>%
     .[row >= 1, year := year_one + (row - 1)] %>%
     .[row < 1, year := year_one + (row - 1)]
   
@@ -295,12 +305,17 @@ generate_catch_fit_residuals <- function(model_dirs, params = NULL) {
   # Add jitter for multiple models and prepare data
   step <- 1 / (length(model_dirs) + 1)
   jitter_seq <- seq(from = -0.5, to = 0.5, by = step)[-1]
+
+  yo_dt = tmp_summary[,.(run_label)] %>%
+          unique(.) %>%
+          .[,year_one:=extract_model_start_year(run_label)]
   
   plot_dt <- plot_dt %>%
     na.omit(.) %>%
-    .[, run_label := factor(run_label, levels = sort(unique(run_label)))] %>%
+    merge(.,yo_dt,by="run_label") %>%     
     .[row >= 1, year := year_one + (row - 1)] %>%
     .[row < 1, year := year_one + (row - 1)] %>%
+    .[, run_label := factor(run_label, levels = sort(unique(run_label)))] %>%
     .[, year := year + jitter_seq[as.numeric(run_label)]]
   
   # Calculate runs test for single model

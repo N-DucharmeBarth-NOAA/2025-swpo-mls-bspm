@@ -85,14 +85,20 @@ get_default_params <- function() {
 }
 
 # Global configuration (to be set by user)
-set_global_config <- function(year_one = 1994, 
+set_global_config <- function( 
                              index_names = c("Index 1", "Index 2"), 
                              model_stem = "./output/",
                              height_per_panel = 350) {
-  assign("year_one", year_one, envir = .GlobalEnv)
   assign("index_names", index_names, envir = .GlobalEnv)
   assign("model_stem", model_stem, envir = .GlobalEnv)
   assign("height_per_panel", height_per_panel, envir = .GlobalEnv)
+}
+
+extract_model_start_year <- function(model_string) {
+  has_sy <- grepl("-sy[0-9]{4}", model_string)
+  result <- rep(1952L, length(model_string))
+  result[has_sy] <- as.integer(sub(".*-sy([0-9]{4}).*", "\\1", model_string[has_sy]))
+  result
 }
 
 # =============================================================================

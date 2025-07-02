@@ -72,6 +72,10 @@ generate_fcast <- function(model_dirs, params = NULL) {
   if (nrow(plot_dt) == 0) {
     stop("No data available for plotting")
   }
+
+  yo_dt = tmp_summary[,.(run_label)] %>%
+          unique(.) %>%
+          .[,year_one:=extract_model_start_year(run_label)]
   
   # Summarize data
   obs_quant <- 0.5 * (1 - (as.numeric(params$quants) - 1e-1) / 100)
@@ -81,6 +85,7 @@ generate_fcast <- function(model_dirs, params = NULL) {
           lp = quantile(value, probs = obs_quant), 
           up = quantile(value, probs = 1 - obs_quant)), 
       by = .(run_label, type, name, row)] %>%
+     merge(.,yo_dt,by="run_label") %>%   
     .[row >= 1, year := year_one + (row - 1)] %>%
     .[row < 1, year := year_one + (row - 1)] %>%
     .[name %in% c("Process error", "Process error (raw)") & row > 0, year := year + 1]

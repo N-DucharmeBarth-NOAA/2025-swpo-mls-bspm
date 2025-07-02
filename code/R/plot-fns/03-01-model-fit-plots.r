@@ -30,6 +30,10 @@ generate_index_fit <- function(model_dirs, params = NULL) {
       calc_std = "FALSE"
     )
   }
+
+    yo_dt = tmp_summary[,.(run_label)] %>%
+          unique(.) %>%
+          .[,year_one:=extract_model_start_year(run_label)]
   
   # Combine and process data
   plot_dt_a <- rbindlist(fit_dt_list) %>%
@@ -38,8 +42,10 @@ generate_index_fit <- function(model_dirs, params = NULL) {
     .[metric %in% c("obs_cpue", "pred_cpue")] %>%
     na.omit(.) %>%
     .[, index := factor(index, levels = sort(unique(index)), labels = index_names[as.numeric(as.character(sort(unique(index))))])] %>%
+    merge(.,yo_dt,by="run_label") %>%
     .[row >= 1, year := year_one + (row - 1)] %>%
-    .[row < 1, year := year_one + (row - 1)]
+    .[row < 1, year := year_one + (row - 1)] %>%
+    .[,year_one:=NULL]
   
   plot_dt_b <- rbindlist(fit_dt_list) %>%
     merge(., tmp_summary[, .(run_id, run_label)], by = "run_id") %>%
@@ -47,6 +53,7 @@ generate_index_fit <- function(model_dirs, params = NULL) {
     .[metric %in% c("sigmao")] %>%
     na.omit(.) %>%
     .[, index := factor(index, levels = sort(unique(index)), labels = index_names[as.numeric(as.character(sort(unique(index))))])] %>%
+    merge(.,yo_dt,by="run_label") %>%
     .[row >= 1, year := year_one + (row - 1)] %>%
     .[row < 1, year := year_one + (row - 1)] %>%
     .[, .(value = median(value)), by = .(run_id, metric, row, index, run_label, group_id, year)] %>%
@@ -175,6 +182,10 @@ generate_index_fit_ppd <- function(model_dirs, params = NULL) {
       calc_std = "FALSE"
     )
   }
+
+  yo_dt = tmp_summary[,.(run_label)] %>%
+          unique(.) %>%
+          .[,year_one:=extract_model_start_year(run_label)]
   
   # Process data (similar to index_fit but using ppd_cpue instead of pred_cpue)
   plot_dt <- rbindlist(fit_dt_list) %>%
@@ -183,6 +194,7 @@ generate_index_fit_ppd <- function(model_dirs, params = NULL) {
     .[metric %in% c("obs_cpue", "sigmao", "ppd_cpue")] %>%
     na.omit(.) %>%
     .[, index := factor(index, levels = sort(unique(index)), labels = index_names[as.numeric(as.character(sort(unique(index))))])] %>%
+    merge(.,yo_dt,by="run_label") %>%
     .[row >= 1, year := year_one + (row - 1)] %>%
     .[row < 1, year := year_one + (row - 1)]
   
@@ -335,13 +347,18 @@ generate_index_fit_residuals <- function(model_dirs, params = NULL) {
   # Add jitter for multiple models and prepare data
   step <- 1 / (length(model_dirs) + 1)
   jitter_seq <- seq(from = -0.5, to = 0.5, by = step)[-1]
-  
+
+  yo_dt = tmp_summary[,.(run_label)] %>%
+          unique(.) %>%
+          .[,year_one:=extract_model_start_year(run_label)]
+
   plot_dt <- plot_dt %>%
     na.omit(.) %>%
     .[, index := factor(index, levels = sort(unique(index)), labels = index_names[as.numeric(as.character(sort(unique(index))))])] %>%
-    .[, run_label := factor(run_label, levels = sort(unique(run_label)))] %>%
+    merge(.,yo_dt,by="run_label") %>%
     .[row >= 1, year := year_one + (row - 1)] %>%
     .[row < 1, year := year_one + (row - 1)] %>%
+    .[, run_label := factor(run_label, levels = sort(unique(run_label)))] %>%
     .[, year := year + jitter_seq[as.numeric(run_label)]]
   
   # Calculate runs test for single model
