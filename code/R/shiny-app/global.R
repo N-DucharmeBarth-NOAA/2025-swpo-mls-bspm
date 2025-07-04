@@ -32,7 +32,7 @@ if(length(plot_files) > 0) {
 }
 
 # Load and format summary data
-summary_dt <- fread(file.path("data","summary_dt.csv")) %>% .[run_num>6]
+summary_dt <- fread(file.path("data","summary_dt.csv")) #%>% .[run_num>6]
 
 # Format numeric columns for display
 # Columns to round only

@@ -210,12 +210,21 @@
 # baseline model: 1952, dwfn, catch 0.2, effort 0.3, n_step 5
 
 
-    model_config_df = data.frame(exec = c("B","BF","BX","BFX"),
+    model_config_df_base = data.frame(exec = c("B","BF","BX","BFX"),
                                  start_year = c(1952,1952,1952,1952),
                                  cpue = c("dwfn","dwfn","dwfn","dwfn"),
                                  catch_scenario = rep("0.2flat",4),
                                  sigma_edev = rep(0.3,4),
                                  step_scenario = rep("5reg",4))
+
+    model_config_df_sens = data.frame(exec = c("BF","BF","B","BX","BX","BX","BX","BX"),
+                                 start_year = c(1952,1952,1952,1953,1952,1952,1952,1988),
+                                 cpue = c("dwfn","dwfn","dwfn","dwfn","dwfn","dwfn","dwfn","dwfn"),
+                                 catch_scenario = c("0.2DWflat","0.2DWpower","0.2correct","0.2flat","0.2DWNoProc","0.2DWNoProcOldlKPrior","0.2DWNoProcOldlKPrior","0.2flat"),
+                                 sigma_edev = c(rep(0.3,4),0.5,0.5,0.3,0.3),
+                                 step_scenario = rep("5reg",8))
+
+    model_config_df = rbind(model_config_df_base,model_config_df_sens)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # set-up model inputs
@@ -317,12 +326,80 @@ for(i in 1:nrow(model_config_df)){
                 stan.data$mv_prior_sd = mv_prior_sd
                 stan.data$mv_prior_corr = mv_cor_catch
             }
+
+            if(model_config_df$start_year[i]==1988){
+                stan.data$mv_prior_mean[4] = log(0.7)
+                stan.data$mv_prior_sd[4] = 0.2
+            }
         
         # catch scenario
             if(model_config_df$catch_scenario[i]=="0.2flat" & model_config_df$exec[i] %in% c("B","BX")){
                 stan.data$sigmac = 0.2
             } else if(model_config_df$catch_scenario[i]=="0.2flat" & model_config_df$exec[i] %in% c("BF","BFX")){
                 stan.data$sigmac = rep(0.2,stan.data$T)
+            }
+
+            if(model_config_df$catch_scenario[i]=="0.2DWNoProc" & model_config_df$exec[i] %in% c("B","BX")){
+                stan.data$sigmac = 0.2
+                stan.data$PriorMean_logsigmap = log(0.001)
+                stan.data$PriorSD_logsigmap = 0.05
+            } else if(model_config_df$catch_scenario[i]=="0.2DWNoProc" & model_config_df$exec[i] %in% c("BF","BFX")){
+                stan.data$sigmac = c(2,rep(0.2,stan.data$T-1))
+                stan.data$PriorMean_logsigmap = log(0.001)
+                stan.data$PriorSD_logsigmap = 0.05
+            }
+
+            if(model_config_df$catch_scenario[i]=="0.2DWNoProcOldlKPrior" & model_config_df$exec[i] %in% c("B","BX")){
+                stan.data$sigmac = 0.2
+                stan.data$PriorMean_logsigmap = log(0.001)
+                stan.data$PriorSD_logsigmap = 0.05
+                stan.data$mv_prior_mean[1] = 13.8633826342304
+                stan.data$mv_prior_sd[1] = 0.456389088374683
+            } else if(model_config_df$catch_scenario[i]=="0.2DWNoProcOldlKPrior" & model_config_df$exec[i] %in% c("BF","BFX")){
+                stan.data$sigmac = c(2,rep(0.2,stan.data$T-1))
+                stan.data$PriorMean_logsigmap = log(0.001)
+                stan.data$PriorSD_logsigmap = 0.05
+                stan.data$mv_prior_mean[1] = 13.8633826342304
+                stan.data$mv_prior_sd[1] = 0.456389088374683
+            }
+
+            if(model_config_df$catch_scenario[i]=="0.2DWflat" & model_config_df$exec[i] %in% c("B","BX")){
+                stan.data$sigmac = 0.2
+            } else if(model_config_df$catch_scenario[i]=="0.2DWflat" & model_config_df$exec[i] %in% c("BF","BFX")){
+                stan.data$sigmac = c(10,rep(0.2,stan.data$T-1))
+            }
+
+            if(model_config_df$catch_scenario[i]=="0.2DWv2flat" & model_config_df$exec[i] %in% c("B","BX")){
+                stan.data$sigmac = 0.2
+            } else if(model_config_df$catch_scenario[i]=="0.2DWv2flat" & model_config_df$exec[i] %in% c("BF","BFX")){
+                stan.data$sigmac = c(100,rep(0.2,stan.data$T-1))
+            }
+
+            if(model_config_df$catch_scenario[i]=="0.2DWv3flat" & model_config_df$exec[i] %in% c("B","BX")){
+                stan.data$sigmac = 0.2
+            } else if(model_config_df$catch_scenario[i]=="0.2DWv3flat" & model_config_df$exec[i] %in% c("BF","BFX")){
+                stan.data$sigmac = c(5,rep(0.2,stan.data$T-1))
+            }
+
+            generate_power_decline = function(N, start_power = 0.5, end_power = 0.2) {
+                years = 0:N
+                decline_rate = (end_power / start_power)^(1/N)
+                power = start_power * decline_rate^years
+                return(power)
+            }
+
+            if(model_config_df$catch_scenario[i]=="0.2DWpower" & model_config_df$exec[i] %in% c("B","BX")){
+                stan.data$sigmac = 0.2
+            } else if(model_config_df$catch_scenario[i]=="0.2DWpower" & model_config_df$exec[i] %in% c("BF","BFX")){
+                stan.data$sigmac = c(10,generate_power_decline(stan.data$T-2))
+            }
+
+            if(model_config_df$catch_scenario[i]=="0.2correct" & model_config_df$exec[i] %in% c("B","BX")){
+                stan.data$sigmac = 0.2
+                stan.data$obs_removals[1] =  mean(stan.data$obs_removals[c(2:6)]/stan.data$effort[c(2:6)])*stan.data$effort[1]
+            } else if(model_config_df$catch_scenario[i]=="0.2correct" & model_config_df$exec[i] %in% c("BF","BFX")){
+                stan.data$sigmac = rep(0.2,stan.data$T)
+                stan.data$obs_removals[1] =  mean(stan.data$obs_removals[c(2:6)]/stan.data$effort[c(2:6)])*stan.data$effort[1]
             }
 
         # exec scenario
@@ -351,9 +428,7 @@ for(i in 1:nrow(model_config_df)){
                     stan_save_dir = file.path(proj_dir,"data","output","model_runs"),
                     n_cores = 5)
 
-    print(fit, pars = c("logK", "r", "shape", "sigmap", "sigmao_add", "qeff", "rho", "sigma_qdev", 
-                       "x[1]", "x[37]", "x[71]", "removals[3]", "removals[70]"))
-    print(stan.data$obs_removals[c(3,70)])
+    print(fit, pars = c("logK", "r", "shape", "sigmap", "sigmao_add", "qeff", "rho", "sigma_qdev"))
     
     quick_diagnostics(fit)
     # compare_marginals(ppc,fit,c("logK", "r", "shape", "sigmap", "sigmao_add", "qeff", "rho", "sigma_qdev", 
