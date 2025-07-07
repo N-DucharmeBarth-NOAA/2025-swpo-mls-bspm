@@ -17,7 +17,7 @@ stan_inits_func = function(Tm1, n_periods = NULL, exec_name = "auto") {
             raw_sigmaf = abs(rnorm(1, 0, 0.25)),
             raw_F = abs(rnorm(Tm1, 0, 0.25))
         )
-    } else if(exec_name %in% c("mvprior", "bspm_estF_softdep_mvprior")) {
+    } else if(exec_name %in% c("mvprior", "bspm_estF_softdep_mvprior","bspm_estF_mvprior")) {
         # Multivariate prior models (3D)
         specific_inits = list(
             raw_mv_params = rnorm(3, 0, 0.25),  # 3D multivariate

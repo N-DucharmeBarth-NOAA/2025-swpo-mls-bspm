@@ -14,7 +14,20 @@ generate_catch_fit <- function(model_dirs, params = NULL) {
   # Load data for all models
   all_data <- lapply(model_dirs, load_model_data)
   tmp_summary <- rbindlist(lapply(all_data, function(x) x$summary), fill = TRUE)
-  
+
+  if(is.null(params$model_names)){
+    short_plot_names = tmp_summary$run_label
+    short_plot_names = sapply(short_plot_names,function(x)strsplit(x,"-")[[1]][1])  
+  } else {
+    if(length(params$model_names)!=nrow(tmp_summary)){
+      stop("`model_names` does not have the correct length")
+    } else if(uniqueN(params$model_names)!=length(params$model_names)){
+      stop("`model_names` can not have duplicate names")
+    } else {
+      short_plot_names = params$model_names
+    }
+  }
+
   # Extract catch fit data for all models
   fit_dt_list <- list()
   for (i in seq_along(all_data)) {
@@ -100,6 +113,7 @@ generate_catch_fit <- function(model_dirs, params = NULL) {
   
   # Create plot
   p <- pred_catch_dt %>%
+  .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)] %>%
     ggplot() +
     ylab("Catch") +
     xlab("Year")
@@ -140,7 +154,20 @@ generate_catch_fit_ppd <- function(model_dirs, params = NULL) {
   # Load data for all models
   all_data <- lapply(model_dirs, load_model_data)
   tmp_summary <- rbindlist(lapply(all_data, function(x) x$summary), fill = TRUE)
-  
+
+  if(is.null(params$model_names)){
+    short_plot_names = tmp_summary$run_label
+    short_plot_names = sapply(short_plot_names,function(x)strsplit(x,"-")[[1]][1])  
+  } else {
+    if(length(params$model_names)!=nrow(tmp_summary)){
+      stop("`model_names` does not have the correct length")
+    } else if(uniqueN(params$model_names)!=length(params$model_names)){
+      stop("`model_names` can not have duplicate names")
+    } else {
+      short_plot_names = params$model_names
+    }
+  }
+
   # Extract catch fit data for all models
   fit_dt_list <- list()
   for (i in seq_along(all_data)) {
@@ -223,6 +250,7 @@ generate_catch_fit_ppd <- function(model_dirs, params = NULL) {
   
   # Create plot (same structure as catch_fit)
   p <- pred_catch_dt %>%
+  .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)] %>%
     ggplot() +
     ylab("Catch") +
     xlab("Year")
@@ -259,7 +287,20 @@ generate_catch_fit_residuals <- function(model_dirs, params = NULL) {
   # Load data for all models
   all_data <- lapply(model_dirs, load_model_data)
   tmp_summary <- rbindlist(lapply(all_data, function(x) x$summary), fill = TRUE)
-  
+
+  if(is.null(params$model_names)){
+    short_plot_names = tmp_summary$run_label
+    short_plot_names = sapply(short_plot_names,function(x)strsplit(x,"-")[[1]][1])  
+  } else {
+    if(length(params$model_names)!=nrow(tmp_summary)){
+      stop("`model_names` does not have the correct length")
+    } else if(uniqueN(params$model_names)!=length(params$model_names)){
+      stop("`model_names` can not have duplicate names")
+    } else {
+      short_plot_names = params$model_names
+    }
+  }
+
   # Extract catch fit data for all models
   fit_dt_list <- list()
   for (i in seq_along(all_data)) {
@@ -345,6 +386,7 @@ generate_catch_fit_residuals <- function(model_dirs, params = NULL) {
   # Create residual plot
   if (params$resid != "PIT") {
     p <- plot_dt %>%
+    .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)] %>%
       ggplot() +
       ylab(ylab_txt) +
       xlab("Year") +
@@ -356,6 +398,7 @@ generate_catch_fit_residuals <- function(model_dirs, params = NULL) {
       get_ssp_theme()
   } else {
     p <- plot_dt %>%
+    .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)] %>%
       ggplot() +
       ylab(ylab_txt) +
       xlab("Year") +

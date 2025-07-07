@@ -17,6 +17,18 @@ generate_kb <- function(model_dirs, params = NULL) {
   all_data <- lapply(model_dirs, load_model_data)
   tmp_summary <- rbindlist(lapply(all_data, function(x) x$summary), fill = TRUE)
   
+  if(is.null(params$model_names)){
+    short_plot_names = tmp_summary$run_label
+    short_plot_names = sapply(short_plot_names,function(x)strsplit(x,"-")[[1]][1])  
+  } else {
+    if(length(params$model_names)!=nrow(tmp_summary)){
+      stop("`model_names` does not have the correct length")
+    } else if(uniqueN(params$model_names)!=length(params$model_names)){
+      stop("`model_names` can not have duplicate names")
+    } else {
+      short_plot_names = params$model_names
+    }
+  }  
   # Parameter mapping for Kobe plot
   parameter_map <- cbind(
     c("Depletion (D)", "Population (P)", "U", "F", "D_Dmsy", "P_Pmsy", "U_Umsy", "F_Fmsy", "Removals", "Process error", "Process error (raw)", "Surplus production"),
@@ -183,6 +195,8 @@ generate_kb <- function(model_dirs, params = NULL) {
     dcast(., run_label + type + row ~ name)
   
   # Create Kobe plot
+    plot_dt = plot_dt %>% .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)]
+
   p <- plot_dt %>%
     ggplot() +
     xlab(expression(P/P["MSY"])) +
@@ -207,6 +221,7 @@ generate_kb <- function(model_dirs, params = NULL) {
   
   # Add uncertainty contours if available
   if (!is.null(contour_dt)) {
+    contour_dt = contour_dt %>% .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)]
     p <- p + geom_polygon(data = contour_dt, 
                         aes(x = P_Pmsy, y = F_Fmsy, fill = run_label, group = plot_id), 
                         alpha = 0.1, show.legend = FALSE)

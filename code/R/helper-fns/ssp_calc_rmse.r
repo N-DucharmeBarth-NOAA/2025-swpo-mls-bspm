@@ -7,9 +7,6 @@
 # Copyright (c) 2024 Nicholas Ducharme-Barth
 # You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-hmc_samples = fread("data/output/model_runs/0006-2024cpueEffortQeff_0/hmc_samples.csv")
-stan_data = fread("data/output/model_runs/0006-2024cpueEffortQeff_0/stan_data.csv")
-
 ssp_calc_rmse = function(hmc_samples,stan_data){
     require(data.table)
     require(magrittr)
