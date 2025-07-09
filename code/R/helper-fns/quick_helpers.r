@@ -192,3 +192,207 @@ compare_marginals_pairs <- function(fit1, fit2, prior_samples = NULL, params = c
   
   return(p)
 }
+
+fit_multivariate_prior <- function(param_matrix, param_names = NULL, use_mle = TRUE, 
+                                   ridge_regularization = 1e-8, verbose = FALSE) {
+    #' Fit multivariate normal distribution to parameter samples
+    #' 
+    #' @param param_matrix Matrix of N_samples x N_parameters 
+    #' @param param_names Optional vector of parameter names for output labeling
+    #' @param use_mle Logical, whether to use MLE fitting (TRUE) or sample moments (FALSE)
+    #' @param ridge_regularization Numeric, regularization added to diagonal for numerical stability
+    #' @param verbose Logical, whether to print convergence information
+    #' 
+    #' @return List containing:
+    #'   - mean: Vector of fitted means
+    #'   - cov: Fitted covariance matrix  
+    #'   - cor: Fitted correlation matrix
+    #'   - sd: Vector of standard deviations (diagonal of cov matrix)
+    #'   - method: String indicating fitting method used
+    #'   - convergence: Convergence information (if MLE used)
+    #'   - ridge_applied: Logical, whether ridge regularization was applied
+    
+    # Input validation
+    if(!is.matrix(param_matrix)) {
+        param_matrix <- as.matrix(param_matrix)
+    }
+    
+    n_samples <- nrow(param_matrix)
+    n_params <- ncol(param_matrix)
+    
+    if(n_samples < n_params + 1) {
+        stop("Need at least n_parameters + 1 samples for covariance estimation")
+    }
+    
+    # Set parameter names if not provided
+    if(is.null(param_names)) {
+        param_names <- paste0("param_", 1:n_params)
+    } else if(length(param_names) != n_params) {
+        stop("Length of param_names must equal number of parameters")
+    }
+    
+    colnames(param_matrix) <- param_names
+    
+    # Check for missing values
+    if(any(is.na(param_matrix))) {
+        warning("Missing values detected. Removing incomplete cases.")
+        param_matrix <- param_matrix[complete.cases(param_matrix), , drop = FALSE]
+        n_samples <- nrow(param_matrix)
+    }
+    
+    # Sample moments (always computed as fallback)
+    sample_mean <- colMeans(param_matrix)
+    sample_cov <- cov(param_matrix)
+    
+    # Check for numerical issues and apply ridge regularization if needed
+    ridge_applied <- FALSE
+    cov_det <- det(sample_cov)
+    min_eigenval <- min(eigen(sample_cov, only.values = TRUE)$values)
+    
+    if(cov_det < 1e-10 || min_eigenval < ridge_regularization) {
+        if(verbose) {
+            cat("Applying ridge regularization. Det =", cov_det, 
+                ", Min eigenvalue =", min_eigenval, "\n")
+        }
+        warning("Sample covariance matrix is near-singular or ill-conditioned. Applying ridge regularization.")
+        sample_cov <- sample_cov + diag(ridge_regularization, n_params)
+        ridge_applied <- TRUE
+    }
+    
+    sample_cor <- cov2cor(sample_cov)
+    sample_sd <- sqrt(diag(sample_cov))
+    
+    # Add names
+    names(sample_mean) <- param_names
+    names(sample_sd) <- param_names
+    dimnames(sample_cov) <- list(param_names, param_names)
+    dimnames(sample_cor) <- list(param_names, param_names)
+    
+    # If not using MLE, return sample moments
+    if(!use_mle) {
+        return(list(
+            mean = sample_mean,
+            cov = sample_cov,
+            cor = sample_cor,
+            sd = sample_sd,
+            method = "sample_moments",
+            convergence = NA,
+            ridge_applied = ridge_applied
+        ))
+    }
+    
+    # MLE fitting using Cholesky parameterization
+    if(verbose) cat("Fitting multivariate normal distribution via MLE...\n")
+    
+    # Load required library
+    if(!requireNamespace("mvtnorm", quietly = TRUE)) {
+        stop("Package 'mvtnorm' is required for MLE fitting")
+    }
+    
+    # Objective function for MLE
+    mv_mle <- function(par) {
+        mu <- par[1:n_params]
+        
+        # Cholesky parameterization for positive definiteness
+        n_chol_params <- n_params * (n_params + 1) / 2
+        L_vec <- par[(n_params + 1):(n_params + n_chol_params)]
+        
+        # Build lower triangular matrix
+        L <- matrix(0, n_params, n_params)
+        L[lower.tri(L, diag = TRUE)] <- L_vec
+        
+        # Reconstruct covariance matrix
+        Sigma <- L %*% t(L)
+        
+        # Check for numerical issues
+        if(any(!is.finite(Sigma)) || det(Sigma) <= 1e-12) {
+            return(1e10)
+        }
+        
+        # Compute negative log-likelihood
+        tryCatch({
+            -sum(mvtnorm::dmvnorm(param_matrix, mu, Sigma, log = TRUE))
+        }, error = function(e) {
+            return(1e10)
+        })
+    }
+    
+    # Initialize with sample moments (potentially regularized)
+    init_chol <- tryCatch({
+        chol(sample_cov)  # Upper triangular
+    }, error = function(e) {
+        # If Cholesky fails, add more ridge regularization
+        if(verbose) cat("Initial Cholesky failed, adding more regularization\n")
+        regularized_cov <- sample_cov + diag(ridge_regularization * 100, n_params)
+        chol(regularized_cov)
+    })
+    
+    init_chol_lower <- t(init_chol)  # Convert to lower triangular
+    init_params <- c(sample_mean, 
+                    init_chol_lower[lower.tri(init_chol_lower, diag = TRUE)])
+    
+    # Fit with robust settings
+    fit_result <- tryCatch({
+        nlminb(init_params, mv_mle,
+               control = list(eval.max = 1000, iter.max = 1000, trace = ifelse(verbose, 1, 0)))
+    }, error = function(e) {
+        if(verbose) cat("MLE fitting failed:", e$message, "\n")
+        list(convergence = -1)
+    })
+    
+    # Check convergence
+    converged <- (fit_result$convergence == 0 || fit_result$convergence == 4)
+    
+    if(!converged) {
+        if(verbose) {
+            cat("MLE fitting did not converge (code:", fit_result$convergence, 
+                "). Using sample moments.\n")
+        }
+        
+        return(list(
+            mean = sample_mean,
+            cov = sample_cov,
+            cor = sample_cor,
+            sd = sample_sd,
+            method = "sample_moments_fallback",
+            convergence = fit_result$convergence,
+            ridge_applied = ridge_applied
+        ))
+    }
+    
+    # Extract fitted parameters
+    fitted_mean <- fit_result$par[1:n_params]
+    n_chol_params <- n_params * (n_params + 1) / 2
+    L_vec <- fit_result$par[(n_params + 1):(n_params + n_chol_params)]
+    
+    # Reconstruct covariance matrix
+    L_fitted <- matrix(0, n_params, n_params)
+    L_fitted[lower.tri(L_fitted, diag = TRUE)] <- L_vec
+    fitted_cov <- L_fitted %*% t(L_fitted)
+    
+    # Calculate derived quantities
+    fitted_cor <- cov2cor(fitted_cov)
+    fitted_sd <- sqrt(diag(fitted_cov))
+    
+    # Add names
+    names(fitted_mean) <- param_names
+    names(fitted_sd) <- param_names
+    dimnames(fitted_cov) <- list(param_names, param_names)
+    dimnames(fitted_cor) <- list(param_names, param_names)
+    
+    if(verbose) {
+        cat("MLE fitting converged successfully.\n")
+        cat("Log-likelihood:", -fit_result$objective, "\n")
+    }
+    
+    return(list(
+        mean = fitted_mean,
+        cov = fitted_cov,
+        cor = fitted_cor,
+        sd = fitted_sd,
+        method = "mle",
+        convergence = fit_result$convergence,
+        ridge_applied = ridge_applied
+    ))
+}
+
