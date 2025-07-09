@@ -188,15 +188,19 @@ server <- function(input, output, session) {
   )
   
   output$plots_hmc_rhat <- render_plot(
-    generate_hmc_rhat, get_hmc_params, single_only = TRUE, output_name = "R-hat plots"
+    generate_hmc_rhat, get_hmc_params, single_only = TRUE, output_name = "R-hat plot"
   )
   
   output$plots_hmc_neff <- render_plot(
-    generate_hmc_neff, get_hmc_params, single_only = TRUE, output_name = "N_eff plots"
+    generate_hmc_neff, get_hmc_params, single_only = TRUE, output_name = "N_eff plot"
   )
   
   output$plots_hmc_acf <- render_plot(
     generate_hmc_acf, get_hmc_params, single_only = TRUE, output_name = "Autocorrelation plots"
+  )
+
+  output$plots_loo_infl <- render_plot(
+    generate_loo_influence, get_hmc_params, single_only = TRUE, output_name = "LOO influence plot"
   )
 
   # =============================================================================

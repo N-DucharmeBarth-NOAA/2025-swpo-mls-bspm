@@ -524,7 +524,8 @@ ui = dashboardPage(
           plot_box("Trace", "plots_hmc_trace"),
           plot_box("Rhat", "plots_hmc_rhat"),
           plot_box("Effective sample size", "plots_hmc_neff"),
-          plot_box("Autocorrelation plots", "plots_hmc_acf")
+          plot_box("Autocorrelation plots", "plots_hmc_acf"),
+          plot_box("LOO influence", "plots_loo_infl")
         )
       ), # End of plots_hmc tab
 

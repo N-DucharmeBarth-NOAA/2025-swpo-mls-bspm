@@ -82,8 +82,24 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
         raw_logK = (logK - mv_mean[1]) / mv_sd[1]
         raw_logr = (log_r - mv_mean[2]) / mv_sd[2]
         
-        # Handle shape parameter (3rd dimension) and x0 parameter (4th dimension if present)
-        if (length(mv_mean) >= 4) {
+        # Handle shape parameter (3rd dimension), x0 parameter (4th dimension if present), qeff (5th dimension if present)
+        if (length(mv_mean) >= 5) {
+            # Handle 4D multivariate prior (logK, log_r, log_shape, log_x0)
+            log_shape = mv_samples[, 3]
+            shape = exp(log_shape)
+            raw_logshape = (log_shape - mv_mean[3]) / mv_sd[3]
+            
+            # Handle x0 parameter (4th dimension)
+            log_x0 = mv_samples[, 4]
+            x0 = exp(log_x0)
+            raw_logx0 = (log_x0 - mv_mean[4]) / mv_sd[4]
+
+            # Handle qeff parameter
+            logqeff = mv_samples[, 5]
+            qeff = exp(logqeff)
+            raw_logqeff = (logqeff - mv_mean[5]) / mv_sd[5]
+            
+        } else if (length(mv_mean) >= 4) {
             # Handle 4D multivariate prior (logK, log_r, log_shape, log_x0)
             log_shape = mv_samples[, 3]
             shape = exp(log_shape)

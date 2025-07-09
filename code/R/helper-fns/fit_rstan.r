@@ -367,6 +367,8 @@
                 colnames(index_ll) = paste0("index_ll_",1:ncol(index_ll))
                 fit_summary = cbind(fit_summary,index_ll)
 
+                loo_influence = loo::pareto_k_influence_values(loo)
+                loo_dt = ssp_calc_loofluence(loo_influence,stan_data)
 
 
             # fits to data
@@ -418,6 +420,7 @@
             fwrite(rhat_dt,file.path(dir_output,"rhat.csv"))
             fwrite(stan_data,file.path(dir_output,"stan_data.csv"))
             fwrite(stan_inits,file.path(dir_output,"stan_inits.csv"))
+            fwrite(loo_dt,file.path(dir_output,"loo_dt.csv"))
 
         # return
             if(silent){

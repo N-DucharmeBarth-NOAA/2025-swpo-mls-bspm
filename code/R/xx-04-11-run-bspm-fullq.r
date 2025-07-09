@@ -1,5 +1,5 @@
 # Nicholas Ducharme-Barth
-# 2025/06/19
+# 2025/07/09
 # Run BSPM with effort-based fishing mortality and updated prior structure
 
 # Copyright (c) 2025 Nicholas Ducharme-Barth
@@ -26,26 +26,19 @@
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # load inputs
-    load(file.path(proj_dir,"data","output","pushforward","bspm_estqsimple_softdep_mvprior_x0_refined","updated_stan_data.RData"))
-    refined_stan_data = updated_stan_data
     load(file.path(proj_dir,"data","output","pushforward","bspm_estqsimple_softdep_mvprior_x0","updated_stan_data.RData"))
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # compile executable
-    exec_name = "bspm_estqsimple_softdep_mvprior_x0" # bspm_estq_softdep_mvprior # bspm_estq_optimized
+    exec_name = "bspm_estqfull_softdep_mvprior_x0" # bspm_estq_softdep_mvprior # bspm_estq_optimized
     stan_c = stan_model(file=file.path(proj_dir,"code","Stan",paste0(exec_name,".stan")), model_name = exec_name)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # develop model grid
     model_config_df = rbind( expand.grid(cpue=c("dwfn"),
-                                  sigma_catch = c(0.2,0.3,0.4,0.5),
-                                  n_step=c(1),
-                                  qeff="b",
-                                  shape="b"),
-                            expand.grid(cpue=c("dwfn"),
-                                  sigma_catch = c(0.2,0.3),
-                                  n_step=c(1),
-                                  qeff="r",
-                                  shape="b")
+                                  sigma_catch = c(0.2),
+                                  n_step=c(5,10),
+                                  sigma_edev=c(0.3,0.5)
+                                  )
     )
 
     model_config_df = unique(model_config_df)
@@ -54,19 +47,16 @@
 # set-up model inputs
 
     for(i in 1:nrow(model_config_df)){
-            run_label_stem = paste0(model_config_df$cpue[i],"-c",model_config_df$sigma_catch[i],"-n",model_config_df$shape[i],"-q",model_config_df$qeff[i],"-s",model_config_df$n_step[i],"_0")
-            run_number = 60 + i
+            run_label_stem = paste0(model_config_df$cpue[i],"-c",model_config_df$sigma_catch[i],"-e",model_config_df$sigma_edev[i],"-s",model_config_df$n_step[i],"_0")
+            run_number = 66 + i
             run_number = sprintf("%04d", run_number)
-        if(model_config_df$qeff[i] == "b"){
-            stan.data = updated_stan_data
-        } else if(model_config_df$qeff[i] == "r"){
-            stan.data = refined_stan_data
-        }             
-        
+                        
+        stan.data = updated_stan_data
         stan.data$sigmac = model_config_df$sigma_catch[i]
         stan.data$n_step = model_config_df$n_step[i]  # years per period for catchability
         stan.data$n_periods = ceiling((stan.data$T-1) / stan.data$n_step)
         stan.data$fit_to_data = 1L
+        stan.data$sigma_edev = model_config_df$sigma_edev[i]
 
         fit = fit_rstan(stan.data,
                         stan_c,

@@ -141,6 +141,14 @@ load_model_data <- function(model_dir) {
     warning(paste("neff.csv not found in", model_dir, "- N_eff plots will not be available"))
     data_list$neff <- NULL
   }
+
+  loo_file <- paste0(model_dir, "loo_dt.csv")
+  if (file.exists(loo_file)) {
+    data_list$loo <- fread(loo_file)
+  } else {
+    warning(paste("loo_dt.csv not found in", model_dir, "- Leverage plots will not be available"))
+    data_list$loo <- NULL
+  }
   
   return(data_list)
 }
