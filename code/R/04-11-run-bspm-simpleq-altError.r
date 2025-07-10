@@ -31,12 +31,14 @@
     load(file.path(proj_dir,"data","output","pushforward","bspm_estqsimple_softdep_mvprior_x0","updated_stan_data.RData"))
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # compile executable
-    exec_name = "bspm_estqsimple_softdep_mvprior_x0_stt" # bspm_estq_softdep_mvprior # bspm_estq_optimized
-    stan_c = stan_model(file=file.path(proj_dir,"code","Stan",paste0(exec_name,".stan")), model_name = exec_name)
-
+    exec_name_vec = c("bspm_estqsimple_softdep_mvprior_x0_stt","bspm_estqsimple_softdep_mvprior_x0_sttgamma_flexsigmaC")
+    stan_c.list = as.list(rep(NA,length(exec_name_vec)))
+    for(i in 1:length(exec_name_vec)){
+        stan_c.list[[i]] = stan_model(file=file.path(proj_dir,"code","Stan",paste0(exec_name_vec[i],".stan")), model_name = exec_name_vec[i])
+    }
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # develop model grid
-    model_config_df = rbind( expand.grid(exec=c("STT"),
+    model_config_df = rbind( expand.grid(exec=c("STT","STTGF"),
                                   cpue=c("dwfn"),
                                   sigma_catch = c(0.2),
                                   n_step=c(1),
@@ -51,7 +53,7 @@
 
     for(i in 1:nrow(model_config_df)){
             run_label_stem = paste0(model_config_df$cpue[i],"-exe",model_config_df$exec[i],"-c",model_config_df$sigma_catch[i],"-n",model_config_df$shape[i],"-q",model_config_df$qeff[i],"-s",model_config_df$n_step[i],"_0")
-            run_number = 60 + i
+            run_number = 66 + i
             run_number = sprintf("%04d", run_number)
         if(model_config_df$qeff[i] == "b"){
             stan.data = updated_stan_data
@@ -65,10 +67,15 @@
         stan.data$fit_to_data = 1L
         if(model_config_df$exec[i] == "STT"){
             stan.data$nu_catch_rate = 0.1
+        } else if (model_config_df$exec[i] == "STTGF"){
+            stan.data$nu_catch_gamma_shape = 2
+            stan.data$nu_catch_gamma_rate = 0.1
+            stan.data$sigmac = rep(stan.data$sigmac,stan.data$T)
         }
 
                 stan_c = switch(model_config_df$exec[i],
-                       "STT" = stan_c.list[[1]])    # bspm_estqsimple_softdep_mvprior_x0_stt
+                       "STT" = stan_c.list[[1]],
+                       "STTGF" = stan_c.list[[1]])    # bspm_estqsimple_softdep_mvprior_x0_stt
 
         fit = fit_rstan(stan.data,
                         stan_c,
@@ -95,7 +102,7 @@
 
         t=as.data.table(summary(fit)$summary)
         t$name = rownames(summary(fit)$summary)
-        t[n_eff<500|Rhat>1.01]
+        na.omit(t)[n_eff<500|Rhat>1.01]
     }
     
     

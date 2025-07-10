@@ -45,7 +45,8 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
     has_mv_qdev_prior = param_exists("mv_qdev_prior_mean")
     has_effort_params = param_exists("effort") || param_exists("n_periods")
     has_qeff = param_exists("prior_qeff_meanlog")
-    has_nu_catch = param_exists("nu_catch_rate")
+    has_nu_catch_exp = param_exists("nu_catch_rate")
+    has_nu_catch_gamma = param_exists("nu_catch_gamma_shape")
     
     # Initialize parameter storage (updated to include x0 parameters)
     logK = log_r = log_shape = log_x0 = r = shape = x0 = NULL
@@ -295,9 +296,14 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
     raw_sigmaf = abs(rnorm(n_samples))
     sigmaf = raw_sigmaf * sigmaf_sd
 
-    if(has_nu_catch){
+    if(has_nu_catch_exp){
         nu_catch_rate = get_stan_param("nu_catch_rate", default_val = 0.1)
         nu_catch = rexp(n = n_samples, rate = nu_catch_rate)
+    }
+    if(has_nu_catch_gamma){
+        nu_catch_gamma_shape = get_stan_param("nu_catch_gamma_shape", default_val = 2)
+        nu_catch_gamma_rate = get_stan_param("nu_catch_gamma_rate", default_val = 0.1)
+        nu_catch = rgamma(n = n_samples, shape = nu_catch_gamma_shape, rate = nu_catch_gamma_rate)
     }
     
     #--------------------------------------------------------------------
