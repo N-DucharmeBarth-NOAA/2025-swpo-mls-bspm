@@ -156,9 +156,9 @@ load_model_data <- function(model_dir) {
 # Parameter mapping
 get_parameter_map <- function() {
   map <- cbind(
-    c("logK","x0","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","sigmaf","lp__"),
-    c("logK","x0","r","sigmao_add","sigmap","n","qeff","rho","sigma_qdev","sigmaf","lp__"),
-    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_logqeff","raw_rho","raw_sigma_qdev","raw_sigmaf","lp__")
+    c("logK","x0","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","sigmaf","nu_catch","lp__"),
+    c("logK","x0","r","sigmao_add","sigmap","n","qeff","rho","sigma_qdev","sigmaf","nu_catch","lp__"),
+    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_logqeff","raw_rho","raw_sigma_qdev","raw_sigmaf","nu_catch","lp__")
   )
   colnames(map) <- c("input","transformed","raw")
   return(map)
@@ -166,9 +166,9 @@ get_parameter_map <- function() {
 
 get_parameter_map_extended <- function() {
   map <- cbind(
-    c("logK","x0","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","sigmaf","epsp","qdev_period","edev","lp__"),
-    c("logK","x0","r","sigmao_add","sigmap","n","qeff","rho","sigma_qdev","sigmaf","epsp","qdev_period","edev","lp__"),
-    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_logqeff","raw_rho","raw_sigma_qdev","raw_sigmaf","raw_epsp","raw_qdev_period","raw_edev","lp__")
+    c("logK","x0","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","sigmaf","epsp","qdev_period","nu_catch","edev","lp__"),
+    c("logK","x0","r","sigmao_add","sigmap","n","qeff","rho","sigma_qdev","sigmaf","epsp","qdev_period","nu_catch","edev","lp__"),
+    c("raw_logK","raw_logx0","raw_logr","raw_sigmao_add","raw_logsigmap","raw_logshape","raw_logqeff","raw_rho","raw_sigma_qdev","raw_sigmaf","raw_epsp","raw_qdev_period","nu_catch","raw_edev","lp__")
   )
   colnames(map) <- c("input","transformed","raw")
   return(map)

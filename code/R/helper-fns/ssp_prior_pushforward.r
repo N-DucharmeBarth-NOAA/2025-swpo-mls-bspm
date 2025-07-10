@@ -45,12 +45,14 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
     has_mv_qdev_prior = param_exists("mv_qdev_prior_mean")
     has_effort_params = param_exists("effort") || param_exists("n_periods")
     has_qeff = param_exists("prior_qeff_meanlog")
+    has_nu_catch = param_exists("nu_catch_rate")
     
     # Initialize parameter storage (updated to include x0 parameters)
     logK = log_r = log_shape = log_x0 = r = shape = x0 = NULL
     raw_logK = raw_logr = raw_logshape = raw_logx0 = NULL
     logqeff = qeff = rho = sigma_qdev = NULL
     raw_logqeff = raw_rho = raw_sigma_qdev = NULL
+    nu_catch = NULL
     
     #--------------------------------------------------------------------
     # 1. Handle main multivariate prior (logK, log_r, log_shape, log_x0)
@@ -292,6 +294,11 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
     
     raw_sigmaf = abs(rnorm(n_samples))
     sigmaf = raw_sigmaf * sigmaf_sd
+
+    if(has_nu_catch){
+        nu_catch_rate = get_stan_param("nu_catch_rate", default_val = 0.1)
+        nu_catch = rexp(n = n_samples, rate = nu_catch_rate)
+    }
     
     #--------------------------------------------------------------------
     # 6. Generate derived time series and population dynamics
@@ -380,7 +387,7 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
                              "logK", "r", "m", "sigmap", "sigmap2", "sigmao_sc", 
                              "shape", "n", "dmsy", "h", "g", "sigmao_add", "sigmaf",
                              "raw_logqeff", "logqeff", "qeff", "raw_rho", "raw_sigma_qdev", 
-                             "rho", "sigma_qdev", "x0", "log_x0")
+                             "rho", "sigma_qdev", "x0", "log_x0","nu_catch")
     
     vector_vars = potential_vector_vars[sapply(potential_vector_vars, function(v) {
         exists(v) && !is.null(get(v)) && is.vector(get(v))

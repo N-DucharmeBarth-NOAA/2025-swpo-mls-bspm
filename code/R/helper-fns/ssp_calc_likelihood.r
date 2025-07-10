@@ -98,10 +98,20 @@ ssp_calc_likelihood = function(hmc_samples,stan_data){
                     sigmac = sigmac_data[order(row)]$value
                 }
 
+                if(nrow(stan_data[name=="nu_catch_rate"])>0){
+                    nu_catch = hmc_samples[name=="nu_catch"][order(as.numeric(iter))]$value
+                }
+
                 for(j in 1:max_iter){
+                    
                     for(t in 1:max(hmc_samples[name=="removals"]$row,na.rm=TRUE)){
-                        mu_catch = log(removals[t,j]) - 0.5*sigmac[t]^2
-                        ll_catch[t,j] = dlnorm(obs_removals[t,1],mu_catch,sigmac[t],log=TRUE)
+                        if(nrow(stan_data[name=="nu_catch_rate"])>0){
+                            mu_catch = log(removals[t,j])
+                            ll_catch[t,j] = dt((log(obs_removals[t,1]) - mu_catch) / sigmac[t], df = nu_catch[j], log = TRUE) - log(sigmac[t])
+                        } else {
+                            mu_catch = log(removals[t,j]) - 0.5*sigmac[t]^2
+                            ll_catch[t,j] = dlnorm(obs_removals[t,1],mu_catch,sigmac[t],log=TRUE)
+                        }
                     }
                 }
                     ll_catch_dt = as.data.table(ll_catch) %>%

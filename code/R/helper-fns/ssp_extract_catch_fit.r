@@ -35,14 +35,25 @@ ssp_extract_catch_fit = function(ssp_summary, samples_dt, stan_data, settings, s
                      .[,metric:="pred_catch"] %>%
                      .[,.(run_id,metric,iter,row,value)]
       
+      error_type = "LN"
+      if(nrow(samples_dt[name=="nu_catch",.(run_id,iter,row,value)])>0){
+            error_type = "ST"
+            nu_catch = samples_dt[name=="nu_catch",.(run_id,iter,row,value)]$value
+      }
+      
       # Generate posterior predicted catch
       ppd_catch_list = list()
       for(i in 1:length(iter_sampled)){
             iter_val = iter_sampled[i]
             pred_vals = pred_catch_dt[iter==iter_val]$value
-            ppd_vals = rlnorm(length(pred_vals), 
-                 log(pred_vals) - 0.5*sigmac[1:length(pred_vals)]^2, 
-                 sigmac[1:length(pred_vals)])
+            if(error_type == "LN"){
+                  ppd_vals = rlnorm(length(pred_vals), 
+                        log(pred_vals) - 0.5*sigmac[1:length(pred_vals)]^2, 
+                        sigmac[1:length(pred_vals)])
+            } else if(error_type == "ST"){
+                  ppd_vals = exp(rt(length(pred_vals), df = nu_catch) * sigmac[1:length(pred_vals)] + log(pred_vals))
+            }
+
             
             ppd_catch_list[[i]] = data.table(run_id=ssp_summary$run_id,
                                            metric="ppd_catch",
