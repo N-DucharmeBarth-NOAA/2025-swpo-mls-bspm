@@ -257,7 +257,7 @@ model {
     // student-t error structure
     real mu_catch;
     for(t in 1:Tm1){
-        mu_catch = log(removals[t]);
+        mu_catch = log(removals[t]) - 0.5*sigmac^2;
         if(fit_to_data == 1) {
             target += student_t_lpdf(log(obs_removals[t]) | nu_catch, mu_catch, sigmac);
         }

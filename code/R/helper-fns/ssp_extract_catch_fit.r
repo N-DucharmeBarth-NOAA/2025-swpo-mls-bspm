@@ -51,7 +51,7 @@ ssp_extract_catch_fit = function(ssp_summary, samples_dt, stan_data, settings, s
                         log(pred_vals) - 0.5*sigmac[1:length(pred_vals)]^2, 
                         sigmac[1:length(pred_vals)])
             } else if(error_type == "ST"){
-                  ppd_vals = exp(rt(length(pred_vals), df = nu_catch) * sigmac[1:length(pred_vals)] + log(pred_vals))
+                  ppd_vals = exp(rt(length(pred_vals), df = nu_catch) * sigmac[1:length(pred_vals)] + (log(pred_vals) - 0.5*sigmac[1:length(pred_vals)]^2))
             }
 
             

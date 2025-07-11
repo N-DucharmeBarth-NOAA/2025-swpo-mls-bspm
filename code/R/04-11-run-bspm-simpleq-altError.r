@@ -26,12 +26,14 @@
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # load inputs
+    load(file.path(proj_dir,"data","output","pushforward","bspm_estqsimple_softdep_mvprior_x0_newlogK","updated_stan_data.RData"))
+    newlogK_stan_data = updated_stan_data
     load(file.path(proj_dir,"data","output","pushforward","bspm_estqsimple_softdep_mvprior_x0_refined","updated_stan_data.RData"))
     refined_stan_data = updated_stan_data
     load(file.path(proj_dir,"data","output","pushforward","bspm_estqsimple_softdep_mvprior_x0","updated_stan_data.RData"))
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # compile executable
-    exec_name_vec = c("bspm_estqsimple_softdep_mvprior_x0_stt","bspm_estqsimple_softdep_mvprior_x0_sttgamma_flexsigmaC")
+    exec_name_vec = c("bspm_estqsimple_softdep_mvprior_x0_stt","bspm_estqsimple_softdep_mvprior_x0_sttgamma_flexsigmaC","bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC")
     stan_c.list = as.list(rep(NA,length(exec_name_vec)))
     for(i in 1:length(exec_name_vec)){
         stan_c.list[[i]] = stan_model(file=file.path(proj_dir,"code","Stan",paste0(exec_name_vec[i],".stan")), model_name = exec_name_vec[i])
@@ -43,6 +45,12 @@
                                   sigma_catch = c(0.2),
                                   n_step=c(1),
                                   qeff="b",
+                                  shape="b"),
+                             expand.grid(exec=c("FSTTGF"),
+                                  cpue=c("dwfn"),
+                                  sigma_catch = c(0.2),
+                                  n_step=c(1),
+                                  qeff="newK",
                                   shape="b")
     )
 
@@ -51,7 +59,7 @@
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # set-up model inputs
 
-    for(i in 1:nrow(model_config_df)){
+    for(i in 3:nrow(model_config_df)){
             run_label_stem = paste0(model_config_df$cpue[i],"-exe",model_config_df$exec[i],"-c",model_config_df$sigma_catch[i],"-n",model_config_df$shape[i],"-q",model_config_df$qeff[i],"-s",model_config_df$n_step[i],"_0")
             run_number = 66 + i
             run_number = sprintf("%04d", run_number)
@@ -59,6 +67,8 @@
             stan.data = updated_stan_data
         } else if(model_config_df$qeff[i] == "r"){
             stan.data = refined_stan_data
+        } else if(model_config_df$qeff[i] == "newK"){
+            stan.data = newlogK_stan_data
         }             
         
         stan.data$sigmac = model_config_df$sigma_catch[i]
@@ -71,11 +81,24 @@
             stan.data$nu_catch_gamma_shape = 2
             stan.data$nu_catch_gamma_rate = 0.1
             stan.data$sigmac = rep(stan.data$sigmac,stan.data$T)
+        } else if (model_config_df$exec[i] == "STTGF"){
+            stan.data$nu_catch_gamma_shape = 2
+            stan.data$nu_catch_gamma_rate = 0.1
+            stan.data$sigmac = rep(stan.data$sigmac,stan.data$T)
+            stan.data$mv_prior_mean = unname(stan.data$full_mv_prior_mean)
+            stan.data$mv_prior_sd = unname(stan.data$full_mv_prior_sd)
+            stan.data$mv_prior_corr = unname(stan.data$full_mv_prior_corr)
         }
 
-                stan_c = switch(model_config_df$exec[i],
+                stan_c = switch(as.character(model_config_df$exec[i]),
                        "STT" = stan_c.list[[1]],
-                       "STTGF" = stan_c.list[[1]])    # bspm_estqsimple_softdep_mvprior_x0_stt
+                       "STTGF" = stan_c.list[[2]],
+                       "FSTTGF" = stan_c.list[[3]])    # bspm_estqsimple_softdep_mvprior_x0_stt
+                
+                exec_name = switch(as.character(model_config_df$exec[i]),
+                       "STT" = exec_name_vec[1],
+                       "STTGF" = exec_name_vec[2],
+                       "FSTTGF" = exec_name_vec[3]) 
 
         fit = fit_rstan(stan.data,
                         stan_c,

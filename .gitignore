@@ -10,4 +10,5 @@ data/output/mean_wt_residuals_filtered.rds
 data/output/sim_dt.csv
 data/output/pushforward/q/sim_dt.csv
 data/output/pushforward/bspm_estqsimple_softdep_mvprior_x0/hmc_samples.csv
+data/output/pushforward/bspm_estqsimple_softdep_mvprior_x0_newlogK/hmc_samples.csv
 shiny/*

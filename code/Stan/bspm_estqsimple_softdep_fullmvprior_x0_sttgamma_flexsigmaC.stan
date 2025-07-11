@@ -22,15 +22,10 @@ data {
     int n_step; // years per period (e.g., 3-5 years)
     int n_periods; // number of catchability periods
 
-    // Updated multivariate priors (now 5-dimensional: logK, log_r, log_shape,log_x0,log_qeff)
-    vector[5] mv_prior_mean; // mean vector [logK, log_r, log_shape, log_x0,log_qeff]
-    vector[5] mv_prior_sd; // standard deviations 
-    corr_matrix[5] mv_prior_corr; // correlation matrix
-
-    // Bivariate prior for rho and sigma_qdev (on transformed scale)
-    vector[2] mv_qdev_prior_mean; // [atanh_rho_mean, log_sigma_qdev_mean]
-    vector[2] mv_qdev_prior_sd; // standard deviations
-    corr_matrix[2] mv_qdev_prior_corr; // correlation matrix
+    // Updated multivariate priors (now 7-dimensional: logK, log_r, log_shape,log_x0,log_qeff, atanh_rho_mean, log_sigma_qdev_mean)
+    vector[7] mv_prior_mean; // mean vector [logK, log_r, log_shape, log_x0,log_qeff, atanh_rho_mean, log_sigma_qdev_mean]
+    vector[7] mv_prior_sd; // standard deviations 
+    corr_matrix[7] mv_prior_corr; // correlation matrix
 
     // Other priors
     real PriorMean_logsigmap;
@@ -50,11 +45,8 @@ transformed data{
 }
 
 parameters {
-    // Updated multivariate parameters (now 5-dimensional)
-    vector[5] raw_mv_params; // [raw_logK, raw_log_r, raw_log_shape, raw_log_x0,raw_logqeff]
-
-    // Bivariate parameters for rho and sigma_qdev
-    vector[2] raw_qdev_params; // [raw_atanh_rho, raw_log_sigma_qdev]
+    // Updated multivariate parameters (now 7-dimensional)
+    vector[7] raw_mv_params; // [raw_logK, raw_log_r, raw_log_shape, raw_log_x0,raw_logqeff, raw_atanh_rho, raw_log_sigma_qdev]
 
     real raw_logsigmap;
     real<lower=0> raw_sigmao_add;
@@ -89,8 +81,8 @@ transformed parameters {
     real raw_rho;
     real raw_sigma_qdev;
 
-    // Updated multivariate transformation (5-dimensional)
-    vector[5] mv_params;
+    // Updated multivariate transformation (7-dimensional)
+    vector[7] mv_params;
     mv_params = mv_prior_mean + diag_pre_multiply(mv_prior_sd, cholesky_decompose(mv_prior_corr)) * raw_mv_params;
     
     // Extract individual parameters (transformed scale)
@@ -99,6 +91,8 @@ transformed parameters {
     shape = exp(mv_params[3]); // shape (transform from log scale)
     x0 = exp(mv_params[4]); // initial depletion (transform from log scale)
     qeff = exp(mv_params[5]); // initial depletion (transform from log scale)
+    rho = tanh(mv_params[6]); // atanh_rho -> rho
+    sigma_qdev = exp(mv_params[7]); // log_sigma_qdev -> sigma_qdev
     
     // Extract individual raw parameters (for compatibility)
     raw_logK = (mv_params[1] - mv_prior_mean[1]) / mv_prior_sd[1];
@@ -106,18 +100,8 @@ transformed parameters {
     raw_logshape = (mv_params[3] - mv_prior_mean[3]) / mv_prior_sd[3];
     raw_logx0 = (mv_params[4] - mv_prior_mean[4]) / mv_prior_sd[4];
     raw_logqeff = (mv_params[5] - mv_prior_mean[5]) / mv_prior_sd[5];
-    
-    // Bivariate transformation for rho and sigma_qdev
-    vector[2] qdev_params;
-    qdev_params = mv_qdev_prior_mean + diag_pre_multiply(mv_qdev_prior_sd, cholesky_decompose(mv_qdev_prior_corr)) * raw_qdev_params;
-    
-    // Transform parameters back to natural scale
-    rho = tanh(qdev_params[1]); // atanh_rho -> rho
-    sigma_qdev = exp(qdev_params[2]); // log_sigma_qdev -> sigma_qdev
-    
-    // Extract individual raw parameters for rho and sigma_qdev (for compatibility)
-    raw_rho = (qdev_params[1] - mv_qdev_prior_mean[1]) / mv_qdev_prior_sd[1];
-    raw_sigma_qdev = (qdev_params[2] - mv_qdev_prior_mean[2]) / mv_qdev_prior_sd[2];
+    raw_rho = (mv_params[6] - mv_prior_mean[6]) / mv_prior_sd[6];
+    raw_sigma_qdev = (mv_params[7] - mv_prior_mean[7]) / mv_prior_sd[7];
     
     // Effort-based fishing mortality calculation with dual error structure
     vector[n_periods] qdev_period; // transformed period deviations
@@ -217,12 +201,9 @@ transformed parameters {
 } 
 
 model {
-    // Updated multivariate normal prior (5-dimensional)
+    // Updated multivariate normal prior (7-dimensional)
     raw_mv_params ~ std_normal(); // Standard normal for raw parameters
 
-    // Bivariate prior for rho and sigma_qdev
-    raw_qdev_params ~ std_normal(); // Standard normal for raw parameters
-    
     // Effort-based priors (non-centered)
     raw_qdev_period ~ std_normal(); // All catchability deviations are standard normal
     

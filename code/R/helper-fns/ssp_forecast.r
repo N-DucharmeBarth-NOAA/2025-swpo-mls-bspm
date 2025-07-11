@@ -27,6 +27,13 @@ ssp_forecast = function(ssp_summary,samples_dt,stan_data,settings,sub_sample_pro
       g = sub_samples_dt[name=="g"]$value
       T = ncol(x)
 
+      if(nrow(sub_samples_dt[name=="nu_catch"])>0){
+                    has_nu = TRUE
+                    nu_catch = sub_samples_dt[name=="nu_catch"][order(as.numeric(iter))]$value
+      } else {
+                    has_nu = FALSE
+      }
+
       # Handle removals matrix
       removals_mat_a = dcast(sub_samples_dt[name=="removals",.(iter,row,value)],iter~row) %>% .[,iter:=NULL] %>% as.matrix(.)
       if(ncol(removals_mat_a)==T-1){
@@ -36,8 +43,16 @@ ssp_forecast = function(ssp_summary,samples_dt,stan_data,settings,sub_sample_pro
             } else {
             sigmac = sigmac_data[order(row)]$value
             }
-            mu_catch = log(stan_data[name=="obs_removals"&row==T]$value) - 0.5*sigmac[T]^2
-            removals_mat_a = cbind(removals_mat_a,rlnorm(nrow(removals_mat_a),mu_catch,sigmac[T]))
+            if(has_nu){
+                  mu_catch = log(stan_data[name=="obs_removals"&row==T]$value) - 0.5*sigmac[T]^2
+                  t_samples = rt(nrow(removals_mat_a), df = nu_catch)
+                  log_removals = mu_catch + sigmac[T] * t_samples
+                  removals_mat_a = cbind(removals_mat_a, exp(log_removals))
+            } else {
+                  mu_catch = log(stan_data[name=="obs_removals"&row==T]$value) - 0.5*sigmac[T]^2
+                  removals_mat_a = cbind(removals_mat_a,rlnorm(nrow(removals_mat_a),mu_catch,sigmac[T]))
+            }
+            
       }
       removals_mat = cbind(removals_mat_a,matrix(NA,nrow=length(iter_sampled),ncol=forecast_years))
 
