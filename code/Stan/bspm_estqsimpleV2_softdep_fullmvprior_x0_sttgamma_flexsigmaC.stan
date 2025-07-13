@@ -1,8 +1,5 @@
 // Modified fletcher-schaefer surplus production model with effort-based fishing mortality
-// Updated prior structure based on pushforward analysis:
-// - 3D multivariate prior for logK, log_r, log_shape  
-// - Independent qeff parameter
-// - Correlated rho and sigma_qdev parameters
+
 
 data {
     int T; // time dimension
@@ -22,10 +19,10 @@ data {
     int n_step; // years per period (e.g., 3-5 years)
     int n_periods; // number of catchability periods
 
-    // Updated multivariate priors (now 7-dimensional: logK, log_r, log_shape,log_x0,log_qeff, atanh_rho_mean, log_sigma_qdev_mean)
-    vector[7] mv_prior_mean; // mean vector [logK, log_r, log_shape, log_x0,log_qeff, atanh_rho_mean, log_sigma_qdev_mean]
-    vector[7] mv_prior_sd; // standard deviations 
-    corr_matrix[7] mv_prior_corr; // correlation matrix
+    // Updated multivariate priors (now 6-dimensional: logK, log_r, log_shape,log_x0,log_qeff, log_sigma_qdev_mean)
+    vector[6] mv_prior_mean; // mean vector [logK, log_r, log_shape, log_x0,log_qeff, log_sigma_qdev_mean]
+    vector[6] mv_prior_sd; // standard deviations 
+    corr_matrix[6] mv_prior_corr; // correlation matrix
 
     // Other priors
     real PriorMean_logsigmap;
@@ -45,8 +42,8 @@ transformed data{
 }
 
 parameters {
-    // Updated multivariate parameters (now 7-dimensional)
-    vector[7] raw_mv_params; // [raw_logK, raw_log_r, raw_log_shape, raw_log_x0,raw_logqeff, raw_atanh_rho, raw_log_sigma_qdev]
+    // Updated multivariate parameters (now 6-dimensional)
+    vector[6] raw_mv_params; // [raw_logK, raw_log_r, raw_log_shape, raw_log_x0,raw_logqeff, raw_log_sigma_qdev]
 
     real raw_logsigmap;
     real<lower=0> raw_sigmao_add;
@@ -69,7 +66,6 @@ transformed parameters {
     real dev[T]; // recruitment deviates
     real epsp[T]; // process error (multiplicative)
     real sigmap;
-    real rho; // AR correlation for catchability
     real sigma_qdev; // catchability variability
 
     // For backward compatibility - extract individual raw parameters
@@ -78,11 +74,10 @@ transformed parameters {
     real raw_logshape;
     real raw_logx0;
     real raw_logqeff;
-    real raw_rho;
     real raw_sigma_qdev;
 
-    // Updated multivariate transformation (7-dimensional)
-    vector[7] mv_params;
+    // Updated multivariate transformation (6-dimensional)
+    vector[6] mv_params;
     mv_params = mv_prior_mean + diag_pre_multiply(mv_prior_sd, cholesky_decompose(mv_prior_corr)) * raw_mv_params;
     
     // Extract individual parameters (transformed scale)
@@ -91,8 +86,7 @@ transformed parameters {
     shape = exp(mv_params[3]); // shape (transform from log scale)
     x0 = exp(mv_params[4]); // initial depletion (transform from log scale)
     qeff = exp(mv_params[5]); // initial depletion (transform from log scale)
-    rho = tanh(mv_params[6]); // atanh_rho -> rho
-    sigma_qdev = exp(mv_params[7]); // log_sigma_qdev -> sigma_qdev
+    sigma_qdev = exp(mv_params[6]); // log_sigma_qdev -> sigma_qdev
     
     // Extract individual raw parameters (for compatibility)
     raw_logK = (mv_params[1] - mv_prior_mean[1]) / mv_prior_sd[1];
@@ -100,18 +94,17 @@ transformed parameters {
     raw_logshape = (mv_params[3] - mv_prior_mean[3]) / mv_prior_sd[3];
     raw_logx0 = (mv_params[4] - mv_prior_mean[4]) / mv_prior_sd[4];
     raw_logqeff = (mv_params[5] - mv_prior_mean[5]) / mv_prior_sd[5];
-    raw_rho = (mv_params[6] - mv_prior_mean[6]) / mv_prior_sd[6];
-    raw_sigma_qdev = (mv_params[7] - mv_prior_mean[7]) / mv_prior_sd[7];
+    raw_sigma_qdev = (mv_params[6] - mv_prior_mean[6]) / mv_prior_sd[6];
     
     // Effort-based fishing mortality calculation with dual error structure
     vector[n_periods] qdev_period; // transformed period deviations
     real qdev[Tm1]; // systematic catchability changes
     real F[Tm1];
     
-    // Non-centered parameterization for AR(1) catchability process
+    // Non-centered parameterization for IID catchability process
     qdev_period[1] = 0;
     for(p in 2:n_periods) {
-        qdev_period[p] = rho * qdev_period[p-1] + raw_qdev_period[p-1] * sigma_qdev * sqrt(1 - rho^2);
+        qdev_period[p] = raw_qdev_period[p-1] * sigma_qdev;
     }
     
     // Assign period-based qdev with temporal structure

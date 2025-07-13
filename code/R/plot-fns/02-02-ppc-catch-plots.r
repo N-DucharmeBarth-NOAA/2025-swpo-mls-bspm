@@ -451,23 +451,57 @@ ssp_calc_catch_likelihood <- function(samples_dt, stan_data) {
   } else {
       sigmac = sigmac_data[order(row)]$value
   }
+
+  if(nrow(samples_dt[name=="nu_catch"])>0){
+    has_nu = TRUE
+    nu_catch <- samples_dt[name=="nu_catch"][order(as.numeric(iter))]$value
+  } else {
+    has_nu = FALSE
+  }
   
-  # Get predicted removals
+  # Convert to matrix format 
   removals_dt <- samples_dt[name == "removals", .(iter, row, value)]
+  removals_wide <- dcast(removals_dt, row ~ iter, value.var = "value")
+  row_indices <- removals_wide$row
+  removals_wide[, row := NULL]
+  removals_matrix <- as.matrix(removals_wide)
   
-  # Calculate log-likelihood for each observation
-  # Note: removals has one fewer observation than obs_removals (no terminal year prediction)
-  ll_dt <- removals_dt[, {
-    if (row <= length(obs_removals)) {  # Ensure we don't exceed obs_removals length
-      mu_catch <- log(value) - 0.5 * sigmac[row]^2
-      ll <- dlnorm(obs_removals[row], meanlog = mu_catch, sdlog = sigmac[row], log = TRUE)
-      .(T = row, ll = ll)
-    } else {
-      .(T = integer(0), ll = numeric(0))  # Return empty if row exceeds observations
+  n_rows <- nrow(removals_matrix)
+  n_iters <- ncol(removals_matrix)
+  
+  # Pre-allocate result matrix
+  ll_matrix <- matrix(NA, nrow = n_rows, ncol = n_iters)
+  
+  # Fully vectorized calculation - no loops over time
+  for(j in 1:n_iters) {
+    valid_rows <- row_indices <= length(obs_removals)
+    
+    if(any(valid_rows)) {
+      t_indices <- row_indices[valid_rows]
+      current_removals <- removals_matrix[valid_rows, j]
+      current_sigmac <- sigmac[t_indices]
+      current_obs <- obs_removals[t_indices]
+      
+      if(has_nu) {
+        mu_catch <- log(current_removals) - 0.5 * current_sigmac^2
+        ll_matrix[valid_rows, j] <- dt((log(current_obs) - mu_catch) / current_sigmac, 
+                                       df = nu_catch[j], log = TRUE) - log(current_sigmac)
+      } else {
+        mu_catch <- log(current_removals) - 0.5 * current_sigmac^2
+        ll_matrix[valid_rows, j] <- dlnorm(current_obs, meanlog = mu_catch, 
+                                          sdlog = current_sigmac, log = TRUE)
+      }
     }
-  }, by = .(iter, row)]
+  }
   
-  return(ll_dt[, .(iter, T, value = ll)])
+  # Convert back to long format
+  ll_dt <- data.table(
+    iter = rep(1:n_iters, each = n_rows),
+    T = rep(row_indices, n_iters),
+    value = as.vector(ll_matrix)
+  )
+  
+  return(ll_dt)
 }
 
 # =============================================================================

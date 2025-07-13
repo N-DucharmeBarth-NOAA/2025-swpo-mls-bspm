@@ -110,6 +110,28 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
             raw_rho = (mv_samples[, 6] - mv_mean[6]) / mv_sd[6]
             raw_sigma_qdev = (mv_samples[, 7] - mv_mean[7]) / mv_sd[7]
             
+        } else if (length(mv_mean) >= 6) {
+            # Handle 4D multivariate prior (logK, log_r, log_shape, log_x0)
+            log_shape = mv_samples[, 3]
+            shape = exp(log_shape)
+            raw_logshape = (log_shape - mv_mean[3]) / mv_sd[3]
+            
+            # Handle x0 parameter (4th dimension)
+            log_x0 = mv_samples[, 4]
+            x0 = exp(log_x0)
+            raw_logx0 = (log_x0 - mv_mean[4]) / mv_sd[4]
+
+            # Handle qeff parameter
+            logqeff = mv_samples[, 5]
+            qeff = exp(logqeff)
+            raw_logqeff = (logqeff - mv_mean[5]) / mv_sd[5]
+            
+            # Transform back to natural scale
+            sigma_qdev = exp(mv_samples[, 6])  # log(sigma_qdev) -> sigma_qdev
+            
+            # Calculate raw parameters
+            raw_sigma_qdev = (mv_samples[, 6] - mv_mean[6]) / mv_sd[6]
+        
         } else if (length(mv_mean) >= 5) {
             # Handle 4D multivariate prior (logK, log_r, log_shape, log_x0)
             log_shape = mv_samples[, 3]
@@ -278,6 +300,24 @@ ssp_prior_pushforward = function(ssp_summary, stan_data, settings) {
                     for (p in 2:n_periods) {
                         qdev_period[i, p] = rho[i] * qdev_period[i, p-1] + 
                                            raw_qdev_period[i, p] * sigma_qdev[i] * sqrt(1 - rho[i]^2)
+                    }
+                }
+                
+                # Assign period-based qdev to annual time series
+                for (t in 1:Tm1) {
+                    period = min(floor((t-1) / n_step) + 1, n_periods)
+                    qdev[i, t] = qdev_period[i, period]
+                }
+            }
+        } else if(is.null(rho) && !is.null(sigma_qdev)){
+            qdev_period = array(NA, dim = c(n_samples, n_periods))
+            qdev = array(NA, dim = c(n_samples, Tm1))
+            
+            for (i in 1:n_samples) {
+                qdev_period[i, 1] = 0
+                if (n_periods > 1) {
+                    for (p in 2:n_periods) {
+                        qdev_period[i, p] = raw_qdev_period[i, p] * sigma_qdev[i]
                     }
                 }
                 
