@@ -87,7 +87,7 @@ stan_inits_func = function(Tm1, n_periods = NULL, exec_name = "auto") {
             raw_qdev_period = rnorm(n_periods-1, 0, 0.25),  # Period-specific catchability deviations
             nu_catch = runif(1,1,40)
         )    
-    } else if (exec_name %in% c("bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC")){ 
+    } else if (exec_name %in% c("bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC","bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT")){ 
         # Effort-based models with full parameter set
         if(is.null(n_periods)) {
             n_step = 3  # default
