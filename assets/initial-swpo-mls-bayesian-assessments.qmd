@@ -1,5 +1,5 @@
 ---
-title: "2025 Stock Assessment of Striped Marlin in the Southwest Pacific Ocean: Part II Data-moderate approach"
+title: "Data-moderate assessment approaches for Southwest Pacific Ocean (SWPO) striped marlin"
 date: last-modified
 date-format: "DD MMMM YYYY"
 author:
@@ -7,18 +7,11 @@ author:
     affiliations:
       - id: pifsc
         name: "NOAA Fisheries, Pacific Islands Fisheries Science Center, 1845 Wasp Boulevard, Bldg. 176, Honolulu HI 96818"
-  - name: "C. Castillo-Jordán"
-    affiliations:
-      - id: spc
-        name: "Oceanic Fisheries Programme of the Pacific Community"
-  - name: "P. Hamer"
-    affiliations:
-      - ref: spc
 meetingtype: "SCIENTIFIC COMMITTEE"
 meetingnumber: "TWENTY-FIRST REGULAR SESSION"
 meetinglocation: "Tonga"
 meetingdates: "13-21 August 2025"
-repnumber: WCPFC-SC21-2025/SA-WP-07
+repnumber: WCPFC-SC21-2025/SA-IP-XX
 format:
   pdf:
     pdf-engine: pdflatex
@@ -43,6 +36,8 @@ format:
     code-font: "Consolas, Monaco, 'Andale Mono', monospace"
     filters:
       - inline-code.lua
+    header-includes: |
+     \usepackage{draftwatermark}
   html:
     toc: true
     toc-depth: 3
@@ -55,6 +50,24 @@ bibliography: 202506_swpo_bayes.bib
 csl: apa.csl
 
 ---
+
+```{=html}
+<style>
+.draft-watermark {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(-45deg);
+  font-size: 100px;
+  font-weight: bold;
+  color: #ccc;
+  opacity: 0.5;
+  z-index: -1000;
+  pointer-events: none;
+}
+</style>
+<div class="draft-watermark">DRAFT</div>
+```
 
 ```{r}
 #| label: set-paths
@@ -70,13 +83,21 @@ dir_model_runs = file.path(proj_dir,"data","output","model_runs")
 
 # Executive summary
 
+Previous integrated age-structured assessments of Southwest Pacific Ocean (SWPO) striped marlin (*Kajikia audax*) have encountered significant technical challenges, including poor fits to size composition data, conflicts between data sources, and difficulties in estimating model initial conditions. To address these issues, this study developed a data-moderate assessment approach using Bayesian surplus production models (BSPMs) to provide estimates of stock status and trends for SWPO striped marlin from 1952-2022.
+
+Three BSPM variants were developed using a Fletcher-Schaefer production function framework implemented in Stan: (1) a baseline model with biologically-informed priors, (2) a depletion-constrained model incorporating additional information from New Zealand recreational fishing size data, and (3) an extended model with refined fishing mortality priors. The models were fitted to annual catch data (1952-2022) and a standardized CPUE index (1988-2022), incorporating biological uncertainty through simulation-based priors derived from 500,000 parameter combinations of life history characteristics.
+
+All three models achieved satisfactory convergence and demonstrated good predictive performance. They estimated consistent population trajectories showing decline from unfished conditions in 1952 to minimum levels around the early 1990s, gradual recovery through the 2000s and 2010s, and recent stabilization at moderate depletion levels. Median estimates of depletion and exploitation relative to Maximum Sustainable Yield (MSY) based reference points did not indicate that the stock was overfished or undergoing overfishing in any of the three models. Only the most conservative model variant indicated some recent risk of the stock falling below MSY-based reference points. Projecting the stock forward under status quo catch scenarios (average 2018-2022 removals), ten-year projections (2023-2032) from all models indicated a continued population recovery through 2032.
+
+This data-moderate assessment provides a robust alternative framework for evaluating SWPO striped marlin stock status when data conflicts present challenges for more complex integrated models. While all models suggest the stock is likely not overfished and currently recovering, the substantial uncertainty in absolute population scale emphasizes the importance of continued monitoring and the potential value of developing multiple modeling approaches. Furthermore, surplus production models simplify age-structured population dynamics, which can potentially bias MSY estimates when age-structured processes differ from the aggregated model assumptions. This analysis complements the 2025 revised integrated stock assessment and can provide managers with additional perspective on likely stock status and trajectory.
+
 \newpage
 
 # Introduction {#sec-introduction}
 
 Assessments of Southwest Pacific Ocean (SWPO) striped marlin (*Kajikia audax*) have been challenging. As documented in the joint NOAA-SPC modeling meeting report [@ducharme-barth_summary_2025], key issues identified by WCPFC SC20 included poor fits to size composition data and relative abundance indices, conflicts between different data sources, and difficulties in estimating model initial conditions.
 
-Discussions at the 2025 SPC Pre-Assessment Workshop highlighted additional challenges related to the estimation of total population scale. The low biomass scale indicated by previous versions of the assessment appears largely driven by the size composition from multiple fisheries. While estimation of low biomass scale is not inherently problematic, the resulting high ratio of fishing mortality (F) to natural mortality (M) that is maintained over multiple decades in the face of relative stability in catches and catch-per-unit-effort (CPUE) was noted as suspicious and flagged for further investigation.
+Discussions at the 2025 SPC Pre-Assessment Workshop highlighted additional challenges related to the estimation of total population scale. The low biomass scale indicated by previous versions of the assessment appears largely driven by the size composition from multiple fisheries. While estimation of low biomass scale is not inherently problematic, the resulting high ratio of fishing mortality (F) to natural mortality (M) that is maintained over multiple decades in the face of relative stability in catches and catch-per-unit-effort (CPUE) is suspicious and potentially indicative of model mis-specification.
 
 The complexity of integrated age-structured models, while providing detailed population dynamics representation, can become problematic when fundamental data conflicts exist or when key biological parameters are uncertain. For SWPO striped marlin, these challenges are compounded by spatiotemporal heterogeneity in fleet coverage, potential non-representativeness in mixed-fleet composition data, and limitations in age data from opportunistic sampling. Changes to productivity assumptions (growth, natural mortality, maturity, and/or steepness) or selectivity patterns will impact biomass scaling through predictions of expected size composition data.
 
@@ -92,11 +113,9 @@ This analysis presents a data-moderate approach for SWPO striped marlin that add
 
 To address some of the issues raised in @sec-introduction, a series of Bayesian state-space surplus production models (BSPMs) spanning the period 1952-2022 were developed following the Fletcher-Schaefer production model framework [@winker_unifying_2020; @edwards_bdm_2024]. Development of the BSPM followed the approach of [@neubauer_alternative_2019;@isc_stock_2024] and incorporated recent best practices for surplus production models [@kokkalis_good_2024] and Bayesian workflows for stock assessment [@monnahan_toward_2024] as guides for model development, analysis, and presentation.
 
-The models were implemented in the Stan probabilistic programming language [@stan_development_team_stan_2024] to take advantage of enhanced convergence diagnostics, greater efficiency in posterior sampling through the no-U-turn (NUTS) Hamiltonian Monte Carlo (HMC) algorithm [@betancourt_hamiltonian_2013], and greater flexibility with model configuration and prior specification. Implementation in R using the *rstan* package [@stan_development_team_rstan_2024] provides connection to an ecosystem of R packages for model diagnostics and validation: *bayesplot* [@gabry_bayesplot_2024] for posterior visualization and *loo* [@vehtari_loo_2024].
+The models were implemented in the Stan probabilistic programming language [@stan_development_team_stan_2024] to take advantage of enhanced convergence diagnostics, greater efficiency in posterior sampling through the no-U-turn (NUTS) Hamiltonian Monte Carlo algorithm [@betancourt_hamiltonian_2013], and greater flexibility with model configuration and prior specification. Implementation in R using the *rstan* package [@stan_development_team_rstan_2024] provides connection to an ecosystem of R packages for model diagnostics and validation: *bayesplot* [@gabry_bayesplot_2024] for posterior visualization and *loo* [@vehtari_loo_2024].
 
-In their baseline configuration, the models began from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, the fishing mortality necessary to produce the catch was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work [@isc_stock_2024] showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering described in @sec-prior-development.   
-
-Using the baseline model as a starting point, a number of one-off sensitivity analyses were conducted to explore key model assumptions or data questions. These included: the choice of relative abundance index used to drive the model dynamics, how catch observation error was dealt with, sensitivity to assumptions in data errors for early model catch and effort observations, alternative priors for catchability, population carrying capacity, and production function shape parameter. Based on these results a structural uncertainty grid was developed for the provision of stock status and management reference points.
+The models begin from an assumed unfished state in 1952 and incorporates process error in population dynamics, observation error in abundance indices, and uncertainty in biological parameters. Several model variants were developed: a baseline model (`0001-2024cpueExPrior`), a depletion-constrained model (`0002-2024cpueDepPrior`) that incorporates additional information about historical stock status from mean size data, and an extension of the depletion-constrained model that assumes a different prior on the variability in fishing mortality (`0003-2024cpueFPrior`). The `0002-2024cpueDepPrior` and `0003-2024cpueFPrior` models include a mean weight-based prior on 1988 depletion, and more detail on the development of this prior can be found in @sec-depletion-prior. Unless otherwise mentioned, all models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering described in @sec-prior-development.
 
 ### Input data {#sec-input-data}
 
@@ -451,10 +470,6 @@ Future assessment efforts should progressively build toward full age-structure t
 Developing Bayesian age-structured modeling approaches can provide more stable estimation of increased parameters due to the use of priors, explicitly account for parameter uncertainty rather than making fixed assumptions, potentially enable informed estimation of difficult-to-observe biological relationships (e.g., stock-recruit relationships), address BSPM limitations by explicitly considering age-structured processes and fishery selectivity, and estimate leading parameters with likelihood components for indices and size composition.
 
 While simplified models offer advantages when data conflicts exist, over-simplification of age-structured processes could result in biases. Future modeling must balance complexity with data quality and conflicts. The transition should be guided by careful evaluation of whether increased model complexity is supported by available data and whether it improves the reliability of management advice.
-
-# Acknowledgements {#sec-acknowledgements}
-
-The authors appreciate feedback received on earlier versions of this analysis, and are thankful to the following for their insights and thoughtful discussion which greatly improved the assessment: K. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), M. Nadon (PIFSC), and F. Carvalho (PIFSC).
 
 # Declaration of Generative AI use {#sec-ai-declaration}
 
