@@ -485,7 +485,9 @@ create_summary_data <- function(proj_dir, shiny_path) {
   # Select columns with parsed components first
   select_cols <- c("run_label","run_id", 
                    "n_par", "low_bfmi", "divergent", "treedepth", 
-                   "max_rhat", "min_neff", "median_catch_rmse", 
+                   "max_rhat", "min_neff",
+                   "n_obs","looic","p_loo","prop_pareto_k",
+                   "median_catch_rmse", 
                    "index_rmse_1", "index_rmse_2", "index_rmse_3", "index_rmse_4", "index_rmse_5", "index_rmse_6")
   
   # Only select columns that actually exist (handles missing parsed columns gracefully)

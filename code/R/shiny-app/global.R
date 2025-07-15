@@ -38,7 +38,7 @@ summary_dt <- fread(file.path("data","summary_dt.csv")) #%>% .[run_num>6]
 # Columns to round only
 round_cols <- c("min_neff", "divergent", "treedepth")
 # Columns to round with specific digits
-precision_cols <- c("max_rhat", "median_catch_rmse",paste0("index_rmse_",1:4))
+precision_cols <- c("max_rhat","looic","p_loo","prop_pareto_k", "median_catch_rmse",paste0("index_rmse_",1:6))
 
 # Apply transformations
 summary_dt[, (round_cols) := lapply(.SD, function(x) round(x * 1000)), .SDcols = intersect(round_cols, names(summary_dt))]
