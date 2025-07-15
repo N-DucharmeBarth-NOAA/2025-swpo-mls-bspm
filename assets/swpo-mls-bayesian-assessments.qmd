@@ -16,7 +16,7 @@ author:
       - ref: spc
 meetingtype: "SCIENTIFIC COMMITTEE"
 meetingnumber: "TWENTY-FIRST REGULAR SESSION"
-meetinglocation: "Tonga"
+meetinglocation: "Nuku'alofa, Tonga"
 meetingdates: "13-21 August 2025"
 repnumber: WCPFC-SC21-2025/SA-WP-07
 format:
@@ -64,6 +64,7 @@ csl: apa.csl
 
 proj_dir = this.path::this.proj()
 dir_model_runs = file.path(proj_dir,"data","output","model_runs")
+diag_model = "0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0"
 ```
 
 \newpage
@@ -100,9 +101,13 @@ Using the baseline model as a starting point, a number of one-off sensitivity an
 
 ### Input data {#sec-input-data}
 
-The BSPMs were fitted to catch and standardized CPUE data for SWPO striped marlin. Annual catch data (in numbers) spanning 1952-2022 were compiled from the 2024 assessment [@castillo-jordan_stock_2024] sources and aggregated into total removals by year. 
+The BSPMs were fitted to catch and standardized CPUE data for SWPO striped marlin. Effort was used as an input to drive the time series of estimated fishing mortality via the estimated catchability trend.
 
-The catch series (@fig-annual-catch) shows initially low removals in 1952-1953, followed by a high peak in 1954. Overall, however, catches have been relatively stable though catches in recent decades have shown a slight decline. A single standardized CPUE index (1988-2022) from the diagnostic case of the 2024 assessment [@castillo-jordan_stock_2024] was used. The index is very noisy (@fig-idx-fit). In general, however, there is a slight declining trend over the index period. The decline was most pronounced after 2000, though the trend stabilized somewhat before showing a slight increase in recent years. 
+Annual catch data (in numbers of individuals) spanning 1952-2022 were compiled from the 2024 assessment [@castillo-jordan_stock_2024] sources and aggregated into total removals by year. The catch series (@fig-annual-catch-effort) shows initially low removals in 1952-1953, followed by a high peak in 1954. Overall, however, catches have been relatively stable though catches in recent decades have shown a slight decline. 
+
+Annual longline effort (in numbers of hooks) matching the SWPO assessment domain, as specified in @castillo-jordan_stock_2024, was extracted from [publicly available WCPFC data](https://www.wcpfc.int/node/4648). Longline effort in the assessment domain (@fig-annual-catch-effort) increased gradually from zero in the early 1950s to ~100 million hooks per year in the early 1970s where it stabilized between 100-150 million hooks per year through the 1990s. Beginning in 2000 effort increased substantially to ~350 million hooks per year in 2003, and has fluctuated around that level for the last 20 years. 
+
+A number of indices were investigated either as one-off sensitivities or included in the structural uncertainty grid (@fig-idx-obs). These included the composite distant water fishing nation (DWFN) longline standardized CPUE index (1988-2022) from the diagnostic case of the 2024 assessment [@castillo-jordan_stock_2024], an Australian longline index, a New Zealand recreational sportfish index, and three different observer data based indices [@neubauer_exploring_2025]. The Pacific Islands observer program indices contained information from New Caledonia, Fiji, Tonga, and French Polynesia observer programs. Three alternative indices were constructed either by including data from all programs together, including data from just the western programs (New Caledonia, Fiji, and Tonga) or including data just from French Polynesia. The DWFN, Australia and observer without French Polynesia indices show recent increases; the New Zealand and observer with only French Polynesia indices show recent declines; and the all observer program index shows no trend. 
 
 ### Population Dynamics {#sec-population-dynamics}
 
@@ -153,12 +158,12 @@ $\alpha \sum_{a=1}^{A_{Max}} l_a f_a \exp(-R_{Max} \times a) = 1$
 
 where $\alpha$ is the slope at the origin of the stock-recruitment curve, $l_a$ is the probability of survival to age $a$, and $f_a$ is the fecundity (reproductive output) at age $a$. Additional technical detail can be found in @sec-equilibrium-dynamics of the Technical Annex.
 
-Repeating this calculation across the 500,000 parameter combinations resulted in a prior distribution of $R_{Max}$ conditioned on plausible biology and life-history characteristics. The resulting distribution was first filtered to values of $R_{Max} < 1.5$ representative of what the literature [@hutchings_lifehistory_2012;@gravel_metabolism_2024] indicates is most likely for teleosts. A prior pushforward analysis, similar to [@isc_stock_2024], was used to further refine this distribution and develop a lognormal prior for $R_{Max}$. Briefly, random values of $R_{Max}$ along with random values of the other leading parameters of the BSPM (drawn from the prior distributions described in @tbl-priors) were used to drive simulated populations forward subject to direct removal of the observed catch (@fig-annual-catch). Based on the results of the prior pushforward (@fig-pushforward), the $R_{Max}$ distribution was further filtered based on the following criteria:
+Repeating this calculation across the 500,000 parameter combinations resulted in a prior distribution of $R_{Max}$ conditioned on plausible biology and life-history characteristics. The resulting distribution was first filtered to values of $R_{Max} < 1.5$ representative of what the literature [@hutchings_lifehistory_2012;@gravel_metabolism_2024] indicates is most likely for teleosts. A prior pushforward analysis, similar to [@isc_stock_2024], was used to further refine this distribution and develop a lognormal prior for $R_{Max}$. Briefly, random values of $R_{Max}$ along with random values of the other leading parameters of the BSPM (drawn from the prior distributions described in @tbl-priors) were used to drive simulated populations forward subject to direct removal of the observed catch (@fig-annual-catch-effort). Based on the results of the prior pushforward (@fig-pushforward), the $R_{Max}$ distribution was further filtered based on the following criteria:
 
 - Depletion in the terminal year $>$ 2% and $R_{Max} < 1$
 - Depletion in the terminal year $>$ 2%, $R_{Max} < 1$, and trend in depletion over the last decade between -5% and 10%
 
-This last filtering step approximates the recent relative trend seen in the index (@fig-idx-fit). Fitting a lognormal distribution to the remaining $R_{Max}$ values results in the prior distribution specified in @tbl-priors and shown in @fig-rmax-prior. Note that though initial filtering restricted $R_{Max}<1$, the final lognormal prior still assigns some prior weight to $R_{Max}>1$.  
+This last filtering step approximates the recent relative trend seen in the index. Fitting a lognormal distribution to the remaining $R_{Max}$ values results in the prior distribution specified in @tbl-priors and shown in @fig-rmax-prior. Note that though initial filtering restricted $R_{Max}<1$, the final lognormal prior still assigns some prior weight to $R_{Max}>1$.  
 
 ### Depletion Prior {#sec-depletion-prior}
 
@@ -304,42 +309,72 @@ Overall retrospective bias was very low and close to zero for all models (@tbl-s
 ## Population Dynamics and Stock Status {#sec-stock-status}
 
 ```{r}
-#| label: read-priors-data
+#| label: read-prior-data
 #| echo: false
 #| warning: false
 #| message: false
 
-# Read and process Stan data to extract prior values
+# Read and process new Stan data to extract prior values
 library(data.table)
 
-# Read the CSV file
-stan_data <- fread(file.path(dir_model_runs,"0002-2024cpueDepPrior_0","stan_data.csv"))
-stan_data2 <- fread(file.path(dir_model_runs,"0003-2024cpueFPrior_0","stan_data.csv"))
+# Read the new CSV file - update path as needed
+stan_data_new <- fread(file.path(dir_model_runs,diag_model,"stan_data.csv"))
 
-# Filter for prior means and standard deviations
-prior_data <- stan_data[type %in% c("PriorMean", "PriorSD")]
-prior_data2 <- stan_data2[type %in% c("PriorMean", "PriorSD")]
+# Extract multivariate prior parameters (7-dimensional)
+mv_prior_means <- stan_data_new[name == "mv_prior_mean", value]
+mv_prior_sds <- stan_data_new[name == "mv_prior_sd", value]
 
-# Reshape to have mean and SD in separate columns
-prior_table <- dcast(prior_data, name ~ type, value.var = "value")
-prior_table2 <- dcast(prior_data2, name ~ type, value.var = "value")
+# According to Stan code, the 7 parameters are:
+# 1. logK, 2. log_r, 3. log_shape, 4. log_x0, 5. log_qeff, 6. atanh_rho, 7. log_sigma_qdev
+param_names <- c("logK", "log_r", "log_shape", "log_x0", "log_qeff", "atanh_rho", "log_sigma_qdev")
 
-# Extract individual prior values for inline use
-PriorMean_logK <- prior_table[name == "logK"]$PriorMean
-PriorSD_logK <- prior_table[name == "logK"]$PriorSD
-PriorMean_logr <- prior_table[name == "logr"]$PriorMean
-PriorSD_logr <- prior_table[name == "logr"]$PriorSD
-PriorMean_logshape <- prior_table[name == "logshape"]$PriorMean
-PriorSD_logshape <- prior_table[name == "logshape"]$PriorSD
-PriorMean_logsigmap <- prior_table[name == "logsigmap"]$PriorMean
-PriorSD_logsigmap <- prior_table[name == "logsigmap"]$PriorSD
-PriorSD_sigmao_add <- prior_table[name == "sigmao_add"]$PriorSD
-PriorSD_sigmaf <- prior_table[name == "sigmaf"]$PriorSD
-PriorSD_sigmaf2 <- prior_table2[name == "sigmaf"]$PriorSD
+# Create lookup for multivariate parameters
+mv_params <- data.table(
+  param = param_names,
+  log_mean = mv_prior_means,
+  log_sd = mv_prior_sds
+)
 
-# Extract depletion priors
-depletion_meanlog <- stan_data[name == "prior_depletion_meanlog"]$value
-depletion_sdlog <- stan_data[name == "prior_depletion_sdlog"]$value
+# Extract individual prior values for other parameters
+prior_mean_logsigmap <- stan_data_new[name == "logsigmap" & type == "PriorMean", value]
+prior_sd_logsigmap <- stan_data_new[name == "logsigmap" & type == "PriorSD", value]
+prior_sd_sigmao_add <- stan_data_new[name == "sigmao_add" & type == "PriorSD", value]
+
+# Extract depletion prior parameters
+depletion_meanlog <- stan_data_new[name == "prior_depletion_meanlog", value]
+depletion_sdlog <- stan_data_new[name == "prior_depletion_sdlog", value]
+
+# Extract Student-t parameters for catch likelihood
+nu_catch_shape <- stan_data_new[name == "nu_catch_gamma_shape", value]
+nu_catch_rate <- stan_data_new[name == "nu_catch_gamma_rate", value]
+
+# Extract multivariate prior correlation matrix (7x7)
+mv_corr_data <- stan_data_new[name == "mv_prior_corr"]
+# Reshape correlation matrix data
+mv_corr_matrix <- matrix(mv_corr_data$value, nrow = 7, ncol = 7, byrow = TRUE)
+rownames(mv_corr_matrix) <- param_names
+colnames(mv_corr_matrix) <- param_names
+
+# Extract specific correlations identified as significant (|r| > 0.05)
+corr_log_r_log_shape <- round(mv_corr_matrix[2, 3], 3)
+corr_log_qeff_log_sigma_qdev <- round(mv_corr_matrix[5, 7], 3)
+corr_log_qeff_atanh_rho <- round(mv_corr_matrix[5, 6], 3)
+corr_logK_log_qeff <- round(mv_corr_matrix[1, 5], 3)
+corr_logK_log_r <- round(mv_corr_matrix[1, 2], 3)
+corr_logK_log_sigma_qdev <- round(mv_corr_matrix[1, 7], 3)
+corr_logK_atanh_rho <- round(mv_corr_matrix[1, 6], 3)
+corr_logK_log_shape <- round(mv_corr_matrix[1, 3], 3)
+corr_atanh_rho_log_sigma_qdev <- round(mv_corr_matrix[6, 7], 3)
+
+# Calculate natural scale medians for reporting
+K_median <- round(exp(mv_params[param == "logK", log_mean]), 0)
+r_median <- round(exp(mv_params[param == "log_r", log_mean]), 4)
+shape_median <- round(exp(mv_params[param == "log_shape", log_mean]), 3)
+x0_median <- round(exp(mv_params[param == "log_x0", log_mean]), 3)
+qeff_median <- round(exp(mv_params[param == "log_qeff", log_mean]), 4)
+rho_median <- round(tanh(mv_params[param == "atanh_rho", log_mean]), 3)
+sigma_qdev_median <- round(exp(mv_params[param == "log_sigma_qdev", log_mean]), 3)
+sigmap_median <- round(exp(prior_mean_logsigmap), 4)
 ```
 
 ```{r}
@@ -505,23 +540,25 @@ Table: Biological parameter distributions and sources used in simulation framewo
 
 ::: {.landscape}
 
-Table: Prior distributions for Bayesian surplus production model parameters. All models assumed the same priors unless explicitly noted. {#tbl-priors}
+Table: Prior distributions for effort-based Bayesian surplus production model parameters. {#tbl-priors}
 
-| Parameter | Distribution | Mean | SD | Description |
-|-----------|-------------|------|----|-----------| 
-| **Core Population Parameters** | | | | |
-| $K$ | Lognormal | $\log(`r format(round(exp(PriorMean_logK), 0), big.mark = ",")`)$ | `r round(PriorSD_logK, 2)` | Carrying capacity |
-| $R_{Max}$ | Lognormal | $\log(`r round(exp(PriorMean_logr), 4)`)$ | `r round(PriorSD_logr, 2)` | Maximum intrinsic rate of increase (from biological simulation) |
-| $n$ | Lognormal | $\log(`r round(exp(PriorMean_logshape), 3)`)$ | `r round(PriorSD_logshape, 2)` | Shape parameter (Pella-Tomlinson production function); $n = 2$ is a Schaefer model |
-| | | | | |
-| **Process and Observation Error** | | | | |
-| $\sigma_P$ | Lognormal | $\log(`r round(exp(PriorMean_logsigmap), 4)`)$ | `r round(PriorSD_logsigmap, 2)` | Process error standard deviation [@winker_jabba_2018] |
-| $\sigma_{O,add}$ | Half-Normal | 0 | `r round(PriorSD_sigmao_add, 2)` | Additional estimated observation error |
-| $\sigma_F$ | Half-Normal | 0 | `r round(PriorSD_sigmaf, 3)` | Fishing mortality variability (`0001-2024cpueExPrior` & `0002-2024cpueDepPrior`)|
-| $\sigma_F$ | Half-Normal | 0 | `r round(PriorSD_sigmaf2, 3)` | Fishing mortality variability (`0003-2024cpueFPrior`)  |
-| | | | | |
-| **Depletion Constraint** (`0002-2024cpueDepPrior` & `0003-2024cpueFPrior`) | | | | |
-| $x_{1988}$ | Lognormal | $\log(`r round(exp(depletion_meanlog), 4)`)$ | `r round(depletion_sdlog, 2)` | Initial depletion at $t=37$ (this analysis) |
+| Parameter | Distribution | Mean | SD | Description | Key Correlations |
+|-----------|-------------|------|----|-----------|-----------------| 
+| **Core Population Parameters** | | | | | |
+| $K$ | Lognormal | $\log(`r format(K_median, big.mark = ",")`)$ | `r round(mv_params[param == "logK", log_sd], 2)` | Carrying capacity (N) | $\rho(K,R_{Max})$ = `r corr_logK_log_r`; $\rho(K,q_{eff})$ = `r corr_logK_log_qeff` |
+| $R_{Max}$ | Lognormal | $\log(`r r_median`)$ | `r round(mv_params[param == "log_r", log_sd], 2)` | Maximum intrinsic rate of increase | $\rho(R_{Max},n)$ = `r corr_log_r_log_shape` |
+| $n$ | Lognormal | $\log(`r shape_median`)$ | `r round(mv_params[param == "log_shape", log_sd], 2)` | Pella-Tomlinson shape parameter | |
+| $x_0$ | Lognormal | $\log(`r x0_median`)$ | `r round(mv_params[param == "log_x0", log_sd], 3)` | Initial depletion | (Independent) |
+| $q_{eff}$ | Lognormal | $\log(`r qeff_median`)$ | `r round(mv_params[param == "log_qeff", log_sd], 2)` | Effort catchability coefficient | $\rho(q_{eff},\sigma_{qdev})$ = `r corr_log_qeff_log_sigma_qdev`; $\rho(q_{eff},\rho)$ = `r corr_log_qeff_atanh_rho` |
+| $\rho$ | Transformed Normal | $\tanh^{-1}(`r rho_median`)$ | `r round(mv_params[param == "atanh_rho", log_sd], 2)` | Autocorrelation in catchability deviations | $\rho(\rho,\sigma_{qdev})$ = `r corr_atanh_rho_log_sigma_qdev` |
+| $\sigma_{qdev}$ | Lognormal | $\log(`r sigma_qdev_median`)$ | `r round(mv_params[param == "log_sigma_qdev", log_sd], 2)` | Catchability variability standard deviation | |
+| | | | | | |
+| **Process and Observation Error** | | | | | |
+| $\sigma_P$ | Lognormal | $\log(`r sigmap_median`)$ | `r round(prior_sd_logsigmap, 2)` | Process error standard deviation | (Independent) |
+| $\sigma_{O,add}$ | Half-Normal | 0 | `r round(prior_sd_sigmao_add, 2)` | Additional estimated observation error | (Independent) |
+| | | | | | |
+| **Catch Likelihood** | | | | | |
+| $\nu_{catch}$ | Gamma | Shape = `r nu_catch_shape` | Rate = `r nu_catch_rate` | Student-t degrees of freedom for catch | (Independent) |
 
 :::
 
@@ -606,32 +643,59 @@ Table: Posterior estimates with 95% credible intervals for all BSPM parameters {
 # Figures {#sec-figures}
 
 ```{r}
-#| label: fig-annual-catch
+#| label: fig-annual-catch-effort
 #| echo: false
 #| warning: false
 #| message: false
-#| fig-cap: "Annual catch of Southwest Pacific Ocean striped marlin (1952-2022). Catch data shows initial low removals in early years, a peak in 1954, followed by relatively stable catches with a slight decline in recent decades."
+#| fig-cap: "Annual catch (numbers; individuals) of striped marlin and nominal longline effort (hooks fished; thousands) in the Southwest Pacific Ocean (1952-2022)."
 
 library(data.table)
 library(ggplot2)
+library(magrittr)
 
 # Read catch data
 catch_dt = fread(file.path(proj_dir, "data", "input", "catch.csv"))
 
-# Process annual catch data (converting to thousands of fish)
-catch_annual = catch_dt[, .(total_catch = sum(Obs * 1000)), by = .(year = floor(Time))]
+# Load effort data 
+effort_dt = fread(file.path(proj_dir, "data", "input", "WCPFC_L_PUBLIC_BY_FLAG_YR.CSV")) %>%
+                .[, lat_short_d := ifelse(grepl("S$", lat_short), 
+                                        -as.numeric(gsub("[NS]", "", lat_short)), 
+                                        as.numeric(gsub("[NS]", "", lat_short))) + 2.5] %>%
+                .[, lon_short_d := ifelse(grepl("W$", lon_short), 
+                                        360 - as.numeric(gsub("[EW]", "", lon_short)), 
+                                            as.numeric(gsub("[EW]", "", lon_short))) + 2.5] %>%
+                .[lat_short_d > -60 & lat_short_d < 0 & lon_short_d < 230] %>%
+                .[!(lat_short_d > -5 & lon_short_d > 210)] %>%
+                .[,.(effort_scaled = sum(hhooks)/1e6),by=yy] %>%
+                .[yy %in% 1952:2022] %>%
+                setnames(., "yy", "time")
+    
+catch_annual = catch_dt[,.(total_catch = sum(Obs * 1000)), by = .(year = floor(Time))]
 setorder(catch_annual, year)
+    
+# Merge with effort data
+catch_effort_annual = merge(catch_annual, effort_dt, by.x = "year", by.y = "time", all.x = TRUE)
+    
+# Fill missing effort with mean (if any)
+if(any(is.na(catch_effort_annual$effort_scaled))) {
+    catch_effort_annual[is.na(effort_scaled), effort_scaled := mean(effort_scaled, na.rm = TRUE)]
+}
 
 # Create histogram of annual catch
-ggplot(catch_annual, aes(x = year, y = total_catch)) +
-  geom_col(fill = "gray60", alpha = 0.8, width = 0.8) +
+catch_effort_annual %>%
+  .[,effort_scaled:=(effort_scaled*1e6*100)/1e3] %>% 
+  melt(.,id.vars=c("year")) %>%
+  .[,variable:=factor(variable,levels=c("total_catch","effort_scaled"),labels=c("Catch","Effort"))] %>%
+ggplot() +
+facet_wrap(~variable,nrow=2,scales="free_y") +
+  geom_col(aes(x = year, y = value),fill = "gray60", alpha = 0.8, width = 0.8) +
   geom_hline(yintercept=0) +
   scale_x_continuous(breaks = seq(1950, 2020, 10), 
                      limits = c(1950, 2025)) +
   scale_y_continuous(labels = scales::comma_format(scale = 1e-3, suffix = "K"),
                      expand = expansion(mult = c(0, 0.05))) +
   labs(x = "Year",
-       y = "Annual Catch (numbers)") +
+       y = "Annual catch and effort") +
   theme(
     panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
     panel.grid.major = element_line(color = 'gray70', linetype = "dotted"), 
@@ -648,13 +712,132 @@ ggplot(catch_annual, aes(x = year, y = total_catch)) +
 ```
 
 ```{r}
-#| label: fig-idx-fit
+#| label: fig-idx-obs
 #| echo: false
-#| fig-cap: "Standardized index (black points), observation error (black bars), and posterior predicted model fits (colored lines) with associated 95% credible interval (colored shading)."
+#| warning: false
+#| message: false
+#| fig-cap: "Standardized index (black points), and observation error (black bars) for alternative model indices. The trend in the indices is shown in blue using a loess-smooth."
 #| out-width: "100%"
 #| fig-pos: "H"
 
-knitr::include_graphics(file.path(proj_dir, "plots", "model_comparison", "comparisons", "comparison_index_fit_ppd.png"))
+# load additional cpue indices
+  cpue_dt = fread(file.path(proj_dir,"data","input","cpue.csv"))
+    au_cpue_dt = fread(file.path(proj_dir,"data","input","AU_cpue.csv"))
+    nz_cpue_dt = fread(file.path(proj_dir,"data","input","NZ_cpue.csv"))
+    obs_cpue_dt = fread(file.path(proj_dir,"data","input","obs-idx-with_OP.csv"))
+    obs_cpue_no_PF_dt = fread(file.path(proj_dir,"data","input","obs-idx-with_OP_no_PF.csv"))
+    obs_cpue_PF_only_dt = fread(file.path(proj_dir,"data","input","obs-idx-with_OP_PF_only.csv"))
+
+# prepare data matrices    
+    time_years = catch_effort_annual$year
+    n_years = length(time_years)
+    
+    index_mat = matrix(NA, nrow = n_years, ncol = 6)
+    se_mat = matrix(NA, nrow = n_years, ncol = 6)
+
+    # dwfn cpue
+    cpue_years = floor(cpue_dt$Time)
+    for(i in 1:nrow(cpue_dt)) {
+        year_idx = which(time_years == cpue_years[i])
+        if(length(year_idx) > 0) {
+            index_mat[year_idx, 1] = cpue_dt$Obs[i]
+            se_mat[year_idx, 1] = cpue_dt$SE[i]
+        }
+    }
+
+    # australia cpue
+    for(i in 1:nrow(au_cpue_dt)) {
+        year_idx = which(time_years == au_cpue_dt$year[i])
+        if(length(year_idx) > 0) {
+            index_mat[year_idx, 2] = au_cpue_dt$obs[i]/mean(au_cpue_dt$obs)
+            se_mat[year_idx, 2] = au_cpue_dt$se_log[i]
+        }
+    }
+
+    # new zealand cpue
+    for(i in 1:nrow(nz_cpue_dt)) {
+        year_idx = which(time_years == nz_cpue_dt$year[i])
+        if(length(year_idx) > 0) {
+            index_mat[year_idx, 3] = nz_cpue_dt$ob[i]/mean(nz_cpue_dt$ob)
+            se_mat[year_idx, 3] = nz_cpue_dt$se_log[i]
+        }
+    }
+
+    # Observer CPUE
+    # calc SE from quantiles
+    obs_cpue_dt[, se_from_quantiles := (Q97.5 - Q2.5) / (2 * 1.96)]
+    for(i in 1:nrow(obs_cpue_dt)) {
+        year_idx = which(time_years == obs_cpue_dt$Year[i])
+        if(length(year_idx) > 0) {
+            index_mat[year_idx, 4] = obs_cpue_dt$Estimate[i]/mean(obs_cpue_dt$Estimate)
+            se_mat[year_idx, 4] = obs_cpue_dt$se_from_quantiles[i]
+        }
+    }
+
+    # calc SE from quantiles
+    obs_cpue_no_PF_dt[, se_from_quantiles := (Q97.5 - Q2.5) / (2 * 1.96)]
+    for(i in 1:nrow(obs_cpue_no_PF_dt)) {
+        year_idx = which(time_years == obs_cpue_no_PF_dt$Year[i])
+        if(length(year_idx) > 0) {
+            index_mat[year_idx, 5] = obs_cpue_no_PF_dt$Estimate[i]/mean(obs_cpue_no_PF_dt$Estimate)
+            se_mat[year_idx, 5] = obs_cpue_no_PF_dt$se_from_quantiles[i]
+        }
+    }
+
+    # calc SE from quantiles
+    obs_cpue_PF_only_dt[, se_from_quantiles := (Q97.5 - Q2.5) / (2 * 1.96)]
+    for(i in 1:nrow(obs_cpue_PF_only_dt)) {
+        year_idx = which(time_years == obs_cpue_PF_only_dt$Year[i])
+        if(length(year_idx) > 0) {
+            index_mat[year_idx, 6] = obs_cpue_PF_only_dt$Estimate[i]/mean(obs_cpue_PF_only_dt$Estimate)
+            se_mat[year_idx, 6] = obs_cpue_PF_only_dt$se_from_quantiles[i]
+        }
+    }
+
+# Create data frame for plotting using data.table
+colnames(index_mat) = c("DWFN", "Australia", "New Zealand", 
+                        "Observer (all)", "Observer (no PF)", "Observer (PF only)")
+
+# Convert matrices to data.table format
+plot_dt = data.table(
+    year = rep(time_years, ncol(index_mat)),
+    index = rep(colnames(index_mat), each = nrow(index_mat)),
+    obs = as.vector(index_mat),
+    se = as.vector(se_mat)
+)
+
+# Filter out missing values and calculate confidence intervals
+plot_dt <- plot_dt[!is.na(obs) & !is.na(se)]
+plot_dt[, `:=`(
+    # Calculate bias-corrected 95% lognormal confidence intervals
+    # Bias correction: meanlog = log(obs) - 0.5*se^2
+    meanlog_corrected = log(obs) - 0.5 * se^2,
+    lower = qlnorm(0.025, meanlog = log(obs) - 0.5 * se^2, sdlog = se),
+    upper = qlnorm(0.975, meanlog = log(obs) - 0.5 * se^2, sdlog = se)
+)]
+
+# Set factor levels for consistent ordering
+plot_dt[, index := factor(index, levels = colnames(index_mat))]
+
+# Create the plot
+ggplot(plot_dt, aes(x = year, y = obs)) +
+    geom_hline(yintercept = 1, linetype = "solid", color = "black") +
+    geom_segment(aes(x = year, xend = year, y = lower, yend = upper), 
+                 color = "black", linewidth = 0.5) +
+    geom_smooth(method = "loess", se = FALSE, color = "blue", linewidth = 0.8, span=0.4) +
+    geom_point(color = "white", fill = "black", shape = 21, size = 1.5) +
+    facet_wrap(~ index, scales = "free_y") +
+    scale_x_continuous(breaks = seq(1980, 2020, 20)) +
+    scale_y_continuous(expand = expansion(mult = c(0.05, 0.05))) +
+    labs(x = "Year", y = "Standardized Index") +
+    theme(
+        panel.background = element_rect(fill = "white", color = "black"),
+        panel.grid.major = element_line(color = 'gray70', linetype = "dotted"), 
+        panel.grid.minor = element_line(color = 'gray70', linetype = "dotted"),
+        strip.background = element_rect(fill = "white"),
+        legend.key = element_rect(fill = "white"),
+        strip.text = element_text(size = 10)
+    )
 ```
 
 \newpage
@@ -804,6 +987,21 @@ knitr::include_graphics(file.path(proj_dir, "plots", "predicted_catch.png"))
 #| fig-pos: "H"
 
 knitr::include_graphics(file.path(proj_dir, "plots","model_comparison","comparisons", "comparison_index_fit_residuals.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+```{r}
+#| label: fig-idx-fit
+#| echo: false
+#| fig-cap: "Standardized index (black points), observation error (black bars), and posterior predicted model fits (colored lines) with associated 95% credible interval (colored shading)."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "model_comparison", "comparisons", "comparison_index_fit_ppd.png"))
 ```
 
 \newpage
