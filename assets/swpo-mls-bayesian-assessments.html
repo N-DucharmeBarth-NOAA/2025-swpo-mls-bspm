@@ -9,7 +9,7 @@
 <meta name="author" content="N. Ducharme-Barth">
 <meta name="author" content="C. Castillo-Jordán">
 <meta name="author" content="P. Hamer">
-<meta name="dcterms.date" content="2025-07-14">
+<meta name="dcterms.date" content="2025-07-15">
 
 <title>2025 Stock Assessment of Striped Marlin in the Southwest Pacific Ocean: Part II Data-moderate approach</title>
 <style>
@@ -3225,14 +3225,11 @@ window.Quarto = {
   <li><a href="#sec-input-data" id="toc-sec-input-data" class="nav-link" data-scroll-target="#sec-input-data"><span class="header-section-number">3.1.1</span> Input data</a></li>
   <li><a href="#sec-population-dynamics" id="toc-sec-population-dynamics" class="nav-link" data-scroll-target="#sec-population-dynamics"><span class="header-section-number">3.1.2</span> Population Dynamics</a></li>
   <li><a href="#sec-observation-model" id="toc-sec-observation-model" class="nav-link" data-scroll-target="#sec-observation-model"><span class="header-section-number">3.1.3</span> Observation Model</a></li>
-  <li><a href="#sec-catch-treatment" id="toc-sec-catch-treatment" class="nav-link" data-scroll-target="#sec-catch-treatment"><span class="header-section-number">3.1.4</span> Catch Treatment</a></li>
   </ul></li>
   <li><a href="#sec-prior-development" id="toc-sec-prior-development" class="nav-link" data-scroll-target="#sec-prior-development"><span class="header-section-number">3.2</span> Prior Development</a>
   <ul class="collapse">
   <li><a href="#sec-biological-simulation" id="toc-sec-biological-simulation" class="nav-link" data-scroll-target="#sec-biological-simulation"><span class="header-section-number">3.2.1</span> Biological Simulation Framework</a></li>
   <li><a href="#sec-rmax-prior" id="toc-sec-rmax-prior" class="nav-link" data-scroll-target="#sec-rmax-prior"><span class="header-section-number">3.2.2</span> Maximum Intrinsic Rate of Increase (<span class="math inline">\(R_{Max}\)</span>) Prior</a></li>
-  <li><a href="#sec-depletion-prior" id="toc-sec-depletion-prior" class="nav-link" data-scroll-target="#sec-depletion-prior"><span class="header-section-number">3.2.3</span> Depletion Prior</a></li>
-  <li><a href="#sec-sigmaF-prior" id="toc-sec-sigmaF-prior" class="nav-link" data-scroll-target="#sec-sigmaF-prior"><span class="header-section-number">3.2.4</span> Fishing Mortality Prior</a></li>
   </ul></li>
   <li><a href="#sec-model-implementation" id="toc-sec-model-implementation" class="nav-link" data-scroll-target="#sec-model-implementation"><span class="header-section-number">3.3</span> Model Implementation</a></li>
   <li><a href="#sec-model-diagnostics" id="toc-sec-model-diagnostics" class="nav-link" data-scroll-target="#sec-model-diagnostics"><span class="header-section-number">3.4</span> Model Diagnostics</a>
@@ -3275,7 +3272,6 @@ window.Quarto = {
   <li><a href="#sec-fecundity-calculation" id="toc-sec-fecundity-calculation" class="nav-link" data-scroll-target="#sec-fecundity-calculation"><span class="header-section-number">11.1.2</span> Fecundity</a></li>
   <li><a href="#sec-stock-recruitment" id="toc-sec-stock-recruitment" class="nav-link" data-scroll-target="#sec-stock-recruitment"><span class="header-section-number">11.1.3</span> Stock-Recruitment Relationship</a></li>
   </ul></li>
-  <li><a href="#sec-transitional-weight-model" id="toc-sec-transitional-weight-model" class="nav-link" data-scroll-target="#sec-transitional-weight-model"><span class="header-section-number">11.2</span> Transitional Mean Weight Model</a></li>
   </ul></li>
   </ul>
 <div class="quarto-alternate-formats"><h2>Other Formats</h2><ul><li><a href="..\swpo-mls-bayesian-assessments.pdf"><i class="bi bi-file-pdf"></i>PDF</a></li></ul></div></nav>
@@ -3324,7 +3320,7 @@ window.Quarto = {
     <div>
     <div class="quarto-title-meta-heading">Published</div>
     <div class="quarto-title-meta-contents">
-      <p class="date">14 July 2025</p>
+      <p class="date">15 July 2025</p>
     </div>
   </div>
   
@@ -3356,7 +3352,7 @@ window.Quarto = {
 <h2 data-number="3.1" class="anchored" data-anchor-id="sec-model-framework"><span class="header-section-number">3.1</span> Model Framework</h2>
 <p>To address some of the issues raised in <a href="#sec-introduction" class="quarto-xref">Section 2</a>, a series of Bayesian state-space surplus production models (BSPMs) spanning the period 1952-2022 were developed following the Fletcher-Schaefer production model framework <span class="citation" data-cites="winker_unifying_2020 edwards_bdm_2024">(<a href="#ref-edwards_bdm_2024" role="doc-biblioref">Edwards, 2024</a>; <a href="#ref-winker_unifying_2020" role="doc-biblioref">Winker et al., 2020</a>)</span>. Development of the BSPM followed the approach of <span class="citation" data-cites="neubauer_alternative_2019 isc_stock_2024">(<a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>; <a href="#ref-neubauer_alternative_2019" role="doc-biblioref">Neubauer et al., 2019</a>)</span> and incorporated recent best practices for surplus production models <span class="citation" data-cites="kokkalis_good_2024">(<a href="#ref-kokkalis_good_2024" role="doc-biblioref">Kokkalis et al., 2024</a>)</span> and Bayesian workflows for stock assessment <span class="citation" data-cites="monnahan_toward_2024">(<a href="#ref-monnahan_toward_2024" role="doc-biblioref">Monnahan, 2024</a>)</span> as guides for model development, analysis, and presentation.</p>
 <p>The models were implemented in the Stan probabilistic programming language <span class="citation" data-cites="stan_development_team_stan_2024">(<a href="#ref-stan_development_team_stan_2024" role="doc-biblioref">Team, 2024b</a>)</span> to take advantage of enhanced convergence diagnostics, greater efficiency in posterior sampling through the no-U-turn (NUTS) Hamiltonian Monte Carlo (HMC) algorithm <span class="citation" data-cites="betancourt_hamiltonian_2013">(<a href="#ref-betancourt_hamiltonian_2013" role="doc-biblioref">Betancourt &amp; Girolami, 2013</a>)</span>, and greater flexibility with model configuration and prior specification. Implementation in R using the <em>rstan</em> package <span class="citation" data-cites="stan_development_team_rstan_2024">(<a href="#ref-stan_development_team_rstan_2024" role="doc-biblioref">Team, 2024a</a>)</span> provides connection to an ecosystem of R packages for model diagnostics and validation: <em>bayesplot</em> <span class="citation" data-cites="gabry_bayesplot_2024">(<a href="#ref-gabry_bayesplot_2024" role="doc-biblioref">Gabry &amp; Mahr, 2024</a>)</span> for posterior visualization and <em>loo</em> <span class="citation" data-cites="vehtari_loo_2024">(<a href="#ref-vehtari_loo_2024" role="doc-biblioref">Vehtari et al., 2024</a>)</span>.</p>
-<p>In their baseline configuration, the models began from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, the fishing mortality necessary to produce the catch was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work <span class="citation" data-cites="isc_stock_2024">(<a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>)</span> showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (<a href="#tbl-priors" class="quarto-xref">Table 2</a>) based on the biological simulation filtering described in <a href="#sec-prior-development" class="quarto-xref">Section 3.2</a>.</p>
+<p>In their baseline configuration, the models began from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. Population scale or carrying capacity <span class="math inline">\(log(K)\)</span> is given in the units of the catch which is total numbers. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, the fishing mortality necessary to produce the catch was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work <span class="citation" data-cites="isc_stock_2024">(<a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>)</span> showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (<a href="#tbl-priors" class="quarto-xref">Table 2</a>) based on the biological simulation filtering described in <a href="#sec-prior-development" class="quarto-xref">Section 3.2</a>.</p>
 <p>Using the baseline model as a starting point, a number of one-off sensitivity analyses were conducted to explore key model assumptions or data questions. These included: the choice of relative abundance index used to drive the model dynamics, how catch observation error was dealt with, sensitivity to assumptions in data errors for early model catch and effort observations, alternative priors for catchability, population carrying capacity, and production function shape parameter. Based on these results a structural uncertainty grid was developed for the provision of stock status and management reference points.</p>
 <section id="sec-input-data" class="level3" data-number="3.1.1">
 <h3 data-number="3.1.1" class="anchored" data-anchor-id="sec-input-data"><span class="header-section-number">3.1.1</span> Input data</h3>
@@ -3367,23 +3363,40 @@ window.Quarto = {
 </section>
 <section id="sec-population-dynamics" class="level3" data-number="3.1.2">
 <h3 data-number="3.1.2" class="anchored" data-anchor-id="sec-population-dynamics"><span class="header-section-number">3.1.2</span> Population Dynamics</h3>
-<p>The population dynamics follow a Fletcher-Schaefer surplus production model with state-space formulation where population depletion <span class="math inline">\(x_t\)</span> (relative to carrying capacity <span class="math inline">\(K\)</span>) evolves according to:</p>
-<p><span class="math display">\[x_t = \begin{cases}
-(x_{t-1} + R_{Max} x_{t-1} (1 - \frac{x_{t-1}}{h}) - C_{t-1}) \times \epsilon_t, &amp; x_{t-1} \leq D_{MSY} \\
-(x_{t-1} + x_{t-1}(\gamma \times m)(1 - x_{t-1}^{n-1}) - C_{t-1}) \times \epsilon_t, &amp; x_{t-1} &gt; D_{MSY}
+<p>The population dynamics follow a hybrid Fletcher-Schaefer surplus production model <span class="citation" data-cites="edwards_bdm_2024 isc_stock_2024">(<a href="#ref-edwards_bdm_2024" role="doc-biblioref">Edwards, 2024</a>; <a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>)</span> with state-space formulation where population depletion <span class="math inline">\(x_t\)</span> (relative to carrying capacity <span class="math inline">\(K\)</span>) evolves according to:</p>
+<p><span class="math display">\[x_t = \left(x_{t-1} + \text{surplus production}_{t-1}\right) \times \epsilon_t \times \exp(-F_{t-1})\]</span></p>
+<p>where surplus production is defined as:</p>
+<p><span class="math display">\[\text{surplus production}_{t-1} = \begin{cases}
+R_{Max} \cdot x_{t-1} \left(1 - \frac{x_{t-1}}{h}\right), &amp; x_{t-1} \leq D_{MSY} \\
+\gamma \cdot m \cdot x_{t-1} \left(1 - x_{t-1}^{n-1}\right), &amp; x_{t-1} &gt; D_{MSY}
 \end{cases}\]</span></p>
-<p>where <span class="math inline">\(R_{Max}\)</span> is the maximum intrinsic rate of increase, <span class="math inline">\(n\)</span> is the shape parameter, and <span class="math inline">\(\epsilon_t\)</span> represents multiplicative process error with <span class="math inline">\(\epsilon_t = \exp(\delta_t - \sigma_P^2/2)\)</span> and <span class="math inline">\(\delta_t \sim N(0, \sigma_P)\)</span>. The intermediate parameters are: <span class="math inline">\(D_{MSY} = (1/n)^{1/(n-1)}\)</span>, <span class="math inline">\(h = 2D_{MSY}\)</span>, <span class="math inline">\(m = R_{Max}h/4\)</span>, and <span class="math inline">\(\gamma = n^{n/(n-1)}/(n-1)\)</span>.</p>
+<p>Here, <span class="math inline">\(R_{Max}\)</span> is the maximum intrinsic rate of increase, <span class="math inline">\(n\)</span> is the shape parameter, <span class="math inline">\(F_{t-1}\)</span> is the fishing mortality in year <span class="math inline">\(t-1\)</span>, and <span class="math inline">\(\epsilon_t\)</span> represents multiplicative process error with <span class="math inline">\(\epsilon_t = \exp(\delta_t - \sigma_P^2/2)\)</span> and <span class="math inline">\(\delta_t \sim N(0, \sigma_P)\)</span>. The intermediate parameters are: <span class="math inline">\(D_{MSY} = (1/n)^{1/(n-1)}\)</span>, <span class="math inline">\(h = 2D_{MSY}\)</span>, <span class="math inline">\(m = R_{Max} \cdot h/4\)</span>, and <span class="math inline">\(\gamma = n^{n/(n-1)}/(n-1)\)</span>.</p>
+<p>Fishing mortality <span class="math inline">\(F_t\)</span> is in turn defined as a function of fishing effort and time-varying catchability:</p>
+<p><span class="math display">\[F_t = q_{eff} \times \exp(\delta_{q,t} - \sigma_{qdev}^2/2) \times \text{E}_t\]</span></p>
+<p>where <span class="math inline">\(q_{eff}\)</span> is the base catchability coefficient, <span class="math inline">\(\text{E}_t\)</span> is the fishing effort<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> in year <span class="math inline">\(t\)</span>, and <span class="math inline">\(\delta_{q,t}\)</span> represents temporal variation in catchability effectiveness.</p>
+<p>The catchability deviations <span class="math inline">\(\delta_{q,t}\)</span> follow a structured temporal process organized into discrete periods of length <span class="math inline">\(n_{step}\)</span> years. In the baseline model <span class="math inline">\(n_{step} = 1\)</span> which allows for annual catchability deviates across <span class="math inline">\(70\)</span><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> periods <span class="math inline">\(p\)</span>. Catchability remains constant within periods <span class="math inline">\(p\)</span>, and evolves between periods according to an AR(1) process:</p>
+<p><span class="math display">\[\delta_{q,p} = \rho \times \delta_{q,p-1} + \epsilon_{q,p} \times \sigma_{qdev} \times \sqrt{1 - \rho^2}\]</span></p>
+<p>where <span class="math inline">\(\rho\)</span> is the autocorrelation parameter, <span class="math inline">\(\sigma_{qdev}\)</span> is the standard deviation of catchability innovations, and <span class="math inline">\(\epsilon_{q,p} \sim N(0,1)\)</span>. The initial period is constrained such that <span class="math inline">\(\delta_{q,1} = 0\)</span>. The term <span class="math inline">\(\sqrt{1 - \rho^2}\)</span> normalizes the variance of <span class="math inline">\(\delta_{q,p}\)</span> to remain stationary at <span class="math inline">\(\sigma^2_{qdev}\)</span> regardless of the value of <span class="math inline">\(\rho\)</span>.</p>
+<p>For each year <span class="math inline">\(t\)</span>, the corresponding period assignment is:</p>
+<p><span class="math display">\[\text{period}(t) = \min\left(\left\lfloor\frac{t-1}{n_{step}}\right\rfloor + 1, n_{periods}\right)\]</span></p>
+<p>and the catchability deviation for year <span class="math inline">\(t\)</span> is assigned as <span class="math inline">\(\delta_{q,t} = \delta_{q,\text{period}(t)}\)</span>. This fishing mortality parametrization is a simplification of the <em>catch-errors</em> formulation in MULTIFAN-CL <span class="citation" data-cites="fournier_multifan-cl_1998">(<a href="#ref-fournier_multifan-cl_1998" role="doc-biblioref">Fournier et al., 1998</a>)</span> and allows catchability to vary smoothly over time while maintaining temporal structure and avoiding overfitting to annual fluctuations in the effort-catch relationship.</p>
+<p>Model initial conditions are defined for <span class="math inline">\(t = 1\)</span> as <span class="math inline">\(x_t = x_0 \times \epsilon_t\)</span> where <span class="math inline">\(x_0\)</span> is the estimated depletion relative to unfished at the start of the model period. The prior specified for <span class="math inline">\(x_0\)</span> in the baseline case assumes an unfished initial condition with some uncertainty (<a href="#tbl-priors" class="quarto-xref">Table 2</a>).</p>
 </section>
 <section id="sec-observation-model" class="level3" data-number="3.1.3">
 <h3 data-number="3.1.3" class="anchored" data-anchor-id="sec-observation-model"><span class="header-section-number">3.1.3</span> Observation Model</h3>
 <p>The model fits to a standardized CPUE index using a lognormal likelihood:</p>
 <p><span class="math display">\[I_t \sim \text{Lognormal}(\log(q \times x_t) - \frac{\sigma_{O,t}^2}{2}, \sigma_{O,t})\]</span></p>
 <p>where catchability <span class="math inline">\(q\)</span> is analytically derived assuming an uninformative uniform prior, and total observation error <span class="math inline">\(\sigma_{O,t} = \sigma_{O,input} + \sigma_{O,add}\)</span> combines fixed input uncertainty with an estimated additional error component.</p>
-</section>
-<section id="sec-catch-treatment" class="level3" data-number="3.1.4">
-<h3 data-number="3.1.4" class="anchored" data-anchor-id="sec-catch-treatment"><span class="header-section-number">3.1.4</span> Catch Treatment</h3>
+<section id="sec-catch-treatment" class="level4" data-number="3.1.3.1">
+<h4 data-number="3.1.3.1" class="anchored" data-anchor-id="sec-catch-treatment"><span class="header-section-number">3.1.3.1</span> Catch Treatment</h4>
 <p>Annual fishing mortality is estimated directly <span class="math inline">\(F_t \sim N^+(0, \sigma_F)\)</span> with catch fitted using a lognormal likelihood with uncertainty <span class="math inline">\(\sigma_C = 0.2\)</span>.</p>
-<p>Catch is predicted as: <span class="math display">\[C_t = (x_t + \text{surplus production}_t) \times (1 - \exp(-F_t)) \times \epsilon_t \times K\]</span></p>
+<p>Removals (catch) are calculated as:</p>
+<p><span class="math display">\[\text{Removals}_{t-1} = \left(x_{t-1} + \text{surplus production}_{t-1}\right) \times \epsilon_t \times \left(1 - \exp(-F_{t-1})\right) \times \exp(\log K)\]</span></p>
+<p>In the population dynamics model fishing mortality is applied through the exponential decay function <span class="math inline">\(\exp(-F_{t-1})\)</span> to determine the surviving population fraction, here removals are calculated as the complementary fraction <span class="math inline">\(\left(1 - \exp(-F_{t-1})\right)\)</span> multiplied by the total production (including surplus production and process error) and converted to absolute numbers units through <span class="math inline">\(\exp(\log K)\)</span>.</p>
+<p>The model fits to the observed total catch in numbers using a Student’s t-distribution likelihood:</p>
+<p><span class="math display">\[Removals_{obs,t} \sim \text{Student-t}\left(\nu_c, \log(Removals_t) - \frac{\sigma_{C,t}^2}{2}, \sigma_{C,t}\right)\]</span></p>
+<p>where the degrees of freedom parameter <span class="math inline">\(\nu_c\)</span> controls the tail behavior, and the observation error <span class="math inline">\(\sigma_{C,t}\)</span> allows for time-varying uncertainty in catch observations. However, in the baseline model configuration <span class="math inline">\(\sigma_{C,t} = 0.2\)</span> for all <span class="math inline">\(t\)</span>.</p>
+</section>
 </section>
 </section>
 <section id="sec-prior-development" class="level2" data-number="3.2">
@@ -3412,22 +3425,6 @@ window.Quarto = {
 <li>Depletion in the terminal year <span class="math inline">\(&gt;\)</span> 2%, <span class="math inline">\(R_{Max} &lt; 1\)</span>, and trend in depletion over the last decade between -5% and 10%</li>
 </ul>
 <p>This last filtering step approximates the recent relative trend seen in the index. Fitting a lognormal distribution to the remaining <span class="math inline">\(R_{Max}\)</span> values results in the prior distribution specified in <a href="#tbl-priors" class="quarto-xref">Table 2</a> and shown in <a href="#fig-rmax-prior" class="quarto-xref">Figure 4</a>. Note that though initial filtering restricted <span class="math inline">\(R_{Max}&lt;1\)</span>, the final lognormal prior still assigns some prior weight to <span class="math inline">\(R_{Max}&gt;1\)</span>.</p>
-</section>
-<section id="sec-depletion-prior" class="level3" data-number="3.2.3">
-<h3 data-number="3.2.3" class="anchored" data-anchor-id="sec-depletion-prior"><span class="header-section-number">3.2.3</span> Depletion Prior</h3>
-<p>It is not possible to fit to size composition data in a BSPM framework. However, information on fishing mortality and depletion may be contained in the long time series of New Zealand recreational fishing data. This fishery routinely catches the largest individuals and shows a decline in average size since the start of the model period (<a href="#fig-gedamke" class="quarto-xref">Figure 5</a>), before which limited large-scale commercial fishing occurred. Assuming constant availability and selectivity, declining mean weight can be an indication of increased mortality. Assuming natural mortality M has remained constant, this indicates that the population may be in a more depleted state than in the initial period. The <code>0002-2024cpueDepPrior</code> variant was developed to capitalize on this potential additional source of information.</p>
-<p>A supplementary analysis was used to estimate relative population depletion in 1988 using New Zealand recreational fishing weight data. A modified Gedamke-Hoenig approach <span class="citation" data-cites="gedamke_estimating_2006">(<a href="#ref-gedamke_estimating_2006" role="doc-biblioref">Gedamke &amp; Hoenig, 2006</a>)</span> for using size composition data to estimate mortality in non-equilibrium situations was applied to estimate change in total mortality from <span class="math inline">\(Z_1\)</span> (initial period) to <span class="math inline">\(Z_2\)</span> (final period) at a known change point (1952) when industrial fishing commenced at the start of the model period (more detail in Technical Annex <a href="#sec-transitional-weight-model" class="quarto-xref">Section 11.2</a>). These two total mortality rates were calculated for each of the biological parameter combinations described in <a href="#sec-biological-simulation" class="quarto-xref">Section 3.2.1</a> and used to calculate relative spawning stock biomass depletion as the ratio of spawning potential under the two mortality regimes:</p>
-<p><span class="math display">\[\text{Relative Depletion} = \frac{SPR_{Z_2}}{SPR_{Z_1}} = \frac{\sum_{a=1}^{A_{Max}} l_{a,Z_2} f_a}{\sum_{a=1}^{A_{Max}} l_{a,Z_1} f_a}\]</span></p>
-<p>where <span class="math inline">\(l_{a,Z}\)</span> is survival to age <span class="math inline">\(a\)</span> under total mortality <span class="math inline">\(Z\)</span>, and <span class="math inline">\(f_a\)</span> is reproductive output at age <span class="math inline">\(a\)</span> (incorporating maturity, weight, sex ratio, and reproductive cycle). Additional technical detail on the population dynamics components of this equation can be found in <a href="#sec-equilibrium-dynamics" class="quarto-xref">Section 11.1</a> of the Technical Annex.</p>
-<p>The resulting depletion estimates across successful parameter combinations were used to construct an informative lognormal prior for stock depletion that could be applied in the BSPM in 1988 (<a href="#fig-dep-prior" class="quarto-xref">Figure 6</a>).</p>
-</section>
-<section id="sec-sigmaF-prior" class="level3" data-number="3.2.4">
-<h3 data-number="3.2.4" class="anchored" data-anchor-id="sec-sigmaF-prior"><span class="header-section-number">3.2.4</span> Fishing Mortality Prior</h3>
-<p>An extension of the prior pushforward analysis described in <a href="#sec-rmax-prior" class="quarto-xref">Section 3.2.2</a> was applied to develop a prior for the variability in fishing mortality <span class="math inline">\(\sigma_F\)</span>. While in <a href="#sec-rmax-prior" class="quarto-xref">Section 3.2.2</a> catch was subtracted directly, random values of <span class="math inline">\(\sigma_F ~ \mathnormal{Normal}^+(0,0.1)\)</span> were used to develop time series of fishing mortality values. Based on the random fishing mortality values, catch was calculated and removed from the population in the same way as described in <a href="#sec-catch-treatment" class="quarto-xref">Section 3.1.4</a>. Based on the results of the prior pushforward, the <span class="math inline">\(\sigma_F\)</span> distribution was further filtered (<a href="#fig-sigmaF-pushforward" class="quarto-xref">Figure 7</a>) based on the same criteria used in <a href="#sec-rmax-prior" class="quarto-xref">Section 3.2.2</a> with the additional criteria that:</p>
-<ul>
-<li>Depletion in the terminal year <span class="math inline">\(&gt;\)</span> 2%, <span class="math inline">\(R_{Max} &lt; 1\)</span>, trend in depletion over the last decade between -5% and 10%, and maximum simulated catch was less than 350,000.</li>
-</ul>
-<p>This last filtering step was done to ensure that observed catch values fell within the <span class="math inline">\(95^{th}\)</span> percentile of the simulated catch, and with a median simulated catch that approximated the magnitude of observed catches (<a href="#fig-sigmaF-removals" class="quarto-xref">Figure 8</a>). Fitting a <span class="math inline">\(\mathnormal{Normal}^+\)</span> distribution to the remaining <span class="math inline">\(\sigma_F\)</span> values results in the prior distribution specified in <a href="#tbl-priors" class="quarto-xref">Table 2</a> and shown in (<a href="#fig-sigmaF-prior" class="quarto-xref">Figure 9</a>). While all parameters (e.g., <span class="math inline">\(R_{Max}\)</span> and <span class="math inline">\(logK\)</span>) were subject to this new filtering step, only the <span class="math inline">\(\sigma_F\)</span> distribution showed meaningful change. Therefore, when setting up the <code>0003-2024cpueFPrior</code> model, the prior distributions for the non-<span class="math inline">\(\sigma_F\)</span> parameters were assumed to be the same as the other two models.</p>
 </section>
 </section>
 <section id="sec-model-implementation" class="level2" data-number="3.3">
@@ -3578,9 +3575,6 @@ Gabry, J., &amp; Mahr, T. (2024). <em>Bayesplot: <span>Plotting</span> for <span
 </div>
 <div id="ref-gabry_visualization_2019" class="csl-entry" role="listitem">
 Gabry, J., Simpson, D., Vehtari, A., Betancourt, M., &amp; Gelman, A. (2019). Visualization in <span>Bayesian</span> <span>Workflow</span>. <em>Journal of the Royal Statistical Society Series A: Statistics in Society</em>, <em>182</em>(2), 389–402. <a href="https://doi.org/10.1111/rssa.12378">https://doi.org/10.1111/rssa.12378</a>
-</div>
-<div id="ref-gedamke_estimating_2006" class="csl-entry" role="listitem">
-Gedamke, T., &amp; Hoenig, J. M. (2006). Estimating <span>Mortality</span> from <span>Mean</span> <span>Length</span> <span>Data</span> in <span>Nonequilibrium</span> <span>Situations</span>, with <span>Application</span> to the <span>Assessment</span> of <span>Goosefish</span>. <em>Transactions of the American Fisheries Society</em>, <em>135</em>(2), 476–487. <a href="https://doi.org/10.1577/T05-153.1">https://doi.org/10.1577/T05-153.1</a>
 </div>
 <div id="ref-gravel_metabolism_2024" class="csl-entry" role="listitem">
 Gravel, S., Bigman, J. S., Pardo, S. A., Wong, S., &amp; Dulvy, N. K. (2024). Metabolism, population growth, and the fast‐slow life history continuum of marine fishes. <em>Fish and Fisheries</em>, <em>25</em>(2), 349–361. <a href="https://doi.org/10.1111/faf.12811">https://doi.org/10.1111/faf.12811</a>
@@ -3797,15 +3791,6 @@ Table 1: Biological parameter distributions and sources used in simulation fram
 <td>Annual spawning</td>
 </tr>
 <tr class="even">
-<td>Length at first capture</td>
-<td><span class="math inline">\(L_c\)</span></td>
-<td>Lognormal</td>
-<td>140 cm</td>
-<td>0.125</td>
-<td>-</td>
-<td>Fishery selectivity</td>
-</tr>
-<tr class="odd">
 <td>Reference ages</td>
 <td><span class="math inline">\(age_1\)</span>, <span class="math inline">\(age_2\)</span></td>
 <td>Fixed</td>
@@ -4457,7 +4442,7 @@ Figure 18: Ten-year stochastic projections (2023-2032) under status quo catch s
 </section>
 <section id="sec-tech-annex" class="level1" data-number="11">
 <h1 data-number="11"><span class="header-section-number">11</span> Technical Annex</h1>
-<p>Additional technical detail of population dynamics components used to solve the Euler-Lotka equation for <span class="math inline">\(R_{Max}\)</span> and implement the Gedamke-Hoenig approach <span class="citation" data-cites="gedamke_estimating_2006">(<a href="#ref-gedamke_estimating_2006" role="doc-biblioref">Gedamke &amp; Hoenig, 2006</a>)</span> for using size composition data to estimate mortality in non-equilibrium situations.</p>
+<p>Additional technical detail of population dynamics components used to solve the Euler-Lotka equation for <span class="math inline">\(R_{Max}\)</span>.</p>
 <section id="sec-equilibrium-dynamics" class="level2" data-number="11.1">
 <h2 data-number="11.1" class="anchored" data-anchor-id="sec-equilibrium-dynamics"><span class="header-section-number">11.1</span> Equilibrium Age-Structured Population Dynamics</h2>
 <section id="sec-survival" class="level3" data-number="11.1.1">
@@ -4486,16 +4471,16 @@ l_{a-1} \times \exp(-M_{ref}) &amp; \text{if } 1 &lt; a &lt; A_{Max} \\
 <p>Successful simulations (those yielding <span class="math inline">\(R_{Max} &gt; 0\)</span> and <span class="math inline">\(R_{Max} &lt; 1.5\)</span>) were filtered to create a plausible prior distribution (<a href="#fig-pushforward" class="quarto-xref">Figure 3</a>). The resulting distribution was fitted to a lognormal prior for use in the BSPM (<a href="#fig-rmax-prior" class="quarto-xref">Figure 4</a>).</p>
 </section>
 </section>
-<section id="sec-transitional-weight-model" class="level2" data-number="11.2">
-<h2 data-number="11.2" class="anchored" data-anchor-id="sec-transitional-weight-model"><span class="header-section-number">11.2</span> Transitional Mean Weight Model</h2>
-<p>For each biological parameter combination, total mortality rates <span class="math inline">\(Z_1\)</span> and <span class="math inline">\(Z_2\)</span> were estimated by fitting a transitional mean weight model to observed temporal changes in recreational catch weights. The expected mean weight during the transition follows:</p>
-<p><span class="math display">\[\bar{W}(d) = W_{\infty} - \frac{Z_1 Z_2 (W_{\infty} - W_c) [Z_1 + k + (Z_2 - Z_1)e^{-(Z_2+k)d}]}{(Z_1 + k)(Z_2 + k)[Z_1 + (Z_2 - Z_1)e^{-Z_2 d}]}\]</span></p>
-<p>where: - <span class="math inline">\(d\)</span> = time since mortality change (years after 1952) - <span class="math inline">\(W_{\infty}\)</span> = asymptotic weight from growth parameters - <span class="math inline">\(W_c\)</span> = weight at first capture (corresponding to <span class="math inline">\(L_c\)</span>) - <span class="math inline">\(k\)</span> = von Bertalanffy growth coefficient</p>
-<p>The mortality parameters were estimated in a likelihood framework by maximizing the likelihood of the observed mean weights given a time series of predicted mean weights <span class="math inline">\(\bar{W}(d)\)</span>. Optimization was constrained such that <span class="math inline">\(Z_1, Z_2 \geq M_{ref}\)</span> to ensure biologically realistic mortality estimates.</p>
-</section>
 </section>
 
-</main>
+
+<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p>When input in the model the raw input effort, defined as <em>hundred hooks</em> in the WCPFC database is divided by <code>1e6</code> to re-scale catchability so that it is numerically on the same scale as other estimated parameters. This improves convergence of the HMC sampling of the posterior distribution.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p>There are 71 total periods in the model period 1952-2022 and fishing mortality is not estimated in the terminal year.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
