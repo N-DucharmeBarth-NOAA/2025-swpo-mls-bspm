@@ -97,7 +97,19 @@ The models were implemented in the Stan probabilistic programming language [@sta
 
 In their baseline configuration, the models began from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. Population scale or carrying capacity $log(K)$ is given in the units of the catch which is total numbers. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, the fishing mortality necessary to produce the catch was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work [@isc_stock_2024] showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering described in @sec-prior-development.   
 
-Using the baseline model as a starting point, a number of one-off sensitivity analyses were conducted to explore key model assumptions or data questions. These included: the choice of relative abundance index used to drive the model dynamics, how catch observation error was dealt with, sensitivity to assumptions in data errors for early model catch and effort observations, alternative priors for catchability, population carrying capacity, and production function shape parameter. Based on these results a structural uncertainty grid was developed for the provision of stock status and management reference points.
+Using the baseline model^[The Stan code for the baseline model `bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT` is publicly available on [GitHub](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/code/Stan/bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT.stan).] as a starting point, a number of one-off sensitivity analyses were conducted to explore key model assumptions or data questions. These included:
+
+- the choice of relative abundance index used to drive the model dynamics,
+- the likelihood used to model catch observation error,
+- the magnitude and trend in catch observation error,
+- sensitivity to assumptions in data errors for early model (1952-1954) catch and effort observations,
+- alternative catch scenarios for under-reporting,
+- structural assumptions related to the temporal resolution of time-varying catchability,
+- complexity of the fishing mortality parametrization (e.g., direct estimation, temporal structure of catchability deviates and inclusion of effort deviates),
+- model start year,
+- and alternative priors assumptions (e.g., process error, catchability, population carrying capacity, and production function shape parameter).
+
+Based on these results a structural uncertainty grid was developed for the provision of stock status and management reference points. Full model development code and input data are available online at the following GitHub repository: <https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm>.
 
 ### Input data {#sec-input-data}
 
@@ -154,21 +166,21 @@ where catchability $q$ is analytically derived assuming an uninformative uniform
 
 #### Catch Treatment {#sec-catch-treatment}
 
-Annual fishing mortality was estimated directly $F_t \sim N^+(0, \sigma_F)$ with catch fitted using a lognormal likelihood with uncertainty $\sigma_C = 0.2$.
-
-Removals (catch) were calculated as:
+Population removals (catch) were calculated in each time step as:
 
 $$\text{Removals}_{t-1} = \left(x_{t-1} + \text{surplus production}_{t-1}\right) \times \epsilon_t \times \left(1 - \exp(-F_{t-1})\right) \times \exp(\log K)$$
 
-In the population dynamics model fishing mortality was applied through the exponential decay function $\exp(-F_{t-1})$ to determine the surviving population fraction, here removals are calculated as the complementary fraction $\left(1 - \exp(-F_{t-1})\right)$ multiplied by the total production (including surplus production and process error) and converted to absolute numbers units through $\exp(\log K)$.
+As described in @sec-population-dynamics, instantaneous fishing mortality $F_t$ was transformed to a discrete proportion of the population that survived fishing, survivorship, through the exponential decay function $\exp(-F_{t-1})$. Removals are simply calculated as the complementary proportion $\left(1 - \exp(-F_{t-1})\right)$ of the total production (including surplus production and process error) that are removed due to fishing and converted to absolute units, numbers, through $\exp(\log K)$.
 
 The model fits to the observed total catch in numbers using a Student's t-distribution likelihood:
 
-$$Removals_{obs,t} \sim \text{Student-t}\left(\nu_c, \log(Removals_t) - \frac{\sigma_{C,t}^2}{2}, \sigma_{C,t}\right)$$
+$$\log(Removals_{obs,t}) \sim \text{Student-t}\left(\nu_c, \log(Removals_t) - \frac{\sigma_{C,t}^2}{2}, \sigma_{C,t}\right)$$
 
-where the degrees of freedom parameter $\nu_c$ controls the tail behavior, and the observation error $\sigma_{C,t}$ allows for time-varying uncertainty in catch observations. However, in the baseline model configuration $\sigma_{C,t} = 0.2$ for all $t$.
+where the degrees of freedom parameter $\nu_c$ controls the tail behavior^[As $\nu_c \to \infty$ the likelihood equation converges to the lognormal distribution $\text{Lognormal}\left(\log(Removals_t) - \frac{\sigma_{C,t}^2}{2}, \sigma_{C,t}\right)$], and the observation error $\sigma_{C,t}$ allows for time-varying uncertainty in catch observations. However, in the baseline model configuration $\sigma_{C,t} = 0.2$ for all $t$.
 
 ## Prior Development {#sec-prior-development}
+
+Informed prior distributions for estimated leading model parameters $R_{Max}$, and the Pella-Tomlinson shape parameter $n$ were developed using numerical simulation based on biological knowledge. Informed prior distributions for $log(K)$, and baseline catchability $q_{eff}$  were developed using numerical simulation based on existing fishing data observations (e.g., catch and effort). Priors for other estimated leading model parameters (initial depletion $x_0$, AR1 correlation in catchability deviates $\rho$, variability in catchability deviates $\sigma_{qdev}$, process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$) were based on expert opinion and values observed in the literature. In all cases the naive prior distributions were refined using a prior pushforward analysis which results in the baseline prior distributions specified in @tbl-priors. 
 
 ### Biological Simulation Framework {#sec-biological-simulation}
 
@@ -183,15 +195,23 @@ Informative priors for key population parameters were developed through biologic
 
 Parameter combinations (@tbl-bio-params) were filtered to ensure biological realism and included correlations between life history parameters reflecting biological trade-offs (e.g., shorter lived individuals having higher natural mortality rates).
 
-### Maximum Intrinsic Rate of Increase ($R_{Max}$) Prior {#sec-rmax-prior}
+#### Maximum Intrinsic Rate of Increase ($R_{Max}$) Prior {#sec-rmax-prior}
 
 $R_{Max}$ was calculated by numerically solving the Euler-Lotka equation using bounded optimization (nlminb function in R) to find the value of $R_{Max}$ that satisfies the equation within convergence criteria. Starting values and bounds were set to ensure biologically realistic solutions. Formulation of the Euler-Lotka equation followed the approach implemented in openMSE [@stanley_stock_2009;@hordyk_openmse_2024]:
 
 $\alpha \sum_{a=1}^{A_{Max}} l_a f_a \exp(-R_{Max} \times a) = 1$
 
-where $\alpha$ is the slope at the origin of the stock-recruitment curve, $l_a$ is the probability of survival to age $a$, and $f_a$ is the fecundity (reproductive output) at age $a$. Additional technical detail can be found in @sec-equilibrium-dynamics of the Technical Annex.
+where $\alpha$ is the slope at the origin of the stock-recruitment curve, $l_a$ is the probability of survival to age $a$, and $f_a$ is the fecundity (reproductive output) at age $a$. Additional technical detail can be found in @sec-equilibrium-dynamics of the Technical Annex. Repeating this calculation across the 500,000 parameter combinations resulted in a prior distribution of $R_{Max}$ conditioned on plausible biology and life-history characteristics. The resulting distribution was first filtered to values of $R_{Max} < 1.5$ representative of what the literature [@hutchings_lifehistory_2012;@gravel_metabolism_2024] indicates is most likely for teleosts.
 
-Repeating this calculation across the 500,000 parameter combinations resulted in a prior distribution of $R_{Max}$ conditioned on plausible biology and life-history characteristics. The resulting distribution was first filtered to values of $R_{Max} < 1.5$ representative of what the literature [@hutchings_lifehistory_2012;@gravel_metabolism_2024] indicates is most likely for teleosts. A prior pushforward analysis, similar to [@isc_stock_2024], was used to further refine this distribution and develop a lognormal prior for $R_{Max}$. Briefly, random values of $R_{Max}$ along with random values of the other leading parameters of the BSPM (drawn from the prior distributions described in @tbl-priors) were used to drive simulated populations forward subject to direct removal of the observed catch (@fig-annual-catch-effort). Based on the results of the prior pushforward (@fig-pushforward), the $R_{Max}$ distribution was further filtered based on the following criteria:
+#### Pella-Tomlinson Shape Parameter ($n$) Prior {#sec-shape-prior}
+
+### Fishing Data Simulation Framework {#sec-fishing-data-simulation}
+
+### Other Priors {#sec-other-priors}
+
+### Prior Pushforward {#sec-prior-pushforward}
+
+A prior pushforward analysis, similar to [@isc_stock_2024], was used to further refine this distribution and develop a lognormal prior for $R_{Max}$. Briefly, random values of $R_{Max}$ along with random values of the other leading parameters of the BSPM (drawn from the prior distributions described in @tbl-priors) were used to drive simulated populations forward subject to direct removal of the observed catch (@fig-annual-catch-effort). Based on the results of the prior pushforward (@fig-pushforward), the $R_{Max}$ distribution was further filtered based on the following criteria:
 
 - Depletion in the terminal year $>$ 2% and $R_{Max} < 1$
 - Depletion in the terminal year $>$ 2%, $R_{Max} < 1$, and trend in depletion over the last decade between -5% and 10%
@@ -552,7 +572,7 @@ Table: Biological parameter distributions and sources used in simulation framewo
 
 ::: {.landscape}
 
-Table: Prior distributions for effort-based Bayesian surplus production model parameters. {#tbl-priors}
+Table: Prior distributions for effort-based Bayesian surplus production model leading parameters. {#tbl-priors}
 
 | Parameter | Distribution | Mean | SD | Description | Key Correlations |
 |-----------|-------------|------|----|-----------|-----------------| 
