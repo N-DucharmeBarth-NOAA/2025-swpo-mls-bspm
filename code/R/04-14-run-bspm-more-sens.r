@@ -63,6 +63,28 @@
     mean_se[6] = mean(obs_cpue_PF_only_dt$se_from_quantiles,na.rm=TRUE)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
+# calculate a reference F
+    # Function to calculate mean F distribution from sigmaF samples (for 0005 model)
+    calc_F = function(model_id) {
+        file_path = file.path(proj_dir, "data", "output", "model_runs", model_id, "hmc_samples.csv")
+        if(!file.exists(file_path)) {
+            warning(paste("File not found:", file_path))
+            return(list(mean_F_mean = NA, mean_F_sd = NA))
+        }
+        dt = fread(file_path)
+        samples = dt[name == "F", .(iter,row,value)] %>%
+                  .[,.(mean(value),sd(value)),by=iter]
+        if(length(samples) == 0) {
+            warning(paste("F parameter not found in", model_id))
+            return(list(mean_F_mean = NA, mean_F_sd = NA))
+        }
+        # Each sigmaF sample represents the mean F for that iteration
+        return(list(mean_F_mean = mean(samples$V1, na.rm = TRUE), 
+                   mean_F_sd = mean(samples$V2, na.rm = TRUE)))
+    }
+    ref_0100_F_variability = calc_F("0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0")
+
+#________________________________________________________________________________________________________________________________________________________________________________________________________
 # develop model grid
     model_config_df = rbind(
                              expand.grid(exec=c("oFLNF"),
@@ -136,6 +158,18 @@
                                   catch_mult="b",
                                   sigmaP = "b",
                                   sy = "1952.10",
+                                  sigma_e = "n"),
+                            expand.grid(exec=c("oFSTTGFestF"),
+                                  cpue=c("dwfn"),
+                                  sigma_catch = c("f0.2"),
+                                  obs1952 = c("b"),
+                                  obs1954 = c("b"),
+                                  n_step=c(1),
+                                  qeff=c("newK","asF"),
+                                  shape=c("b"),
+                                  catch_mult="b",
+                                  sigmaP = "b",
+                                  sy = "1952.10",
                                   sigma_e = "n")                        
     )
 
@@ -145,7 +179,8 @@
     exec_name_vec = c("bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT",
                       "bspm_estqsimple_softdep_fullmvprior_x0_LN_flexsigmaC_OPT",
                       "bspm_estq_softdep_fullmvprior_x0_LN_flexsigmaC_OPT",
-                      "bspm_estq_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT")
+                      "bspm_estq_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT",
+                      "bspm_estF_softdep_mvprior_x0_sttgamma_flexsigmaC_OPT")
     stan_c.list = as.list(rep(NA,length(exec_name_vec)))
     for(i in 1:length(exec_name_vec)){
         stan_c.list[[i]] = stan_model(file=file.path(proj_dir,"code","Stan",paste0(exec_name_vec[i],".stan")), model_name = exec_name_vec[i])
@@ -154,7 +189,7 @@
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # set-up model inputs
 
-    for(i in 1:nrow(model_config_df)){
+    for(i in 18:nrow(model_config_df)){
             run_label_stem = paste0(model_config_df$cpue[i],
                             "-exe",model_config_df$exec[i],
                             "-c",model_config_df$sigma_catch[i],
@@ -266,19 +301,46 @@
             } else {
                 stan.data$sigma_edev = 0.3
             }
+        } else if (model_config_df$exec[i] == "oFSTTGFestF"){
+            stan.data$nu_catch_gamma_shape = 2
+            stan.data$nu_catch_gamma_rate = 0.1
+            stan.data$sigmac = rep(0.2,stan.data$T)
+            stan.data$mv_prior_mean = unname(stan.data$full_mv_prior_mean)[1:4]
+            stan.data$mv_prior_sd = unname(stan.data$full_mv_prior_sd)[1:4]
+            stan.data$mv_prior_corr = unname(stan.data$full_mv_prior_corr)[1:4,1:4]
+
+            # recenter x0 prior
+            stan.data$mv_prior_mean[4] = 0
+            stan.data$mv_prior_sd[4] = 0.025
+
+            if(model_config_df$sigma_e[i] != "n"){
+                stan.data$sigma_edev = as.numeric(as.character(model_config_df$sigma_e[i]))
+            } else {
+                stan.data$sigma_edev = 0.3
+            }
+
+            # sigmaF prior
+            if(model_config_df$qeff[i] == "newK"){
+                stan.data$PriorSD_sigmaf = ref_0100_F_variability$mean_F_mean*sqrt(pi/2)
+            } else if(model_config_df$qeff[i] == "asF"){
+                stan.data$PriorSD_sigmaf = 0.25*ref_0100_F_variability$mean_F_mean*sqrt(pi/2)
+            }
+            
         }
 
                 stan_c = switch(as.character(model_config_df$exec[i]),
                        "oFSTTGF" = stan_c.list[[1]],
                        "oFLNF" = stan_c.list[[2]],
                        "oFLNFe" = stan_c.list[[3]],
-                       "oFSTTGFe" = stan_c.list[[4]])    # bspm_estqsimple_softdep_mvprior_x0_stt
+                       "oFSTTGFe" = stan_c.list[[4]],
+                       "oFSTTGFestF" = stan_c.list[[5]])    # bspm_estqsimple_softdep_mvprior_x0_stt
                 
                 exec_name = switch(as.character(model_config_df$exec[i]),
                        "oFSTTGF" = exec_name_vec[1],
                        "oFLNF" = exec_name_vec[2],
                        "oFLNFe" = exec_name_vec[3],
-                       "oFSTTGFe" = exec_name_vec[4])
+                       "oFSTTGFe" = exec_name_vec[4],
+                       "oFSTTGFestF" = exec_name_vec[5])
 
         # Determine which CPUE index to fit and set sigmao_input accordingly
 
