@@ -89,15 +89,15 @@ This analysis presents a data-moderate approach for SWPO striped marlin that add
 
 # Methods {#sec-methods}
 
-## Model Framework {#sec-model-framework}
+## Model framework {#sec-model-framework}
 
 To address some of the issues raised in @sec-introduction, a series of Bayesian state-space surplus production models (BSPMs) spanning the period 1952-2022 were developed following the Fletcher-Schaefer production model framework [@winker_unifying_2020; @edwards_bdm_2024]. Development of the BSPM followed the approach of [@neubauer_alternative_2019;@isc_stock_2024] and incorporated recent best practices for surplus production models [@kokkalis_good_2024] and Bayesian workflows for stock assessment [@monnahan_toward_2024] as guides for model development, analysis, and presentation.
 
 The models were implemented in the Stan probabilistic programming language [@stan_development_team_stan_2024] to take advantage of enhanced convergence diagnostics, greater efficiency in posterior sampling through the no-U-turn (NUTS) Hamiltonian Monte Carlo (HMC) algorithm [@betancourt_hamiltonian_2013], and greater flexibility with model configuration and prior specification. Implementation in R using the *rstan* package [@stan_development_team_rstan_2024] provides connection to an ecosystem of R packages for model diagnostics and validation: *bayesplot* [@gabry_bayesplot_2024] for posterior visualization and *loo* [@vehtari_loo_2024].
 
-In their baseline configuration, the models began from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. Population scale or carrying capacity $log(K)$ is given in the units of the catch which is total numbers. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, the fishing mortality necessary to produce the catch was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work [@isc_stock_2024] showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering described in @sec-prior-development.   
+In their baseline configuration (diagnostic case), the models began from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. Population scale or carrying capacity $log(K)$ is given in the units of the catch which is total numbers. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, the fishing mortality necessary to produce the catch was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work [@isc_stock_2024] showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering described in @sec-prior-development.   
 
-Using the baseline model^[The Stan code for the baseline model `bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT` is publicly available on [GitHub](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/code/Stan/bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT.stan).] as a starting point, a number of one-off sensitivity analyses were conducted to explore key model assumptions or data questions. These included:
+Using the diagnostic model^[The Stan code for the diagnostic model `bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT` is publicly available on [GitHub](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/code/Stan/bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT.stan).] as a starting point, a number of one-off sensitivity analyses were conducted to explore key model assumptions or data questions. These included:
 
 - the choice of relative abundance index used to drive the model dynamics,
 - the likelihood used to model catch observation error,
@@ -121,7 +121,7 @@ Annual longline effort (in numbers of hooks) matching the SWPO assessment domain
 
 A number of indices were investigated either as one-off sensitivities or included in the structural uncertainty grid (@fig-idx-obs). These included the composite distant water fishing nation (DWFN) longline standardized CPUE index (1988-2022) from the diagnostic case of the 2024 assessment [@castillo-jordan_stock_2024], an Australian longline index, a New Zealand recreational sportfish index, and three different observer data based indices [@neubauer_exploring_2025]. The Pacific Islands observer program indices contained information from New Caledonia, Fiji, Tonga, and French Polynesia observer programs. Three alternative indices were constructed either by including data from all programs together, including data from just the western programs (New Caledonia, Fiji, and Tonga) or including data just from French Polynesia. The DWFN, Australia and observer without French Polynesia indices show recent increases; the New Zealand and observer with only French Polynesia indices show recent declines; and the all observer program index shows no trend. 
 
-### Population Dynamics {#sec-population-dynamics}
+### Population dynamics {#sec-population-dynamics}
 
 The population dynamics follow a hybrid Fletcher-Schaefer surplus production model [@edwards_bdm_2024; @isc_stock_2024] with state-space formulation where population depletion $x_t$ (relative to carrying capacity $K$) evolves according to:
 
@@ -142,7 +142,7 @@ $$F_t = q_{eff} \times \exp(\delta_{q,t} - \sigma_{qdev}^2/2) \times \text{E}_t$
 
 where $q_{eff}$ is the base catchability coefficient, $\text{E}_t$ is the fishing effort^[When input in the model the raw input effort, defined as *hundred hooks* in the WCPFC database is divided by `1e6` to re-scale catchability so that it is numerically on the same scale as other estimated parameters. This improves convergence of the HMC sampling of the posterior distribution.] in year $t$, and $\delta_{q,t}$ represents temporal variation in catchability effectiveness.
 
-The catchability deviations $\delta_{q,t}$ follow a structured temporal process organized into discrete periods of length $n_{step}$ years. In the baseline model $n_{step} = 1$ which allows for annual catchability deviates across $70$^[There are 71 total periods in the model period 1952-2022 and fishing mortality is not estimated in the terminal year.] periods $p$. Catchability remains constant within periods $p$, and evolves between periods according to an AR(1) process:
+The catchability deviations $\delta_{q,t}$ follow a structured temporal process organized into discrete periods of length $n_{step}$ years. In the diagnostic model $n_{step} = 1$ which allows for annual catchability deviates across $70$^[There are 71 total periods in the model period 1952-2022 and fishing mortality is not estimated in the terminal year.] periods $p$. Catchability remains constant within periods $p$, and evolves between periods according to an AR(1) process:
 
 $$\delta_{q,p} = \rho \times \delta_{q,p-1} + \epsilon_{q,p} \times \sigma_{qdev} \times \sqrt{1 - \rho^2}$$
 
@@ -154,9 +154,9 @@ $$\text{period}(t) = \min\left(\left\lfloor\frac{t-1}{n_{step}}\right\rfloor + 1
 
 and the catchability deviation for year $t$ is assigned as $\delta_{q,t} = \delta_{q,\text{period}(t)}$. This fishing mortality parametrization is a simplification of the *catch-errors* formulation in MULTIFAN-CL [@fournier_multifan-cl_1998] and allows catchability to vary smoothly over time while maintaining temporal structure and avoiding overfitting to annual fluctuations in the effort-catch relationship.
 
-Model initial conditions are defined for $t = 1$ as $x_t = x_0 \times \epsilon_t$ where $x_0$ is the estimated depletion relative to unfished at the start of the model period. The prior specified for $x_0$ in the baseline case assumes an unfished initial condition with some uncertainty (@tbl-priors).  
+Model initial conditions are defined for $t = 1$ as $x_t = x_0 \times \epsilon_t$ where $x_0$ is the estimated depletion relative to unfished at the start of the model period. The prior specified for $x_0$ in the diagnostic case assumes an unfished initial condition with some uncertainty (@tbl-priors).  
 
-### Observation Model {#sec-observation-model}
+### Observation model {#sec-observation-model}
 
 The model fits to a standardized CPUE index using a lognormal likelihood:
 
@@ -164,7 +164,7 @@ $$I_t \sim \text{Lognormal}(\log(q \times x_t) - \frac{\sigma_{O,t}^2}{2}, \sigm
 
 where catchability $q$ is analytically derived assuming an uninformative uniform prior, and total observation error $\sigma_{O,t} = \sigma_{O,input} + \sigma_{O,add}$ combines fixed input uncertainty with an estimated additional error component.
 
-#### Catch Treatment {#sec-catch-treatment}
+#### Catch treatment {#sec-catch-treatment}
 
 Population removals (catch) were calculated in each time step as:
 
@@ -176,15 +176,17 @@ The model fits to the observed total catch in numbers using a Student's t-distri
 
 $$\log(Removals_{obs,t}) \sim \text{Student-t}\left(\nu_c, \log(Removals_t) - \frac{\sigma_{C,t}^2}{2}, \sigma_{C,t}\right)$$
 
-where the degrees of freedom parameter $\nu_c$ controls the tail behavior^[As $\nu_c \to \infty$ the likelihood equation converges to the lognormal distribution $\text{Lognormal}\left(\log(Removals_t) - \frac{\sigma_{C,t}^2}{2}, \sigma_{C,t}\right)$], and the observation error $\sigma_{C,t}$ allows for time-varying uncertainty in catch observations. However, in the baseline model configuration $\sigma_{C,t} = 0.2$ for all $t$.
+where the degrees of freedom parameter $\nu_c$ controls the tail behavior^[As $\nu_c \to \infty$ the likelihood equation converges to the lognormal distribution $\text{Lognormal}\left(\log(Removals_t) - \frac{\sigma_{C,t}^2}{2}, \sigma_{C,t}\right)$], and the observation error $\sigma_{C,t}$ allows for time-varying uncertainty in catch observations. However, in the diagnostic model configuration $\sigma_{C,t} = 0.2$ for all $t$.
 
-## Prior Development {#sec-prior-development}
+## Prior development {#sec-prior-development}
 
-Informed prior distributions for estimated leading model parameters $R_{Max}$, and the Pella-Tomlinson shape parameter $n$ were developed using numerical simulation based on biological knowledge. Informed prior distributions for $log(K)$, and baseline catchability $q_{eff}$  were developed using numerical simulation based on existing fishing data observations (e.g., catch and effort). Priors for other estimated leading model parameters (initial depletion $x_0$, AR1 correlation in catchability deviates $\rho$, variability in catchability deviates $\sigma_{qdev}$, process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$) were based on expert opinion and values observed in the literature. In all cases the naive prior distributions were refined using a prior pushforward analysis which results in the baseline prior distributions specified in @tbl-priors. 
+The baseline prior distributions for leading estimated model parameters are specified in @tbl-priors. A description of the derivation of these prior distributions follows.
 
-### Biological Simulation Framework {#sec-biological-simulation}
+Informed prior distributions for  $R_{Max}$, and the Pella-Tomlinson shape parameter $n$ were developed using numerical simulation based on biological knowledge. Informed prior distributions for $log(K)$, and baseline catchability $q_{eff}$  were developed using numerical simulation based on existing fishing data observations (e.g., catch and effort). Priors for other estimated leading model parameters (initial depletion $x_0$, AR1 correlation in catchability deviates $\rho$, variability in catchability deviates $\sigma_{qdev}$, process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$) were based on expert opinion and values observed in the literature. The naïve or input prior distributions were refined using a prior pushforward analysis. 
 
-Informative priors for key population parameters were developed through biological simulation using Monte Carlo sampling from biologically plausible parameter distributions. The simulation framework incorporated uncertainty and correlations in life history parameters:
+### Biological simulation framework {#sec-biological-simulation}
+
+Informative priors for key population parameters were developed through biological simulation using Monte Carlo sampling from biologically plausible parameter distributions^[The R code for the simulation `01-01-define-rmax-prior.r` is publicly available on [GitHub](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/code/R/01-01-define-rmax-prior.r).]. The simulation framework incorporated uncertainty and correlations in life history parameters:
 
 - **Growth parameters**: Francis parameterization with independent sampling
 - **Natural mortality**: Reference mortality $M_{ref}$ negatively correlated with maximum age (r = -0.3)
@@ -195,30 +197,69 @@ Informative priors for key population parameters were developed through biologic
 
 Parameter combinations (@tbl-bio-params) were filtered to ensure biological realism and included correlations between life history parameters reflecting biological trade-offs (e.g., shorter lived individuals having higher natural mortality rates).
 
-#### Maximum Intrinsic Rate of Increase ($R_{Max}$) Prior {#sec-rmax-prior}
+#### Maximum intrinsic rate of increase ($R_{Max}$) prior {#sec-rmax-prior}
 
 $R_{Max}$ was calculated by numerically solving the Euler-Lotka equation using bounded optimization (nlminb function in R) to find the value of $R_{Max}$ that satisfies the equation within convergence criteria. Starting values and bounds were set to ensure biologically realistic solutions. Formulation of the Euler-Lotka equation followed the approach implemented in openMSE [@stanley_stock_2009;@hordyk_openmse_2024]:
 
 $\alpha \sum_{a=1}^{A_{Max}} l_a f_a \exp(-R_{Max} \times a) = 1$
 
-where $\alpha$ is the slope at the origin of the stock-recruitment curve, $l_a$ is the probability of survival to age $a$, and $f_a$ is the fecundity (reproductive output) at age $a$. Additional technical detail can be found in @sec-equilibrium-dynamics of the Technical Annex. Repeating this calculation across the 500,000 parameter combinations resulted in a prior distribution of $R_{Max}$ conditioned on plausible biology and life-history characteristics. The resulting distribution was first filtered to values of $R_{Max} < 1.5$ representative of what the literature [@hutchings_lifehistory_2012;@gravel_metabolism_2024] indicates is most likely for teleosts.
+where $\alpha$ is the slope at the origin of the stock-recruitment curve, $l_a$ is the probability of survival to age $a$, and $f_a$ is the fecundity (reproductive output) at age $a$. Additional technical detail can be found in @sec-equilibrium-dynamics of the Technical Annex. Repeating this calculation across the 500,000 parameter combinations resulted in a prior distribution of $R_{Max}$ conditioned on plausible biology and life-history characteristics. The resulting distribution was first filtered to values of $R_{Max} < 1.5$ representative of what the literature [@hutchings_lifehistory_2012;@gravel_metabolism_2024] indicates is most likely for teleosts. A lognormal distribution was fit to the filtered distribution to derive input prior parameters for the Stan model.
 
-#### Pella-Tomlinson Shape Parameter ($n$) Prior {#sec-shape-prior}
+#### Pella-Tomlinson shape parameter ($n$) prior {#sec-shape-prior}
 
-### Fishing Data Simulation Framework {#sec-fishing-data-simulation}
+Similarly, a prior distribution for the Pella-Tomlinson shape parameter $n$ was derived from the filtered $R_{Max}$ values and associated biological parameter combinations through a two-step process. First, the inflection point of the production function was estimated using the relationship established by @fowler_population_1988:
 
-### Other Priors {#sec-other-priors}
+$$\phi = 0.633 - 0.187 \times \log(T_G \times R_{Max})$$
 
-### Prior Pushforward {#sec-prior-pushforward}
+where $\phi$ is the inflection point (representing the population level at which maximum sustainable yield occurs as a fraction of carrying capacity), $T_G$ is the generation time calculated following @grant_demography_1992 as $T_G = \sum_{a=1}^{A_{Max}} a \times l_a \times f_a / \sum_{a=1}^{A_{Max}} l_a \times f_a$, and $R_{Max}$ is the maximum intrinsic rate of increase.
 
-A prior pushforward analysis, similar to [@isc_stock_2024], was used to further refine this distribution and develop a lognormal prior for $R_{Max}$. Briefly, random values of $R_{Max}$ along with random values of the other leading parameters of the BSPM (drawn from the prior distributions described in @tbl-priors) were used to drive simulated populations forward subject to direct removal of the observed catch (@fig-annual-catch-effort). Based on the results of the prior pushforward (@fig-pushforward), the $R_{Max}$ distribution was further filtered based on the following criteria:
+The Pella-Tomlinson shape parameter $n$ was then derived from the inflection point through the mathematical relationship $\phi = (1/n)^{1/(n-1)}$, solved numerically using bounded optimization in R as done for $R_{Max}$. This transformation links the biologically-derived inflection point to the production function curvature, where $n = 2$ corresponds to the symmetric Schaefer model (e.g., MSY achieved at depletion $D = 0.5$). Lower values of $n$ ($n<2$) indicate more productive stocks that achieves MSY at $D < 0.5$ and higher values of $n$ indicate less productive stocks with MSY occurring at $D > 0.5$. A lognormal distribution was fit to the distribution of $n$ to derive input prior parameters for the Stan model. Additionally, linking the shape parameter $n$ to $R_{Max}$ necessitated a multivariate prior structure so the correlation between the two parameters was estimated as well.
 
-- Depletion in the terminal year $>$ 2% and $R_{Max} < 1$
-- Depletion in the terminal year $>$ 2%, $R_{Max} < 1$, and trend in depletion over the last decade between -5% and 10%
+### Fishing data simulation framework {#sec-fishing-data-simulation}
 
-This last filtering step approximates the recent relative trend seen in the index. Fitting a lognormal distribution to the remaining $R_{Max}$ values results in the prior distribution specified in @tbl-priors and shown in @fig-rmax-prior. Note that though initial filtering restricted $R_{Max}<1$, the final lognormal prior still assigns some prior weight to $R_{Max}>1$.  
+Prior distributions for carrying capacity $\log(K)$ and initial catchability coefficient $q_{eff}$ were derived using catch and effort data combined with the biologically-informed parameter distributions^[This is applied in the R script `03-06-new-logK-prior-pushforward-bspm_estqsimple_softdep_mvprior_x0.r` lines 64-92 which is publicly available on [GitHub](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/code/R/03-06-new-logK-prior-pushforward-bspm_estqsimple_softdep_mvprior_x0.r).].
 
-## Model Implementation {#sec-model-implementation}
+#### Carrying capacity prior ($\log(K)$)
+
+The carrying capacity prior was constructed by assuming the maximum observed catch approximates maximum sustainable yield (MSY). This provides a conservative assumption for the upper limit of population scale^[The upper limit of population scale is typically more challenging to estimate than the lower population limit as population scales of infinite sizes can support any observed catches. However, there typically is a hard floor to population scale in that it must be sufficiently large to maintain a population that produces the time series of observed catches.] as larger MSY correlates positively with larger population scale. To account for uncertainty in the maximum catch $\sim$ MSY relationship (e.g., true MSY was above or below the maximum observed catch), candidate $MSY$ values were sampled from a lognormal distribution centered on the maximum observed catch with moderate levels of uncertainty ($MSY \sim \text{Lognormal}(\log(\text{max catch}), 0.5)$).
+
+For each combination of MSY, biologically-derived $R_{Max}$ and shape parameter $n$, carrying capacity was calculated as:
+
+$$K = \frac{MSY}{r \times \phi \times (1-\phi)^{n-1}}$$
+
+where $\phi = (1/n)^{1/(n-1)}$ represents the inflection point of the production function. For the Fox model special case where $n = 1$, the relationship simplifies to $K = e \times MSY / r$. Non-finite values and extreme outliers ($\log(K) > 20$) were replaced through resampling from the valid parameter space to ensure numerical stability. A lognormal distribution was fit to the filtered distribution to derive input prior parameters for the Stan model.
+
+#### Initial effort catchability prior ($q_{eff}$)
+
+Next, the initial catchability coefficient prior was developed using the relationship between CPUE and stock abundance:
+
+$$q_{eff} = \frac{CPUE}{K}$$
+
+where CPUE was calculated from early fishery data (first 10 years of catch and effort records) when the stock was assumed to be closer to carrying capacity. The prior distribution was constructed by randomly pairing CPUE values sampled from the early period with carrying capacity values from the $\log(K)$ prior distribution to generate a distribution of $q_{eff}$ values incorporating both the uncertainty in population scale and the variability observed in early fishery CPUE. Again, a lognormal distribution was fit to the filtered distribution to derive input prior parameters for the Stan model.
+
+### Other priors {#sec-other-priors}
+
+As mentioned previously, initial prior distributions for the remaining leading model parameters (initial depletion $x_0$, AR1 correlation in catchability deviates $\rho$, variability in catchability deviates $\sigma_{qdev}$, process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$) were specified either using expert opinion or literture.
+
+Given that the limited large-scale industrial fishing existed in the SWPO prior to the expansion of the Japanese distant-water longline fleet in 1952, the population was assumed to start at an unfished condition with some uncertainty. Initial depletion $x_0$ was modeled with a lognormal distribution centered on 1. A lognormal prior was used for the standard deviation of the process error where the parameters were converted from the JABBA default prior for process error [@winker_jabba_2018]. The degrees of freedom $nu_{catch}$ parameter assumed a gamma prior based on suggestions in the literature that it serves as a sensible default choice [@juarez_model-based_2010]. The prior for index observation error $\sigma_{O,add}$ assumed a half-normal distribution following @isc_stock_2024 which provides sufficient support for a broad range of extra estimated observation error. For the autocorrelation coefficient in catchability deviations ($\rho$) and the standard deviation of catchability deviations ($\sigma_{qdev}$), initial priors were derived from data-filtering simulation results and specified as a bivariate distribution on the transformed scale: $\tanh^{-1}(\rho)$ and $\log(\sigma_{qdev})$.
+
+
+### Prior pushforward {#sec-prior-pushforward}
+
+Following @kim_examining_2025, a prior pushforward analysis was conducted to refine the naïve prior distributions derived from the biological and fishing data simulation frameworks. Random parameter combinations drawn from the input prior distributions were passed through the diagnostic Stan model used for inference but with the likelihoods turned off (`fit_to_data = 0L`), generating simulated population trajectories and fishing dynamics under the model structure. This approach ensures that simulated trajectories are consistent with the actual model structure used for inference.
+
+Parameter combinations were filtered through sequential criteria based on population viability and fishery realism:
+
+- **Initial survival filter (`iter_surve`)**: Terminal year depletion $>$ 1% (`mindep > 0.01`), minimum population size $>$ 15,000 individuals which matches recent observed catch levels (`minN > 15000`), and biologically reasonable shape parameter (`shape < 20`)
+- **Fishing mortality filter (`iter_f`)**: Maximum fishing mortality $<$ 2.5 (`maxF < 2.5`) and average fishing mortality $<$ 0.8 (`avgF < 0.8`) to ensure realistic exploitation levels
+- **Catch consistency filter (`iter_catch`)**: Simulated catches within realistic bounds relative to observed data: maximum catch between 0.5-5.0$\times$ observed maximum, minimum catch $>$ 0.5$\times$ observed minimum, and average catch between 0.5-5.0$\times$ observed average
+- **CPUE consistency filter (`iter_cpue`)**: Early period CPUE (first 10 years) between 0.5-5.0$\times$ observed early CPUE average to ensure realistic abundance levels during the initial fishery development
+
+Parameter combinations passing all filtering stages (`iter_cpue`) were used to fit updated multivariate prior distributions using maximum likelihood estimation. Given that a number of parameters showed correlations following the prior pushforward, a 7-dimensional multivariate prior was developed for core parameters: $\log(K)$, $\log(R_{Max})$, $\log(n)$, $\log(x_0)$, $\log(q_{eff})$, $\tanh^{-1}(\rho)$ and $\log(\sigma_{qdev})$. Correlations with absolute values $<$ 0.1 were reset to zero to avoid weak spurious correlations, retaining only meaningful parameter relationships. Though $log(x_0)$ was included in the multivariate prior, for convenience, it was treated as an unchanged univariate prior from the initial naïve prior distribution since the pushforward did not provide an update to this parameter. 
+
+Prior distributions for process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$ were unchanged following the prior pushforward analysis and remained as univariate priors. Final prior distributions are listed in @tbl-priors. 
+
+## Model implementation {#sec-model-implementation}
 
 ```{r}
 #| label: read-model-config
@@ -228,7 +269,7 @@ This last filtering step approximates the recent relative trend seen in the inde
 
 # Read model configuration data
 library(data.table)
-model_config <- fread(file.path(dir_model_runs, "0001-2024cpueExPrior_0", "settings.csv"))
+model_config <- fread(file.path(dir_model_runs,diag_model, "settings.csv"))
 
 # Extract values for inline use
 n_chains <- model_config$chains
@@ -247,13 +288,13 @@ final_sample_size <- (post_warmup_iter / n_thin) * n_chains
 
 The models were implemented using the No-U-Turn Sampler (NUTS) in Stan. Each model was run using `r n_chains` independent Markov chains with randomly generated starting values to ensure robust exploration of the posterior parameter space. Each chain was sampled for `r format(iter_total, big.mark = ",")` iterations, with the first `r format(warmup_iter, big.mark = ",")` iterations discarded as warmup to allow for algorithm adaptation. To reduce posterior sample autocorrelation and storage requirements, every `r n_thin`$^{th}$ samples was retained from the post-warmup iterations, yielding a final sample size of `r format(final_sample_size, big.mark = ",")` draws from the joint posterior distribution across all chains. The NUTS algorithm was configured with strict adaptation parameters to ensure reliable convergence. The adaptation delta was set to `r adapt_delta` to reduce the step size and minimize divergent transitions, while the maximum tree depth was increased to `r max_treedepth` to allow for longer trajectories during the dynamic sampling process.
 
-Model convergence and performance were assessed using multiple diagnostic criteria recommended for Bayesian stock assessment workflows [@monnahan_toward_2024]. The potential scale reduction factor ($\hat{R}$) was required to be less than 1.01 for all parameters, indicating convergence across chains. Effective sample sizes were required to exceed 500 to ensure adequate precision in posterior estimates. Additionally, posterior predictive checks were conducted to evaluate model adequacy through comparison of observed versus predicted index and catch values, while parameter identifiability was assessed through visual examination of posterior distributions and correlation structures among estimated parameters [@gabry_visualization_2019].
+Model convergence and performance were assessed using multiple diagnostic criteria recommended for Bayesian stock assessment workflows [@monnahan_toward_2024]. The potential scale reduction factor ($\hat{R}$) was required to be less than 1.01 for all parameters, indicating convergence across chains. Effective sample sizes were required to exceed `r 100* n_chains` to ensure adequate precision in posterior estimates. Additionally, posterior predictive checks were conducted to evaluate model adequacy through comparison of observed versus predicted index and catch values, while parameter identifiability was assessed through visual examination of posterior distributions and correlation structures among estimated parameters [@gabry_visualization_2019].
 
-## Model Diagnostics {#sec-model-diagnostics}
+## Model diagnostics {#sec-model-diagnostics}
 
 Model performance was comprehensively evaluated using multiple diagnostic criteria recommended for Bayesian stock assessment workflows [@monnahan_toward_2024]. The diagnostic framework included Stan model convergence criteria, data fits, posterior predictive checks, retrospective analysis, and hindcast cross-validation.
 
-### Convergence Diagnostics {#sec-convergence-diagnostics}
+### Convergence diagnostics {#sec-convergence-diagnostics}
 
 Conventional Stan model convergence diagnostics and thresholds were employed to identify whether posterior distributions were representative and unbiased [@monnahan_toward_2024]. Models were considered to have 'converged' to a stable, unbiased posterior distribution if they satisfied the following criteria:
 
@@ -265,9 +306,17 @@ Conventional Stan model convergence diagnostics and thresholds were employed to 
 
 Additionally, trace plots and rank plots were examined to visually assess mixing and convergence behavior across chains [@gabry_visualization_2019].
 
-### Data Fits {#sec-data-fits}
+### Leave-one-out cross-validation diagnostics {#sec-loo-diagnostics}
 
-Model fit to the abundance index was quantified using normalized root-mean-squared error (NRMSE):
+Model predictive performance and influential observations were assessed using leave-one-out cross-validation (LOO-CV) implemented through the *loo* package [@vehtari_practical_2017;@vehtari_loo_2024]. LOO-CV provides an estimate of the expected log pointwise predictive density (ELPD) while identifying problematic observations that may unduly influence model predictions.
+
+LOO-CV was also used as a factor to compare performance between models. Following the recommendations of @sivula_uncertainty_2020, models were considered to have meaningfully different performance when the ELPD difference exceeded 4 units. For differences larger than 4 units, statistical significance was assessed by comparing the ELPD difference to twice its standard error, with differences greater than 2$\times$ the standard error considered statistically significant.
+
+The effective number of parameters (p_loo) was examined as an additional diagnostic measure, with values substantially larger than the nominal number of model parameters indicating potential model misspecification. Catch and index observations were categorized as having low influence (Pareto-k $\leq$ 0.7), high influence (0.7 < Pareto-k $\leq$ 1.0), or very high influence (Pareto-k > 1.0). Observations with high or very-high influence were investigated to identify potential outliers, data entry errors, or systematic model misspecification that could compromise predictive performance.
+
+### Data fits {#sec-data-fits}
+
+Model fits to the abundance index and catch time series were each quantified using normalized root-mean-squared error (NRMSE):
 
 $$RMSE = \sqrt{\frac{\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}{n}}$$
 
@@ -275,17 +324,17 @@ $$NRMSE = \frac{RMSE}{\sum_{i=1}^{n} y_i / n}$$
 
 where $y_i$ are the observed values and $\hat{y}_i$ are the model predictions. The average NRMSE across all posterior samples was calculated for each data component. Additionally, Probability Integral Transform (PIT) style residuals were calculated for the fit to the index.
 
-### Posterior Predictive Checks {#sec-posterior-predictive-checks}
+### Posterior predictive checks {#sec-posterior-predictive-checks}
 
 Posterior predictive checks were conducted to evaluate model adequacy by comparing observed data with data simulated from the fitted model. For each posterior sample, synthetic datasets were generated using the estimated parameters, and agreement between observed and predicted datasets was assessed visually.
 
-### Retrospective Analysis {#sec-retrospective-analysis}
+### Retrospective analysis {#sec-retrospective-analysis}
 
 Retrospective analysis was conducted for each model by sequentially peeling off a year from the terminal end of the fitted index and re-running the model. Data were removed for up to five years, from 2022 back to 2018. Estimates of $x$ in the terminal year of each retrospective peel were compared to the corresponding estimate of $x$ from the full model run to better understand any potential biases or uncertainty in terminal year estimates. The Mohn's $\rho$ statistic [@mohn_retrospective_1999] was calculated and presented. This statistic measures the average relative difference between an estimated quantity from an assessment (e.g., depletion in final year) with a reduced time-series of information and the same quantity estimated from an assessment using the full time-series.
 
 Additionally, following @kokkalis_good_2024 the proportion of retrospective peels (or coverage) where the relative exploitation rate ($U/U_{MSY}$) and relative depletion ($D/D_{MSY}$) were inside the credible intervals of the full model run was calculated. This metric provides an additional perspective on retrospective consistency by evaluating whether the uncertainty estimates from the full model appropriately capture the range of estimates obtained when using reduced datasets.
 
-### Hindcast Cross-Validation {#sec-hindcast-cross-validation}
+### Hindcast cross-validation {#sec-hindcast-cross-validation}
 
 Hindcast cross-validation [@kell_validation_2021] was conducted for each index to determine model performance in predicting the observed CPUE $I$ one-step-ahead into the future relative to a naïve predictor. Briefly, the 'model-free' approach to hindcast cross-validation was used, and used the same set of five retrospective peels described in @sec-retrospective-analysis. 
 
@@ -321,25 +370,26 @@ stan_data <- fread(file.path(proj_dir, "data", "output", "model_runs", "0001-202
 catch_cv <- stan_data[name == "sigmac" & type == "Data"]$value
 ```
 
-## Model Convergence and Diagnostics {#sec-model-convergence}
+## Diagnostic case
+### Model convergence and diagnostics {#sec-model-convergence}
 
 All three BSPM model variants achieved satisfactory convergence based on standard Hamiltonian Monte Carlo diagnostics (@tbl-summary). All models met convergence criteria with $\hat{R}$ values well below the 1.01 threshold and effective sample sizes exceeding the recommended minimum of 500 (100 samples per chain). No divergent transitions were observed across chains, and maximum tree depth was not exceeded during sampling, indicating successful exploration of the posterior space.
 
-### Model Fit to Data {#sec-model-fit}
+#### Model fit to data {#sec-model-fit}
 
-#### Catch Data Fit
+##### Catch data fit
 
 All models fitted the observed catch time series (1952-2022) with a coefficient of variation of `r catch_cv` to account for uncertainty in catch estimates. Since fishing mortality required to generate the catch was directly estimated, model fit to the catch was good (@fig-pred-catch). The models consistently predicted lower than observed catch for the large catch event in 1954.
 
-#### CPUE Index Fit
+##### CPUE index fit
 
 Model fit to the standardized CPUE index (1988-2022) was evaluated using normalized root-mean-squared error (NRMSE). All three models provided reasonable fits to the observed index given the high variability and observation error (@tbl-summary). The `0003-2024cpueFPrior` model showed marginally improved fit with lower RMSE values. All models successfully captured the general declining trend in standardized CPUE from 1988-2022. However, the estimated combination of observation and process error meant models were not tightly constrained to individual observations, resulting in persistent negative residuals in the last decade (@fig-idx-residuals). Posterior predictive checks confirmed that models replicated key features of the observed CPUE data (@fig-idx-fit).
 
-### Model Validation {#sec-model-validation}
+#### Model validation {#sec-model-validation}
 
 Overall retrospective bias was very low and close to zero for all models (@tbl-summary; @fig-retro), indicating lack of persistent bias in terminal estimates as successive years of index data were removed. Estimates of relative exploitation rate ($U/U_{MSY}$​) and relative depletion ($D/D_{MSY}$​) fell within the credible intervals of the full model run 100% of the time (@tbl-summary). For hindcast cross-validation, all models exceeded the performance of the naïve predictor, with the `0003-2024cpueFPrior` model showing the best performance (@tbl-summary; @fig-hcxval). This provides support that models successfully identified and estimated a production function for the stock.
 
-## Population Dynamics and Stock Status {#sec-stock-status}
+### Population dynamics and stock status {#sec-stock-status}
 
 ```{r}
 #| label: read-prior-data
@@ -476,15 +526,19 @@ All models showed substantial posterior updates for the $R_{Max}$ parameter, est
 
 The estimated population depletion time series shows a decline from the assumed unfished state in 1952 to minimum levels around the early 1990s (@fig-timeseries). All three models estimated similar depletion trajectories, with differences primarily related to estimated population scale. The `0003-2024cpueFPrior` model estimated slightly lower depletion levels throughout the time series compared to the other models. From the minimum depletion period, all models estimated gradual recovery through the 2000s and 2010s, with populations stabilizing at moderate depletion levels in recent years. Credible intervals around depletion estimates are relatively wide, particularly in the early period when no abundance index data were available to inform the model, reflecting inherent uncertainty in reconstructing historical population dynamics. The estimated population time series mirrors these depletion patterns. The `0001-2024cpueExPrior` model estimated the highest population scale throughout the time series, while the `0002-2024cpueDepPrior` and `0003-2024cpueFPrior` models estimated lower population levels. While uncertainty in absolute population size is substantial, as reflected in wide credible intervals, relative trends are more precisely estimated.
 
-Posterior estimates of depletion in 1988 differed notably among the three models (@tbl-param-hmc). For the `0002-2024cpueDepPrior` and `0003-2024cpueFPrior` models, these estimates differed from the prior value of $x_{1988} =$ `r round(exp(depletion_meanlog), 3)` (@tbl-priors). The baseline model (`0001-2024cpueExPrior`) estimated median depletion of $x_{1988} =$ `r format_estimate(baseline_estimates[["x[37]"]])`, while the depletion-constrained model (`0002-2024cpueDepPrior`) estimated $x_{1988} =$ `r format_estimate(constrained_estimates[["x[37]"]])`. The `0003-2024cpueFPrior` model, with a more representative prior on fishing mortality variability, estimated the greatest depletion levels in 1988: $x_{1988} =$ `r format_estimate(sigmaF_estimates[["x[37]"]])`.
-
 Process error estimates (@fig-timeseries) showed consistent temporal variability across models, with the largest deviations occurring during periods of rapid population change in the 1970s and 1980s. This indicates that removals alone could not explain the observed changes in the standardized index. The estimated process error variability $\sigma_P$ (@tbl-param-hmc), while similar across all models, was lowest for the `0003-2024cpueFPrior` model, indicating greater internal consistency in the model dynamics.
 
-## Biological Reference Points {#sec-reference-points}
+## One-off sensitivities {#sec-one-off}
+
+## Model ensemble
+
+### Population dynamics and stock status {#sec-grid-stock-status}
+
+### Biological reference points {#sec-reference-points}
 
 MSY-based reference points were derived from the Fletcher-Schaefer production function for all three BSPM variants. The relative stock status time series (@fig-timeseries) shows consistent trends across all models, albeit at different relative levels. Median estimates of the $D/D_{MSY}$ ratio indicate the stock was above the MSY reference level for the entire model period. Only the `0003-2024cpueFPrior` model indicates risk of falling below the MSY-based reference point in recent years. Similarly, median estimates of the $F/F_{MSY}$ ratio were consistently below the overfishing reference point, with episodic periods of overfishing risk indicated by the `0003-2024cpueFPrior` model. However, recent trends indicate declining overfishing risk, consistent with estimated stock recovery.
 
-## Future Projections {#sec-projections}
+### Future projections {#sec-projections}
 
 Ten-year stochastic projections (2023-2032) were conducted for all three BSPM variants under a status quo catch scenario, with projected removals set to the average catch over 2018-2022 (@fig-projections). Under status quo catch levels, all models projected continued population recovery through 2032. Depletion trajectories show gradual increases from current levels, with the `0001-2024cpueExPrior` model projecting the most optimistic recovery due to higher estimated population scale. The `0002-2024cpueDepPrior` and `0003-2024cpueFPrior` models showed more modest but consistent increases in depletion over the projection period.
 
@@ -524,7 +578,7 @@ While simplified models offer advantages when data conflicts exist, over-simplif
 
 The authors appreciate feedback received on earlier versions of this analysis, and are thankful to the following for their insights and thoughtful discussion which greatly improved the assessment: K. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), M. Nadon (PIFSC), and F. Carvalho (PIFSC).
 
-# Declaration of Generative AI use {#sec-ai-declaration}
+# Declaration of generative AI use {#sec-ai-declaration}
 
 A generative artificial intelligence (AI) assistant, Anthropic Claude Sonnet 4.0, was used to parse model code in the preparation of an initial draft of this report.
 
