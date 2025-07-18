@@ -333,12 +333,7 @@
                 r_eff = loo::relative_eff(lik_mat, unique(hmc_samples[,.(iter,chain)])$chain, cores = n_cores)
                 loo = loo::loo(log_lik_mat,r_eff=r_eff,cores=n_cores)
                 # n_obs
-                n_obs = tmp_likelihood %>% 
-                          .[lambda>0] %>%
-                          na.omit(.) %>%
-                          .[iter==1] %>%
-                          nrow(.)
-                fit_summary$n_obs = n_obs
+                fit_summary$n_obs = ssp_count_total_observations(stan_data)
                 # looic
                 fit_summary$looic = loo$estimates["looic",1]
                 # p_loo
