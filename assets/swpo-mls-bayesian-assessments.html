@@ -3248,6 +3248,7 @@ window.Quarto = {
   <li><a href="#sec-desc-sens-start" id="toc-sec-desc-sens-start" class="nav-link" data-scroll-target="#sec-desc-sens-start"><span class="header-section-number">3.6.9</span> Start year</a></li>
   <li><a href="#sec-desc-sens-effort" id="toc-sec-desc-sens-effort" class="nav-link" data-scroll-target="#sec-desc-sens-effort"><span class="header-section-number">3.6.10</span> Inclusion of effort deviates</a></li>
   <li><a href="#sec-desc-sens-direct-f" id="toc-sec-desc-sens-direct-f" class="nav-link" data-scroll-target="#sec-desc-sens-direct-f"><span class="header-section-number">3.6.11</span> Direct estimation of fishing mortality</a></li>
+  <li><a href="#sec-desc-sens-rmax" id="toc-sec-desc-sens-rmax" class="nav-link" data-scroll-target="#sec-desc-sens-rmax"><span class="header-section-number">3.6.12</span> Alternative <span class="math inline">\(R_{Max}\)</span> prior</a></li>
   </ul></li>
   <li><a href="#sec-model-implementation" id="toc-sec-model-implementation" class="nav-link" data-scroll-target="#sec-model-implementation"><span class="header-section-number">3.7</span> Model Implementation</a></li>
   <li><a href="#sec-model-diagnostics" id="toc-sec-model-diagnostics" class="nav-link" data-scroll-target="#sec-model-diagnostics"><span class="header-section-number">3.8</span> Model diagnostics</a>
@@ -3283,6 +3284,7 @@ window.Quarto = {
   <li><a href="#sec-res-sens-start" id="toc-sec-res-sens-start" class="nav-link" data-scroll-target="#sec-res-sens-start"><span class="header-section-number">4.2.9</span> Start year</a></li>
   <li><a href="#sec-res-sens-effort" id="toc-sec-res-sens-effort" class="nav-link" data-scroll-target="#sec-res-sens-effort"><span class="header-section-number">4.2.10</span> Inclusion of effort deviates</a></li>
   <li><a href="#sec-res-sens-direct-f" id="toc-sec-res-sens-direct-f" class="nav-link" data-scroll-target="#sec-res-sens-direct-f"><span class="header-section-number">4.2.11</span> Direct estimation of fishing mortality</a></li>
+  <li><a href="#sec-res-sens-rmax" id="toc-sec-res-sens-rmax" class="nav-link" data-scroll-target="#sec-res-sens-rmax"><span class="header-section-number">4.2.12</span> Alternative <span class="math inline">\(R_{Max}\)</span> prior</a></li>
   </ul></li>
   <li><a href="#model-ensemble" id="toc-model-ensemble" class="nav-link" data-scroll-target="#model-ensemble"><span class="header-section-number">4.3</span> Model ensemble</a>
   <ul class="collapse">
@@ -3386,7 +3388,7 @@ window.Quarto = {
 <section id="sec-introduction" class="level1" data-number="2">
 <h1 data-number="2"><span class="header-section-number">2</span> Introduction</h1>
 <p>Assessments of Southwest Pacific Ocean (SWPO) striped marlin (<em>Kajikia audax</em>) have been challenging. As documented in the joint NOAA-SPC modeling meeting report <span class="citation" data-cites="ducharme-barth_summary_2025">(<a href="#ref-ducharme-barth_summary_2025" role="doc-biblioref">Ducharme-Barth et al., 2025</a>)</span>, key issues identified by WCPFC SC20 included poor fits to size composition data and relative abundance indices, conflicts between different data sources, and difficulties in estimating model initial conditions.</p>
-<p>Discussions at the 2025 SPC Pre-Assessment Workshop highlighted additional challenges related to the estimation of total population scale. The low biomass scale indicated by previous versions of the assessment appears largely driven by the size composition from multiple fisheries. While estimation of low biomass scale is not inherently problematic, the resulting high ratio of fishing mortality (F) to natural mortality (M) that is maintained over multiple decades in the face of relative stability in catches and catch-per-unit-effort (CPUE) was noted as suspicious and flagged for further investigation.</p>
+<p>Discussions at the 2025 SPC Pre-Assessment Workshop highlighted additional challenges related to the estimation of total population scale. The low biomass scale indicated by previous versions of the assessment appeared largely driven by the size composition from multiple fisheries. While estimation of low biomass scale is not inherently problematic, the resulting high ratio of fishing mortality (F) to natural mortality (M) that is maintained over multiple decades in the face of relative stability in catches and catch-per-unit-effort (CPUE) was noted as suspicious and flagged for further investigation.</p>
 <p>The complexity of integrated age-structured models, while providing detailed population dynamics representation, can become problematic when fundamental data conflicts exist or when key biological parameters are uncertain. For SWPO striped marlin, these challenges are compounded by spatiotemporal heterogeneity in fleet coverage, potential non-representativeness in mixed-fleet composition data, and limitations in age data from opportunistic sampling. Changes to productivity assumptions (growth, natural mortality, maturity, and/or steepness) or selectivity patterns will impact biomass scaling through predictions of expected size composition data.</p>
 <p>Scaling back model complexity to a data-moderate approach, like Bayesian surplus production models (BSPMs), offers analysts a simplified yet robust alternative for stock assessment when data limitations or conflicts present challenges for more complex models. These models have proven effective in recent pelagic fish stock assessments <span class="citation" data-cites="winker_jabba_2018">(<a href="#ref-winker_jabba_2018" role="doc-biblioref">Winker et al., 2018</a>)</span>, and are routinely applied for WCPFC shark assessments <span class="citation" data-cites="neubauer_alternative_2019 isc_stock_2024 neubauer_stock_2024">(<a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>; <a href="#ref-neubauer_alternative_2019" role="doc-biblioref">Neubauer et al., 2019</a>, <a href="#ref-neubauer_stock_2024" role="doc-biblioref">2024</a>)</span>. They facilitate a more tractable exploration of model assumptions by distilling productivity and fishing assumptions into a restricted parameter subset. The BSPM framework allows for explicit incorporation of parameter uncertainty through informative priors while maintaining computational efficiency and interpretability.</p>
 <p>One advantage of the Bayesian approach is the use of prior information to propagate uncertainty in model assumptions. Biological simulation approaches can provide robust methods for parameterizing key population dynamics parameters <span class="citation" data-cites="pardo_maximum_2016 isc_stock_2024">(<a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>; <a href="#ref-pardo_maximum_2016" role="doc-biblioref">Pardo et al., 2016</a>)</span>. For species with complex life histories like striped marlin, these simulation-based priors can incorporate uncertainty in growth, maturity, natural mortality, and reproductive parameters to derive realistic distributions for maximum intrinsic rate of increase and carrying capacity. Additionally, prior pushforward checks <span class="citation" data-cites="monnahan_toward_2024 kim_examining_2025">(<a href="#ref-kim_examining_2025" role="doc-biblioref">Kim &amp; Neubauer, 2025</a>; <a href="#ref-monnahan_toward_2024" role="doc-biblioref">Monnahan, 2024</a>)</span> can be used to further refine parameter distributions by identifying parameter combinations that produce clearly improbable outcomes.</p>
@@ -3396,7 +3398,7 @@ window.Quarto = {
 <h1 data-number="3"><span class="header-section-number">3</span> Methods</h1>
 <section id="sec-model-framework" class="level2" data-number="3.1">
 <h2 data-number="3.1" class="anchored" data-anchor-id="sec-model-framework"><span class="header-section-number">3.1</span> Modelling framework</h2>
-<p>To address some of the issues raised in <a href="#sec-introduction" class="quarto-xref">Section 2</a>, a series of Bayesian state-space surplus production models (BSPMs) spanning the period 1952-2022 were developed following the Fletcher-Schaefer production model framework <span class="citation" data-cites="winker_unifying_2020 edwards_bdm_2024">(<a href="#ref-edwards_bdm_2024" role="doc-biblioref">Edwards, 2024</a>; <a href="#ref-winker_unifying_2020" role="doc-biblioref">Winker et al., 2020</a>)</span>. Development of the BSPM followed the approach of <span class="citation" data-cites="neubauer_alternative_2019 isc_stock_2024">(<a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>; <a href="#ref-neubauer_alternative_2019" role="doc-biblioref">Neubauer et al., 2019</a>)</span> and incorporated recent best practices for surplus production models <span class="citation" data-cites="kokkalis_good_2024">(<a href="#ref-kokkalis_good_2024" role="doc-biblioref">Kokkalis et al., 2024</a>)</span> and Bayesian workflows for stock assessment <span class="citation" data-cites="monnahan_toward_2024">(<a href="#ref-monnahan_toward_2024" role="doc-biblioref">Monnahan, 2024</a>)</span> as guides for model development, analysis, and presentation.</p>
+<p>To address some of the issues raised in <a href="#sec-introduction" class="quarto-xref">Section 2</a>, a series of Bayesian state-space surplus production models (BSPMs) spanning the period 1952-2022 were developed following the Fletcher-Schaefer production model framework <span class="citation" data-cites="winker_unifying_2020 edwards_bdm_2024">(<a href="#ref-edwards_bdm_2024" role="doc-biblioref">Edwards, 2024</a>; <a href="#ref-winker_unifying_2020" role="doc-biblioref"><strong>winker_unifying_2020?</strong></a>)</span>. Development of the BSPM followed the approach of <span class="citation" data-cites="neubauer_alternative_2019 isc_stock_2024">(<a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>; <a href="#ref-neubauer_alternative_2019" role="doc-biblioref">Neubauer et al., 2019</a>)</span> and incorporated recent best practices for surplus production models <span class="citation" data-cites="kokkalis_good_2024">(<a href="#ref-kokkalis_good_2024" role="doc-biblioref">Kokkalis et al., 2024</a>)</span> and Bayesian workflows for stock assessment <span class="citation" data-cites="monnahan_toward_2024">(<a href="#ref-monnahan_toward_2024" role="doc-biblioref">Monnahan, 2024</a>)</span> as guides for model development, analysis, and presentation.</p>
 <p>The models were implemented in the Stan probabilistic programming language <span class="citation" data-cites="stan_development_team_stan_2024">(<a href="#ref-stan_development_team_stan_2024" role="doc-biblioref">Team, 2024b</a>)</span> to take advantage of enhanced convergence diagnostics, greater efficiency in posterior sampling through the no-U-turn (NUTS) Hamiltonian Monte Carlo (HMC) algorithm <span class="citation" data-cites="betancourt_hamiltonian_2013">(<a href="#ref-betancourt_hamiltonian_2013" role="doc-biblioref">Betancourt &amp; Girolami, 2013</a>)</span>, and greater flexibility with model configuration and prior specification. Implementation in R using the <em>rstan</em> package <span class="citation" data-cites="stan_development_team_rstan_2024">(<a href="#ref-stan_development_team_rstan_2024" role="doc-biblioref">Team, 2024a</a>)</span> provides connection to an ecosystem of R packages for model diagnostics and validation: <em>bayesplot</em> <span class="citation" data-cites="gabry_bayesplot_2024">(<a href="#ref-gabry_bayesplot_2024" role="doc-biblioref">Gabry &amp; Mahr, 2024</a>)</span> for posterior visualization and <em>loo</em> <span class="citation" data-cites="vehtari_loo_2024">(<a href="#ref-vehtari_loo_2024" role="doc-biblioref">Vehtari et al., 2024</a>)</span>.</p>
 <p>In their baseline configuration (diagnostic case), the models begin from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. Population scale or carrying capacity <span class="math inline">\(log(K)\)</span> is given in the units of the catch which is total numbers. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, multiplicative survival after fishing mortality was applied. Fishing mortality was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work <span class="citation" data-cites="isc_stock_2024">(<a href="#ref-isc_stock_2024" role="doc-biblioref">ISC, 2024</a>)</span> showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (<a href="#tbl-priors" class="quarto-xref">Table 2</a>) based on the biological simulation filtering described in <a href="#sec-prior-development" class="quarto-xref">Section 3.5</a>.</p>
 <p>Using the diagnostic model<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> as a starting point, a number of one-off sensitivity analyses were conducted to explore key model assumptions or data questions. These are described in <a href="#sec-desc-sens" class="quarto-xref">Section 3.6</a> and listed in <a href="#tbl-model-reference" class="quarto-xref">Table 3</a>. Based on the results of the sensitivity analyses a model ensemble was developed for the provision of stock status and management reference points. Full model development code and input data are available online at the following GitHub repository: <a href="https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm" class="uri">https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm</a>.</p>
@@ -3512,7 +3514,7 @@ R_{Max} \cdot x_{t-1} \left(1 - \frac{x_{t-1}}{h}\right), &amp; x_{t-1} \leq D_{
 </section>
 <section id="sec-desc-sens" class="level2" data-number="3.6">
 <h2 data-number="3.6" class="anchored" data-anchor-id="sec-desc-sens"><span class="header-section-number">3.6</span> Description of one-off sensitivities</h2>
-<p>During the course of model development 32 one-off sensitivity models, organized into 11 groups, were investigated to explore alternative assumptions, model structures and sensitivities to data inputs. These models are listed in <a href="#tbl-model-reference" class="quarto-xref">Table 3</a> and are described in further detail below.</p>
+<p>During the course of model development 38 one-off sensitivity models, organized into 12 groups, were investigated to explore alternative assumptions, model structures and sensitivities to data inputs. These models are listed in <a href="#tbl-model-reference" class="quarto-xref">Table 3</a> and are described in further detail below.</p>
 <section id="sec-desc-sens-index" class="level3" data-number="3.6.1">
 <h3 data-number="3.6.1" class="anchored" data-anchor-id="sec-desc-sens-index"><span class="header-section-number">3.6.1</span> Index</h3>
 <p>The diagnostic case model fits only to the DWFN index. One-off model sensitivities were conducted to explore how model estimates changed as a result of alternative indices:</p>
@@ -3523,7 +3525,13 @@ R_{Max} \cdot x_{t-1} \left(1 - \frac{x_{t-1}}{h}\right), &amp; x_{t-1} \leq D_{
 <li><code>0074</code>: Fits to the longline observer data excluding the French Polynesia program</li>
 <li><code>0075</code>: Fits only to the longline observer data from the French Polynesia program</li>
 </ul>
-<p>The French Polynesia observer program data was treated seperately as it showed differing trends from the other 3 observer programs <span class="citation" data-cites="neubauer_exploring_2025">(<a href="#ref-neubauer_exploring_2025" role="doc-biblioref">Neubauer et al., 2025</a>)</span>.</p>
+<p>The French Polynesia observer program data was treated seperately as it showed differing trends from the other 3 observer programs <span class="citation" data-cites="neubauer_exploring_2025">(<a href="#ref-neubauer_exploring_2025" role="doc-biblioref">Neubauer et al., 2025</a>)</span>. Additionally, given that the shorter indices (Australia and longline observer) provided little information about population scale, several other models were set-up to simultaneously fit them with the two longer indices (DWFN and New Zealand).</p>
+<ul>
+<li><code>0129</code>: Fits to the DWFN &amp; Australia index</li>
+<li><code>0130</code>: Fits to the New Zealand &amp; Australia index</li>
+<li><code>0131</code>: Fits to the DWFN &amp; Observer (New Caledonia, Fiji &amp; Tonga) index</li>
+<li><code>0132</code>: Fits to the New Zealand &amp; Observer (New Caledonia, Fiji &amp; Tonga) index</li>
+</ul>
 </section>
 <section id="sec-desc-sens-sigmac" class="level3" data-number="3.6.2">
 <h3 data-number="3.6.2" class="anchored" data-anchor-id="sec-desc-sens-sigmac"><span class="header-section-number">3.6.2</span> Catch observation error <span class="math inline">\(\sigma_C\)</span></h3>
@@ -3621,6 +3629,14 @@ R_{Max} \cdot x_{t-1} \left(1 - \frac{x_{t-1}}{h}\right), &amp; x_{t-1} \leq D_{
 <ul>
 <li><code>0127</code>: Direct F estimation with <span class="math inline">\(\sigma_F\)</span> calibrated to match the variance in fishing mortality observed in the diagnostic case model</li>
 <li><code>0128</code>: Direct F estimation with <span class="math inline">\(\sigma_F\)</span> set to 0.25 times the diagnostic case variance, providing more constraint on fishing mortality variability in order to see how estimates of scale are impacted</li>
+</ul>
+</section>
+<section id="sec-desc-sens-rmax" class="level3" data-number="3.6.12">
+<h3 data-number="3.6.12" class="anchored" data-anchor-id="sec-desc-sens-rmax"><span class="header-section-number">3.6.12</span> Alternative <span class="math inline">\(R_{Max}\)</span> prior</h3>
+<p>The diagnostic case model estimates a fairly productive stock with an <span class="math inline">\(R_{Max}\)</span> that is considerably higher than an analogous species in the Atlantic Ocean, white marlin (<em>Kajikia albida</em>). The most recent ICCAT assessment <span class="citation" data-cites="iccat_report_2020">(<a href="#ref-iccat_report_2020" role="doc-biblioref">ICCAT, 2020</a>)</span>, implemented using JABBA <span class="citation" data-cites="winker_jabba_2018">(<a href="#ref-winker_jabba_2018" role="doc-biblioref">Winker et al., 2018</a>)</span>, estimated <span class="math inline">\(R_{Max}\)</span> at 0.163 for white marlin. Sensitivity models assuming this lower level of productivity were developed to see the impact it would have on model estimates, particularly population scale.</p>
+<ul>
+<li><code>0133</code>: Apply lower productivity white marlin Rmax prior</li>
+<li><code>0134</code>: Apply lower productivity white marlin Rmax prior and apply a more conservative shape parameter prior (centered on 2)</li>
 </ul>
 </section>
 </section>
@@ -3737,6 +3753,9 @@ R_{Max} \cdot x_{t-1} \left(1 - \frac{x_{t-1}}{h}\right), &amp; x_{t-1} \leq D_{
 <section id="sec-res-sens-direct-f" class="level3" data-number="4.2.11">
 <h3 data-number="4.2.11" class="anchored" data-anchor-id="sec-res-sens-direct-f"><span class="header-section-number">4.2.11</span> Direct estimation of fishing mortality</h3>
 </section>
+<section id="sec-res-sens-rmax" class="level3" data-number="4.2.12">
+<h3 data-number="4.2.12" class="anchored" data-anchor-id="sec-res-sens-rmax"><span class="header-section-number">4.2.12</span> Alternative <span class="math inline">\(R_{Max}\)</span> prior</h3>
+</section>
 </section>
 <section id="model-ensemble" class="level2" data-number="4.3">
 <h2 data-number="4.3" class="anchored" data-anchor-id="model-ensemble"><span class="header-section-number">4.3</span> Model ensemble</h2>
@@ -3830,6 +3849,9 @@ Hordyk, A., Huynh, Q., &amp; Carruthers, T. (2024). <em><span class="nocase">ope
 <div id="ref-hutchings_lifehistory_2012" class="csl-entry" role="listitem">
 Hutchings, J. A., Myers, R. A., García, V. B., Lucifora, L. O., &amp; Kuparinen, A. (2012). Life‐history correlates of extinction risk and recovery potential. <em>Ecological Applications</em>, <em>22</em>(4), 1061–1067. <a href="https://doi.org/10.1890/11-1313.1">https://doi.org/10.1890/11-1313.1</a>
 </div>
+<div id="ref-iccat_report_2020" class="csl-entry" role="listitem">
+ICCAT. (2020). Report of the 2019 <span>ICCAT</span> white marlin stock assessment meeting. <em>Collect. Vol. Sci. Pap. ICCAT</em>, <em>76</em>(4), 97–181. <a href="https://www.iccat.int/Documents/CVSP/CV076_2019/colvol76.html#">https://www.iccat.int/Documents/CVSP/CV076_2019/colvol76.html#</a>
+</div>
 <div id="ref-isc_stock_2024" class="csl-entry" role="listitem">
 ISC. (2024). <em>Stock <span>Assessment</span> of <span>Shortfin</span> <span>Mako</span> <span>Shark</span> in the <span>North</span> <span>Pacific</span> <span>Ocean</span> through 2022</em> (WCPFC-SC20-2024/SA-WP-14). <a href="https://meetings.wcpfc.int/node/22828">https://meetings.wcpfc.int/node/22828</a>
 </div>
@@ -3883,9 +3905,6 @@ Vehtari, A., Gelman, A., &amp; Gabry, J. (2017). Practical <span>Bayesian</span>
 </div>
 <div id="ref-winker_jabba_2018" class="csl-entry" role="listitem">
 Winker, H., Carvalho, F., &amp; Kapur, M. (2018). <span>JABBA</span>: <span>Just</span> <span>Another</span> <span>Bayesian</span> <span>Biomass</span> <span>Assessment</span>. <em>Fisheries Research</em>, <em>204</em>, 275–288. <a href="https://doi.org/10.1016/j.fishres.2018.03.010">https://doi.org/10.1016/j.fishres.2018.03.010</a>
-</div>
-<div id="ref-winker_unifying_2020" class="csl-entry" role="listitem">
-Winker, H., Mourato, B., &amp; Chang, Y. (2020). Unifying parameterizations between age-structured and surplus production models: <span>An</span> application to atlantic white marlin (<em><span>Kajiki</span> albidia</em>) with simulation testing. <em>Collect. Vol. Sci. Pap. ICCAT</em>, <em>76</em>(4), 219–234.
 </div>
 </div>
 <div style="page-break-after: always;"></div>
@@ -4103,7 +4122,7 @@ Table 2: Prior distributions for diagnostic model leading parameters.
 <td>MV Lognormal</td>
 <td><span class="math inline">\(\log(0.6206)\)</span></td>
 <td>0.58</td>
-<td>Maximum intrinsic rate of increase</td>
+<td>Max rate of increase</td>
 <td><span class="math inline">\(\rho(R_{Max},n)\)</span> = -0.881</td>
 </tr>
 <tr class="even">
@@ -4127,7 +4146,7 @@ Table 2: Prior distributions for diagnostic model leading parameters.
 <td>Lognormal</td>
 <td><span class="math inline">\(\log(0.5019)\)</span></td>
 <td>0.95</td>
-<td>Effort catchability coefficient</td>
+<td>Initial catchability</td>
 <td><span class="math inline">\(\rho(q_{eff},\sigma_{qdev})\)</span> = 0.559; <span class="math inline">\(\rho(q_{eff},\rho)\)</span> = 0.243</td>
 </tr>
 <tr class="odd">
@@ -4143,7 +4162,7 @@ Table 2: Prior distributions for diagnostic model leading parameters.
 <td>MV Lognormal</td>
 <td><span class="math inline">\(\log(1.619)\)</span></td>
 <td>0.3</td>
-<td>Catchability variability standard deviation</td>
+<td>Catchability variability</td>
 <td></td>
 </tr>
 <tr class="odd">
@@ -4167,7 +4186,7 @@ Table 2: Prior distributions for diagnostic model leading parameters.
 <td>Lognormal</td>
 <td><span class="math inline">\(\log(0.0533)\)</span></td>
 <td>0.27</td>
-<td>Process error standard deviation</td>
+<td>Process error</td>
 <td>(Independent)</td>
 </tr>
 <tr class="even">
@@ -4223,8 +4242,8 @@ Table 3: Model descriptions
 <table class="do-not-create-environment cell caption-top table table-sm table-striped small">
 <colgroup>
 <col style="width: 7%">
-<col style="width: 30%">
-<col style="width: 61%">
+<col style="width: 28%">
+<col style="width: 64%">
 </colgroup>
 <thead>
 <tr class="header">
@@ -4278,6 +4297,26 @@ Table 3: Model descriptions
 <td style="text-align: left;"><code>0075</code></td>
 <td style="text-align: left;">One-off: Index</td>
 <td style="text-align: left;">Observer (French Polynesia) index</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>0129</code></td>
+<td style="text-align: left;">One-off: Index</td>
+<td style="text-align: left;">DWFN &amp; Australia index</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>0130</code></td>
+<td style="text-align: left;">One-off: Index</td>
+<td style="text-align: left;">New Zealand &amp; Australia index</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>0131</code></td>
+<td style="text-align: left;">One-off: Index</td>
+<td style="text-align: left;">DWFN &amp; Observer (New Caledonia, Fiji &amp; Tonga) index</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>0132</code></td>
+<td style="text-align: left;">One-off: Index</td>
+<td style="text-align: left;">New Zealand &amp; Observer (New Caledonia, Fiji &amp; Tonga) index</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><code>0076</code></td>
@@ -4413,6 +4452,16 @@ Table 3: Model descriptions
 <td style="text-align: left;"><code>0128</code></td>
 <td style="text-align: left;">One-off: Direct F estimation</td>
 <td style="text-align: left;">0.25x diagnostic case sigmaF</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>0133</code></td>
+<td style="text-align: left;">One-off: Rmax prior</td>
+<td style="text-align: left;">Apply lower productivity Rmax prior</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>0134</code></td>
+<td style="text-align: left;">One-off: Rmax prior</td>
+<td style="text-align: left;">Apply lower productivity Rmax prior and alternative shape prior</td>
 </tr>
 </tbody>
 </table>
@@ -4589,6 +4638,62 @@ Table 4: Model diagnostics and fit statistics
 <td style="text-align: right;">29.7</td>
 <td style="text-align: right;">-29.2</td>
 <td style="text-align: right;">0.989</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>0129</code></td>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">139</td>
+<td style="text-align: right;">1.014</td>
+<td style="text-align: right;">666</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">24.7</td>
+<td style="text-align: right;">36.5</td>
+<td style="text-align: right;">-12.3</td>
+<td style="text-align: right;">0.971</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>0130</code></td>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">143</td>
+<td style="text-align: right;">1.012</td>
+<td style="text-align: right;">760</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">56.2</td>
+<td style="text-align: right;">39.3</td>
+<td style="text-align: right;">-28.1</td>
+<td style="text-align: right;">0.986</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>0131</code></td>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">136</td>
+<td style="text-align: right;">1.005</td>
+<td style="text-align: right;">710</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">35.9</td>
+<td style="text-align: right;">35.5</td>
+<td style="text-align: right;">-17.9</td>
+<td style="text-align: right;">0.985</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>0132</code></td>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">140</td>
+<td style="text-align: right;">1.011</td>
+<td style="text-align: right;">783</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">61.7</td>
+<td style="text-align: right;">36.7</td>
+<td style="text-align: right;">-30.8</td>
+<td style="text-align: right;">0.979</td>
 </tr>
 <tr class="even">
 <td style="text-align: left;"><code>0076</code></td>
@@ -4859,7 +4964,7 @@ Table 4: Model diagnostics and fit statistics
 <tr class="odd">
 <td style="text-align: left;"><code>0119</code></td>
 <td style="text-align: right;">147</td>
-<td style="text-align: right;">44</td>
+<td style="text-align: right;">111</td>
 <td style="text-align: right;">1.007</td>
 <td style="text-align: right;">701</td>
 <td style="text-align: right;">0</td>
@@ -4873,7 +4978,7 @@ Table 4: Model diagnostics and fit statistics
 <tr class="even">
 <td style="text-align: left;"><code>0120</code></td>
 <td style="text-align: right;">114</td>
-<td style="text-align: right;">35</td>
+<td style="text-align: right;">69</td>
 <td style="text-align: right;">1.007</td>
 <td style="text-align: right;">771</td>
 <td style="text-align: right;">1</td>
@@ -4887,7 +4992,7 @@ Table 4: Model diagnostics and fit statistics
 <tr class="odd">
 <td style="text-align: left;"><code>0121</code></td>
 <td style="text-align: right;">114</td>
-<td style="text-align: right;">35</td>
+<td style="text-align: right;">69</td>
 <td style="text-align: right;">1.008</td>
 <td style="text-align: right;">612</td>
 <td style="text-align: right;">0</td>
@@ -4901,7 +5006,7 @@ Table 4: Model diagnostics and fit statistics
 <tr class="even">
 <td style="text-align: left;"><code>0122</code></td>
 <td style="text-align: right;">114</td>
-<td style="text-align: right;">35</td>
+<td style="text-align: right;">69</td>
 <td style="text-align: right;">1.008</td>
 <td style="text-align: right;">737</td>
 <td style="text-align: right;">0</td>
@@ -4968,6 +5073,34 @@ Table 4: Model diagnostics and fit statistics
 <td style="text-align: right;">-31.4</td>
 <td style="text-align: right;">0.544</td>
 </tr>
+<tr class="odd">
+<td style="text-align: left;"><code>0133</code></td>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">114</td>
+<td style="text-align: right;">1.007</td>
+<td style="text-align: right;">742</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">45.5</td>
+<td style="text-align: right;">31.7</td>
+<td style="text-align: right;">-22.8</td>
+<td style="text-align: right;">0.982</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>0134</code></td>
+<td style="text-align: right;">150</td>
+<td style="text-align: right;">114</td>
+<td style="text-align: right;">1.015</td>
+<td style="text-align: right;">762</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">0</td>
+<td style="text-align: right;">44.7</td>
+<td style="text-align: right;">31.5</td>
+<td style="text-align: right;">-22.4</td>
+<td style="text-align: right;">0.982</td>
+</tr>
 </tbody>
 </table>
 </div>
@@ -4985,7 +5118,7 @@ Table 4: Model diagnostics and fit statistics
 <li><p>Tree Depth: Whether maximum tree depth was exceeded during sampling</p></li>
 <li><p>BFMI Issues: Whether low Bayesian Fraction of Missing Information was detected</p></li>
 <li><p>LOOIC: Leave-one-out information criterion (lower is better)</p></li>
-<li><p>p LOO: Effective number of parameters estimated by LOO</p></li>
+<li><p>p LOO: Effective number of parameters estimated by LOO (should be &lt; n par &amp; n obs)</p></li>
 <li><p>ELPD LOO: Expected log pointwise predictive density from LOO (higher is better)</p></li>
 <li><p>Prop Pareto k: Proportion of Pareto k values &lt;= 0.7 (should be high for reliable LOO estimates)</p></li>
 </ul>
@@ -5098,6 +5231,42 @@ Table 5: Model performance and validation statistics
 <td style="text-align: left;"><code>0075</code></td>
 <td style="text-align: right;">0.390</td>
 <td style="text-align: right;">0.251</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">NA%</td>
+<td style="text-align: left;">NA%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>0129</code></td>
+<td style="text-align: right;">0.189</td>
+<td style="text-align: right;">0.248</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">NA%</td>
+<td style="text-align: left;">NA%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>0130</code></td>
+<td style="text-align: right;">0.231</td>
+<td style="text-align: right;">0.247</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">NA%</td>
+<td style="text-align: left;">NA%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>0131</code></td>
+<td style="text-align: right;">0.230</td>
+<td style="text-align: right;">0.251</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">NA%</td>
+<td style="text-align: left;">NA%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>0132</code></td>
+<td style="text-align: right;">0.271</td>
+<td style="text-align: right;">0.249</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: left;">NA%</td>
@@ -5341,6 +5510,24 @@ Table 5: Model performance and validation statistics
 <td style="text-align: left;"><code>0128</code></td>
 <td style="text-align: right;">0.268</td>
 <td style="text-align: right;">0.221</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">NA%</td>
+<td style="text-align: left;">NA%</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>0133</code></td>
+<td style="text-align: right;">0.260</td>
+<td style="text-align: right;">0.252</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: right;">NA</td>
+<td style="text-align: left;">NA%</td>
+<td style="text-align: left;">NA%</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>0134</code></td>
+<td style="text-align: right;">0.259</td>
+<td style="text-align: right;">0.250</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: right;">NA</td>
 <td style="text-align: left;">NA%</td>

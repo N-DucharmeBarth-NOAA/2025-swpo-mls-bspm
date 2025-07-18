@@ -260,7 +260,7 @@ Prior distributions for process error $\sigma_P$, index observation error $\sigm
 
 ## Description of one-off sensitivities {#sec-desc-sens}
 
-During the course of model development 32 one-off sensitivity models, organized into 11 groups, were investigated to explore alternative assumptions, model structures and sensitivities to data inputs. These models are listed in @tbl-model-reference and are described in further detail below.
+During the course of model development 38 one-off sensitivity models, organized into 12 groups, were investigated to explore alternative assumptions, model structures and sensitivities to data inputs. These models are listed in @tbl-model-reference and are described in further detail below.
 
 ### Index {#sec-desc-sens-index}
 
@@ -272,7 +272,12 @@ The diagnostic case model fits only to the DWFN index. One-off model sensitiviti
 - `0074`: Fits to the longline observer data excluding the French Polynesia program
 - `0075`: Fits only to the longline observer data from the French Polynesia program
 
-The French Polynesia observer program data was treated seperately as it showed differing trends from the other 3 observer programs [@neubauer_exploring_2025]. 
+The French Polynesia observer program data was treated seperately as it showed differing trends from the other 3 observer programs [@neubauer_exploring_2025]. Additionally, given that the shorter indices (Australia and longline observer) provided little information about population scale, several other models were set-up to simultaneously fit them with the two longer indices (DWFN and New Zealand).
+
+- `0129`: Fits to the DWFN & Australia index
+- `0130`: Fits to the New Zealand & Australia index
+- `0131`: Fits to the DWFN & Observer (New Caledonia, Fiji & Tonga) index
+- `0132`: Fits to the New Zealand & Observer (New Caledonia, Fiji & Tonga) index
 
 ### Catch observation error $\sigma_C$ {#sec-desc-sens-sigmac}
 
@@ -364,6 +369,13 @@ Rather than estimating fishing mortality indirectly through catchability and eff
 
 - `0127`: Direct F estimation with $\sigma_F$ calibrated to match the variance in fishing mortality observed in the diagnostic case model
 - `0128`: Direct F estimation with $\sigma_F$ set to 0.25 times the diagnostic case variance, providing more constraint on fishing mortality variability in order to see how estimates of scale are impacted
+
+### Alternative $R_{Max}$ prior {#sec-desc-sens-rmax}
+
+The diagnostic case model estimates a fairly productive stock with an $R_{Max}$ that is considerably higher than an analogous species in the Atlantic Ocean, white marlin (*Kajikia albida*). The most recent ICCAT assessment [@iccat_report_2020], implemented using JABBA [@winker_jabba_2018], estimated $R_{Max}$ at 0.163 for white marlin. Sensitivity models assuming this lower level of productivity were developed to see the impact it would have on model estimates, particularly population scale.
+
+- `0133`: Apply lower productivity white marlin Rmax prior
+- `0134`: Apply lower productivity white marlin Rmax prior and apply a more conservative shape parameter prior (centered on 2)
 
 ## Model Implementation {#sec-model-implementation}
 
@@ -486,7 +498,7 @@ diagnostics_config <- list(
     "Tree Depth: Whether maximum tree depth was exceeded during sampling",
     "BFMI Issues: Whether low Bayesian Fraction of Missing Information was detected",
     "LOOIC: Leave-one-out information criterion (lower is better)",
-    "p LOO: Effective number of parameters estimated by LOO",
+    "p LOO: Effective number of parameters estimated by LOO (should be < n par & n obs)",
     "ELPD LOO: Expected log pointwise predictive density from LOO (higher is better)",
     "Prop Pareto k: Proportion of Pareto k values <= 0.7 (should be high for reliable LOO estimates)"
   )
@@ -581,6 +593,40 @@ create_model_table <- function(data, model_desc_config, table_config) {
 # Function to generate notes section (just metric definitions)
 generate_notes <- function(table_config) {
   paste0("- ", table_config$notes)
+}
+
+# Function to identify rows to highlight based on model groups
+get_highlight_rows <- function(table_data, model_desc_config, highlight_groups) {
+  highlight_models <- model_desc_config[group %in% highlight_groups, short_name]
+  highlight_pattern <- paste0("(", paste(highlight_models, collapse = "|"), ")")
+  which(grepl(highlight_pattern, table_data$Model))
+}
+
+# Function to get alternating one-off group highlighting
+get_alternating_oneoff_rows <- function(table_data, model_desc_config) {
+  # Get unique one-off groups in order they appear
+  oneoff_groups <- model_desc_config[grepl("^One-off:", group), ]
+  unique_groups <- unique(oneoff_groups$group)
+  
+  # Determine which groups to highlight (every other one)
+  groups_to_highlight <- unique_groups[seq(2, length(unique_groups), by = 2)]
+  
+  # Get models in those groups
+  highlight_models <- model_desc_config[group %in% groups_to_highlight, short_name]
+  highlight_pattern <- paste0("(", paste(highlight_models, collapse = "|"), ")")
+  which(grepl(highlight_pattern, table_data$Model))
+}
+
+# Function to identify diagnostic problem rows
+get_diagnostic_problem_rows <- function(diagnostics_table) {
+  # Extract numeric values from formatted strings
+  max_rhat <- as.numeric(diagnostics_table$`Max $\\hat{R}$`)
+  min_ess <- as.numeric(diagnostics_table$`Min ESS`)
+  divergent <- as.numeric(diagnostics_table$Divergent)
+  prop_pareto_k <- as.numeric(diagnostics_table$`Prop Pareto k`)
+  
+  # Find problematic rows
+  which(divergent > 0 | max_rhat >= 1.01 | min_ess < 500 | prop_pareto_k < 0.9)
 }
 
 # Create model reference table - preserve CSV order
@@ -691,6 +737,7 @@ sigmap_median <- round(exp(prior_mean_logsigmap), 4)
 ### Start year {#sec-res-sens-start}
 ### Inclusion of effort deviates {#sec-res-sens-effort}
 ### Direct estimation of fishing mortality {#sec-res-sens-direct-f}
+### Alternative $R_{Max}$ prior {#sec-res-sens-rmax}
 
 ## Model ensemble
 
@@ -788,15 +835,15 @@ Table: Prior distributions for diagnostic model leading parameters. {#tbl-priors
 |-----------|-------------|------|----|-----------|-----------------| 
 | **Core Population Parameters** | | | | | |
 | $K$ | MV Lognormal | $\log(`r format(K_median, big.mark = ",")`)$ | `r round(mv_params[param == "logK", log_sd], 2)` | Carrying capacity (N) | $\rho(K,R_{Max})$ = `r corr_logK_log_r`; $\rho(K,q_{eff})$ = `r corr_logK_log_qeff` |
-| $R_{Max}$ | MV Lognormal | $\log(`r r_median`)$ | `r round(mv_params[param == "log_r", log_sd], 2)` | Maximum intrinsic rate of increase | $\rho(R_{Max},n)$ = `r corr_log_r_log_shape` |
+| $R_{Max}$ | MV Lognormal | $\log(`r r_median`)$ | `r round(mv_params[param == "log_r", log_sd], 2)` | Max rate of increase | $\rho(R_{Max},n)$ = `r corr_log_r_log_shape` |
 | $n$ | MV Lognormal | $\log(`r shape_median`)$ | `r round(mv_params[param == "log_shape", log_sd], 2)` | Pella-Tomlinson shape parameter | |
 | $x_0$ | MV Lognormal | $\log(`r x0_median`)$ | `r round(mv_params[param == "log_x0", log_sd], 3)` | Initial depletion | (Independent) |
-| $q_{eff}$ MV | Lognormal | $\log(`r qeff_median`)$ | `r round(mv_params[param == "log_qeff", log_sd], 2)` | Effort catchability coefficient | $\rho(q_{eff},\sigma_{qdev})$ = `r corr_log_qeff_log_sigma_qdev`; $\rho(q_{eff},\rho)$ = `r corr_log_qeff_atanh_rho` |
+| $q_{eff}$ MV | Lognormal | $\log(`r qeff_median`)$ | `r round(mv_params[param == "log_qeff", log_sd], 2)` | Initial catchability | $\rho(q_{eff},\sigma_{qdev})$ = `r corr_log_qeff_log_sigma_qdev`; $\rho(q_{eff},\rho)$ = `r corr_log_qeff_atanh_rho` |
 | $\rho$ | MV Transformed Normal | $\tanh^{-1}(`r rho_median`)$ | `r round(mv_params[param == "atanh_rho", log_sd], 2)` | Autocorrelation in catchability deviations | $\rho(\rho,\sigma_{qdev})$ = `r corr_atanh_rho_log_sigma_qdev` |
-| $\sigma_{qdev}$ | MV Lognormal | $\log(`r sigma_qdev_median`)$ | `r round(mv_params[param == "log_sigma_qdev", log_sd], 2)` | Catchability variability standard deviation | |
+| $\sigma_{qdev}$ | MV Lognormal | $\log(`r sigma_qdev_median`)$ | `r round(mv_params[param == "log_sigma_qdev", log_sd], 2)` | Catchability variability | |
 | | | | | | |
 | **Process and Observation Error** | | | | | |
-| $\sigma_P$ | Lognormal | $\log(`r sigmap_median`)$ | `r round(prior_sd_logsigmap, 2)` | Process error standard deviation | (Independent) |
+| $\sigma_P$ | Lognormal | $\log(`r sigmap_median`)$ | `r round(prior_sd_logsigmap, 2)` | Process error | (Independent) |
 | $\sigma_{O,add}$ | Half-Normal | 0 | `r round(prior_sd_sigmao_add, 2)` | Additional estimated observation error | (Independent) |
 | | | | | | |
 | **Catch Likelihood** | | | | | |

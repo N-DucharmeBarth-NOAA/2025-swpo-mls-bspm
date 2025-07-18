@@ -170,6 +170,30 @@
                                   catch_mult="b",
                                   sigmaP = "b",
                                   sy = "1952.10",
+                                  sigma_e = "n"),
+                            expand.grid(exec=c("oFSTTGF"),
+                                  cpue=c("dwfnau","nzau","dwfnnopf","nznopf"),
+                                  sigma_catch = c("f0.2"),
+                                  obs1952 = c("b"),
+                                  obs1954 = c("b"),
+                                  n_step=c(1),
+                                  qeff=c("newK"),
+                                  shape=c("b"),
+                                  catch_mult="b",
+                                  sigmaP = "b",
+                                  sy = "1952.10",
+                                  sigma_e = "n"),
+                            expand.grid(exec=c("oFSTTGF"),
+                                  cpue=c("dwfn"),
+                                  sigma_catch = c("f0.2"),
+                                  obs1952 = c("b"),
+                                  obs1954 = c("b"),
+                                  n_step=c(1),
+                                  qeff=c("altR"),
+                                  shape=c("b","alt"),
+                                  catch_mult="b",
+                                  sigmaP = "b",
+                                  sy = "1952.10",
                                   sigma_e = "n")                        
     )
 
@@ -189,7 +213,7 @@
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # set-up model inputs
 
-    for(i in 1:nrow(model_config_df)){
+    for(i in 20:nrow(model_config_df)){
             run_label_stem = paste0(model_config_df$cpue[i],
                             "-exe",model_config_df$exec[i],
                             "-c",model_config_df$sigma_catch[i],
@@ -226,6 +250,10 @@
             stan.data = newlogK_stan_data
             stan.data$full_mv_prior_mean[c(1,5)] = c(14.32,-1.32)
             stan.data$full_mv_prior_sd[c(1,5)] = c(0.2,0.2)
+        } else if(model_config_df$qeff[i] == "altR"){
+            stan.data = newlogK_stan_data
+            stan.data$full_mv_prior_mean[2] = log(0.163)
+            stan.data$full_mv_prior_sd[2] = 0.15
         }             
         
         stan.data$sigmac = model_config_df$sigma_catch[i]
@@ -371,6 +399,18 @@
                 stan.data$sigmao_input = 0.15
             } else if(model_config_df$cpue[i] == "allPFonly"){
                 stan.data$lambdas = c(1,1,1,0,0,1)
+                stan.data$sigmao_input = 0.15
+            } else if(model_config_df$cpue[i] == "dwfnau"){
+                stan.data$lambdas = c(1,1,0,0,0,0)
+                stan.data$sigmao_input = 0.15
+            } else if(model_config_df$cpue[i] == "nzau"){
+                stan.data$lambdas = c(0,1,1,0,0,0)
+                stan.data$sigmao_input = 0.15
+            } else if(model_config_df$cpue[i] == "dwfnnopf"){
+                stan.data$lambdas = c(1,0,0,0,1,0)
+                stan.data$sigmao_input = 0.15
+            } else if(model_config_df$cpue[i] == "nznopf"){
+                stan.data$lambdas = c(0,0,1,0,1,0)
                 stan.data$sigmao_input = 0.15
             }
         }

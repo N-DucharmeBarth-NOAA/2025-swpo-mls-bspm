@@ -8,6 +8,10 @@ short_name,group,description
 0073,One-off: Index,Observer (all) index
 0074,One-off: Index,"Observer (New Caledonia, Fiji & Tonga) index"
 0075,One-off: Index,Observer (French Polynesia) index
+0129,One-off: Index,"DWFN & Australia index"
+0130,One-off: Index,"New Zealand & Australia index"
+0131,One-off: Index,"DWFN & Observer (New Caledonia, Fiji & Tonga) index"
+0132,One-off: Index,"New Zealand & Observer (New Caledonia, Fiji & Tonga) index"
 0076,One-off: sigma_c,Time-varying sigma_c: Power curve from 0.5-0.2
 0077,One-off: sigma_c,Constant sigma_c: 0.1
 0078,One-off: sigma_c,Time-varying sigma_c: Power curve from 0.5-0.1
@@ -35,3 +39,5 @@ short_name,group,description
 0126,One-off: Est. effort devs,Estimate effort deviates & n_step = 5
 0127,One-off: Direct F estimation,sigmaF to match diagnostic case
 0128,One-off: Direct F estimation,0.25x diagnostic case sigmaF
+0133,One-off: Rmax prior,Apply lower productivity Rmax prior
+0134,One-off: Rmax prior,Apply lower productivity Rmax prior and alternative shape prior

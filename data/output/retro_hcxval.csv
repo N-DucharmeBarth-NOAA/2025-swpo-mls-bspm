@@ -127,3 +127,9 @@ run_id,retro,hcxval,coverage_pmsy,coverage_fmsy,n_retro
 0126-dwfn-exeoFSTTGFe-cf0.2-nb-qnewK-s5-o52b-o54b-cmb-sPb-sy1952.10-sEn_0-bspm_estq_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT,,,,,0
 0127-dwfn-exeoFSTTGFestF-cf0.2-nb-qnewK-s1-o52b-o54b-cmb-sPb-sy1952.10-sEn_0-bspm_estF_softdep_mvprior_x0_sttgamma_flexsigmaC_OPT,,,,,0
 0128-dwfn-exeoFSTTGFestF-cf0.2-nb-qasF-s1-o52b-o54b-cmb-sPb-sy1952.10-sEn_0-bspm_estF_softdep_mvprior_x0_sttgamma_flexsigmaC_OPT,,,,,0
+0129-dwfnau-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b-cmb-sPb-sy1952.10-sEn_0-bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT,,,,,0
+0130-nzau-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b-cmb-sPb-sy1952.10-sEn_0-bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT,,,,,0
+0131-dwfnnopf-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b-cmb-sPb-sy1952.10-sEn_0-bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT,,,,,0
+0132-nznopf-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b-cmb-sPb-sy1952.10-sEn_0-bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT,,,,,0
+0133-dwfn-exeoFSTTGF-cf0.2-nb-qaltR-s1-o52b-o54b-cmb-sPb-sy1952.10-sEn_0-bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT,,,,,0
+0134-dwfn-exeoFSTTGF-cf0.2-nalt-qaltR-s1-o52b-o54b-cmb-sPb-sy1952.10-sEn_0-bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT,,,,,0
