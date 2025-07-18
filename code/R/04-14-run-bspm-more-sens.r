@@ -189,7 +189,7 @@
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # set-up model inputs
 
-    for(i in 18:nrow(model_config_df)){
+    for(i in 1:nrow(model_config_df)){
             run_label_stem = paste0(model_config_df$cpue[i],
                             "-exe",model_config_df$exec[i],
                             "-c",model_config_df$sigma_catch[i],

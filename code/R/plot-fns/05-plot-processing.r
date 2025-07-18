@@ -52,7 +52,7 @@ generate_all_single_model_plots <- function(model_dir,
   cat("  Generating HMC plots...\n")
   hmc_plots <- list(
     parcoord = generate_hmc_parcoord, pairs = generate_hmc_pairs, trace = generate_hmc_trace,
-    rhat = generate_hmc_rhat, neff = generate_hmc_neff, acf = generate_hmc_acf
+    rhat = generate_hmc_rhat, neff = generate_hmc_neff, acf = generate_hmc_acf, loofluence = generate_loo_influence
   )
   for (name in names(hmc_plots)) {
     plots[[paste0("hmc_", name)]] <- make_plot(hmc_plots[[name]], paste0("hmc_", name), params$hmc)
@@ -242,7 +242,7 @@ generate_all_plots <- function(model_dirs,
         "get_default_params", "load_model_data", "get_parameter_map", "get_ssp_theme",
         # HMC functions
         "generate_hmc_parcoord", "generate_hmc_pairs", "generate_hmc_trace", 
-        "generate_hmc_rhat", "generate_hmc_neff", "generate_hmc_acf",
+        "generate_hmc_rhat", "generate_hmc_neff", "generate_hmc_acf", "generate_loo_influence",
         # CPUE PPC functions
         "generate_ppc_dens", "generate_ppc_ecdf", "generate_ppc_pit_ecdf", 
         "generate_ppc_stat", "generate_ppc_loo_pit", "generate_ppc_loo_qq", "generate_ppc_loo_interval",
@@ -256,7 +256,7 @@ generate_all_plots <- function(model_dirs,
         "ssp_extract_cpue_fit", "ssp_extract_catch_fit", "ssp_calc_likelihood", "ssp_calc_catch_likelihood",
         "ssp_calc_rmse", "ssp_derived_quants", "ssp_derived_quants_ts", "ssp_forecast", "ssp_prior_pushforward",
         # Global variables
-        "year_one", "index_names", "model_stem", "height_per_panel"
+        "index_names", "model_stem", "height_per_panel"
       ), envir = environment())
       
       single_model_plots <- parallel::parLapply(cl, model_dirs, function(model_dir) {

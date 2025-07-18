@@ -1,0 +1,37 @@
+short_name,group,description
+0100,Final ensemble,Diagnostic case model: DWFN index & baseline priors
+0102,Final ensemble,New Zealand index & baseline priors
+0105,Final ensemble,DWFN index & alternative shape prior
+0107,Final ensemble,New Zealand index & alternative shape prior
+0071,One-off: Index,Australia index
+0072,One-off: Index,New Zealand index
+0073,One-off: Index,Observer (all) index
+0074,One-off: Index,"Observer (New Caledonia, Fiji & Tonga) index"
+0075,One-off: Index,Observer (French Polynesia) index
+0076,One-off: sigma_c,Time-varying sigma_c: Power curve from 0.5-0.2
+0077,One-off: sigma_c,Constant sigma_c: 0.1
+0078,One-off: sigma_c,Time-varying sigma_c: Power curve from 0.5-0.1
+0079,One-off: Early data,Alternative 1952 catch
+0080,One-off: Early data,Alternative 1952 effort
+0081,One-off: Early data,Alternative 1954 catch
+0082,One-off: Early data,Alternative 1952 & 1954 catch
+0083,One-off: Early data,Alternative 1952 effort & 1954 catch
+0093,One-off: Scaling priors,Force higher scale (logK & qeff)
+0096,One-off: Scaling priors,"Force higher scale (logK & qeff), alternative shape prior"
+0110,One-off: Catch obs model,Lognormal error structure
+0111,One-off: qdev steps,n_step = 2
+0112,One-off: qdev steps,n_step = 3
+0113,One-off: qdev steps,n_step = 5
+0114,One-off: qdev steps,n_step = 10
+0115,One-off: Catch reporting,2x observed catch
+0116,One-off: Catch reporting,Linear increase to 2x observed catch
+0117,One-off: Catch reporting,Linear decrease from 2x observed catch
+0118,One-off: Process error,Process error restricted to 0
+0119,One-off: Start year,Start in 1955: x0 = 0.9
+0120,One-off: Start year,Start in 1988: x0 = 0.5
+0121,One-off: Start year,Start in 1988: x0 = 0.7
+0122,One-off: Start year,Start in 1988: x0 = 0.9
+0124,One-off: Est. effort devs,Estimate effort deviates & n_step = 2
+0126,One-off: Est. effort devs,Estimate effort deviates & n_step = 5
+0127,One-off: Direct F estimation,sigmaF to match diagnostic case
+0128,One-off: Direct F estimation,0.25x diagnostic case sigmaF

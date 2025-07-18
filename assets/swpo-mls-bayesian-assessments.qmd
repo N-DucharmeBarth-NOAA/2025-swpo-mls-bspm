@@ -11,6 +11,9 @@ author:
     affiliations:
       - id: spc
         name: "Oceanic Fisheries Programme of the Pacific Community"
+  - name: "F. Carvalho"
+    affiliations:
+      - ref: pifsc
   - name: "P. Hamer"
     affiliations:
       - ref: spc
@@ -61,10 +64,18 @@ csl: apa.csl
 #| echo: false
 #| warning: false
 #| message: false
+library(data.table)
+library(ggplot2)
+library(magrittr)
 
 proj_dir = this.path::this.proj()
 dir_model_runs = file.path(proj_dir,"data","output","model_runs")
 diag_model = "0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0"
+
+# Define model description configuration (without run_number - will be matched from data)
+model_desc_config = fread(file.path(proj_dir,"data","output","model_desc_config.csv"))
+model_desc_config[,short_name:=sprintf("%04d", short_name)]
+model_desc_config[,short_name:=factor(short_name,levels=short_name)]
 ```
 
 \newpage
@@ -77,7 +88,7 @@ diag_model = "0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0"
 
 Assessments of Southwest Pacific Ocean (SWPO) striped marlin (*Kajikia audax*) have been challenging. As documented in the joint NOAA-SPC modeling meeting report [@ducharme-barth_summary_2025], key issues identified by WCPFC SC20 included poor fits to size composition data and relative abundance indices, conflicts between different data sources, and difficulties in estimating model initial conditions.
 
-Discussions at the 2025 SPC Pre-Assessment Workshop highlighted additional challenges related to the estimation of total population scale. The low biomass scale indicated by previous versions of the assessment appears largely driven by the size composition from multiple fisheries. While estimation of low biomass scale is not inherently problematic, the resulting high ratio of fishing mortality (F) to natural mortality (M) that is maintained over multiple decades in the face of relative stability in catches and catch-per-unit-effort (CPUE) was noted as suspicious and flagged for further investigation.
+Discussions at the 2025 SPC Pre-Assessment Workshop highlighted additional challenges related to the estimation of total population scale. The low biomass scale indicated by previous versions of the assessment appeared largely driven by the size composition from multiple fisheries. While estimation of low biomass scale is not inherently problematic, the resulting high ratio of fishing mortality (F) to natural mortality (M) that is maintained over multiple decades in the face of relative stability in catches and catch-per-unit-effort (CPUE) was noted as suspicious and flagged for further investigation.
 
 The complexity of integrated age-structured models, while providing detailed population dynamics representation, can become problematic when fundamental data conflicts exist or when key biological parameters are uncertain. For SWPO striped marlin, these challenges are compounded by spatiotemporal heterogeneity in fleet coverage, potential non-representativeness in mixed-fleet composition data, and limitations in age data from opportunistic sampling. Changes to productivity assumptions (growth, natural mortality, maturity, and/or steepness) or selectivity patterns will impact biomass scaling through predictions of expected size composition data.
 
@@ -89,29 +100,17 @@ This analysis presents a data-moderate approach for SWPO striped marlin that add
 
 # Methods {#sec-methods}
 
-## Model framework {#sec-model-framework}
+## Modelling framework {#sec-model-framework}
 
 To address some of the issues raised in @sec-introduction, a series of Bayesian state-space surplus production models (BSPMs) spanning the period 1952-2022 were developed following the Fletcher-Schaefer production model framework [@winker_unifying_2020; @edwards_bdm_2024]. Development of the BSPM followed the approach of [@neubauer_alternative_2019;@isc_stock_2024] and incorporated recent best practices for surplus production models [@kokkalis_good_2024] and Bayesian workflows for stock assessment [@monnahan_toward_2024] as guides for model development, analysis, and presentation.
 
 The models were implemented in the Stan probabilistic programming language [@stan_development_team_stan_2024] to take advantage of enhanced convergence diagnostics, greater efficiency in posterior sampling through the no-U-turn (NUTS) Hamiltonian Monte Carlo (HMC) algorithm [@betancourt_hamiltonian_2013], and greater flexibility with model configuration and prior specification. Implementation in R using the *rstan* package [@stan_development_team_rstan_2024] provides connection to an ecosystem of R packages for model diagnostics and validation: *bayesplot* [@gabry_bayesplot_2024] for posterior visualization and *loo* [@vehtari_loo_2024].
 
-In their baseline configuration (diagnostic case), the models began from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. Population scale or carrying capacity $log(K)$ is given in the units of the catch which is total numbers. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, the fishing mortality necessary to produce the catch was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work [@isc_stock_2024] showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering described in @sec-prior-development.   
+In their baseline configuration (diagnostic case), the models begin from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. Population scale or carrying capacity $log(K)$ is given in the units of the catch which is total numbers. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, multiplicative survival after fishing mortality was applied. Fishing mortality was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work [@isc_stock_2024] showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering described in @sec-prior-development.   
 
-Using the diagnostic model^[The Stan code for the diagnostic model `bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT` is publicly available on [GitHub](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/code/Stan/bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT.stan).] as a starting point, a number of one-off sensitivity analyses were conducted to explore key model assumptions or data questions. These included:
+Using the diagnostic model^[The Stan code for the diagnostic model `bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT` is publicly available on [GitHub](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/code/Stan/bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT.stan).] as a starting point, a number of one-off sensitivity analyses were conducted to explore key model assumptions or data questions. These are described in @sec-desc-sens and listed in @tbl-model-reference. Based on the results of the sensitivity analyses a model ensemble was developed for the provision of stock status and management reference points. Full model development code and input data are available online at the following GitHub repository: <https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm>.
 
-- the choice of relative abundance index used to drive the model dynamics,
-- the likelihood used to model catch observation error,
-- the magnitude and trend in catch observation error,
-- sensitivity to assumptions in data errors for early model (1952-1954) catch and effort observations,
-- alternative catch scenarios for under-reporting,
-- structural assumptions related to the temporal resolution of time-varying catchability,
-- complexity of the fishing mortality parametrization (e.g., direct estimation, temporal structure of catchability deviates and inclusion of effort deviates),
-- model start year,
-- and alternative priors assumptions (e.g., process error, catchability, population carrying capacity, and production function shape parameter).
-
-Based on these results a structural uncertainty grid was developed for the provision of stock status and management reference points. Full model development code and input data are available online at the following GitHub repository: <https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm>.
-
-### Input data {#sec-input-data}
+## Input data {#sec-input-data}
 
 The BSPMs were fitted to catch and standardized CPUE data for SWPO striped marlin. Effort was used as an input to drive the time series of estimated fishing mortality via the estimated catchability trend.
 
@@ -121,7 +120,7 @@ Annual longline effort (in numbers of hooks) matching the SWPO assessment domain
 
 A number of indices were investigated either as one-off sensitivities or included in the structural uncertainty grid (@fig-idx-obs). These included the composite distant water fishing nation (DWFN) longline standardized CPUE index (1988-2022) from the diagnostic case of the 2024 assessment [@castillo-jordan_stock_2024], an Australian longline index, a New Zealand recreational sportfish index, and three different observer data based indices [@neubauer_exploring_2025]. The Pacific Islands observer program indices contained information from New Caledonia, Fiji, Tonga, and French Polynesia observer programs. Three alternative indices were constructed either by including data from all programs together, including data from just the western programs (New Caledonia, Fiji, and Tonga) or including data just from French Polynesia. The DWFN, Australia and observer without French Polynesia indices show recent increases; the New Zealand and observer with only French Polynesia indices show recent declines; and the all observer program index shows no trend. 
 
-### Population dynamics {#sec-population-dynamics}
+## Population dynamics {#sec-population-dynamics}
 
 The population dynamics follow a hybrid Fletcher-Schaefer surplus production model [@edwards_bdm_2024; @isc_stock_2024] with state-space formulation where population depletion $x_t$ (relative to carrying capacity $K$) evolves according to:
 
@@ -156,7 +155,7 @@ and the catchability deviation for year $t$ is assigned as $\delta_{q,t} = \delt
 
 Model initial conditions are defined for $t = 1$ as $x_t = x_0 \times \epsilon_t$ where $x_0$ is the estimated depletion relative to unfished at the start of the model period. The prior specified for $x_0$ in the diagnostic case assumes an unfished initial condition with some uncertainty (@tbl-priors).  
 
-### Observation model {#sec-observation-model}
+## Observation model {#sec-observation-model}
 
 The model fits to a standardized CPUE index using a lognormal likelihood:
 
@@ -164,7 +163,7 @@ $$I_t \sim \text{Lognormal}(\log(q \times x_t) - \frac{\sigma_{O,t}^2}{2}, \sigm
 
 where catchability $q$ is analytically derived assuming an uninformative uniform prior, and total observation error $\sigma_{O,t} = \sigma_{O,input} + \sigma_{O,add}$ combines fixed input uncertainty with an estimated additional error component.
 
-#### Catch treatment {#sec-catch-treatment}
+### Catch treatment {#sec-catch-treatment}
 
 Population removals (catch) were calculated in each time step as:
 
@@ -248,18 +247,125 @@ Given that the limited large-scale industrial fishing existed in the SWPO prior 
 
 Following @kim_examining_2025, a prior pushforward analysis was conducted to refine the naïve prior distributions derived from the biological and fishing data simulation frameworks. Random parameter combinations drawn from the input prior distributions were passed through the diagnostic Stan model used for inference but with the likelihoods turned off (`fit_to_data = 0L`), generating simulated population trajectories and fishing dynamics under the model structure. This approach ensures that simulated trajectories are consistent with the actual model structure used for inference.
 
-Parameter combinations were filtered through sequential criteria based on population viability and fishery realism:
+Parameter combinations were filtered through sequential criteria based on population viability and fishery realism (@fig-pushforward):
 
 - **Initial survival filter (`iter_surve`)**: Terminal year depletion $>$ 1% (`mindep > 0.01`), minimum population size $>$ 15,000 individuals which matches recent observed catch levels (`minN > 15000`), and biologically reasonable shape parameter (`shape < 20`)
 - **Fishing mortality filter (`iter_f`)**: Maximum fishing mortality $<$ 2.5 (`maxF < 2.5`) and average fishing mortality $<$ 0.8 (`avgF < 0.8`) to ensure realistic exploitation levels
 - **Catch consistency filter (`iter_catch`)**: Simulated catches within realistic bounds relative to observed data: maximum catch between 0.5-5.0$\times$ observed maximum, minimum catch $>$ 0.5$\times$ observed minimum, and average catch between 0.5-5.0$\times$ observed average
 - **CPUE consistency filter (`iter_cpue`)**: Early period CPUE (first 10 years) between 0.5-5.0$\times$ observed early CPUE average to ensure realistic abundance levels during the initial fishery development
 
-Parameter combinations passing all filtering stages (`iter_cpue`) were used to fit updated multivariate prior distributions using maximum likelihood estimation. Given that a number of parameters showed correlations following the prior pushforward, a 7-dimensional multivariate prior was developed for core parameters: $\log(K)$, $\log(R_{Max})$, $\log(n)$, $\log(x_0)$, $\log(q_{eff})$, $\tanh^{-1}(\rho)$ and $\log(\sigma_{qdev})$. Correlations with absolute values $<$ 0.1 were reset to zero to avoid weak spurious correlations, retaining only meaningful parameter relationships. Though $log(x_0)$ was included in the multivariate prior, for convenience, it was treated as an unchanged univariate prior from the initial naïve prior distribution since the pushforward did not provide an update to this parameter. 
+Parameter combinations passing all filtering stages (`iter_cpue`) were used to fit updated multivariate prior distributions using maximum likelihood estimation (@fig-pushforward-pairs). Given that a number of parameters showed correlations following the prior pushforward, a 7-dimensional multivariate prior was developed for core parameters: $\log(K)$, $\log(R_{Max})$, $\log(n)$, $\log(x_0)$, $\log(q_{eff})$, $\tanh^{-1}(\rho)$ and $\log(\sigma_{qdev})$. Correlations with absolute values $<$ 0.1 were reset to zero to avoid weak spurious correlations, retaining only meaningful parameter relationships. Though $log(x_0)$ was included in the multivariate prior, for convenience, it was treated as an unchanged univariate prior from the initial naïve prior distribution since the pushforward did not provide an update to this parameter. 
 
-Prior distributions for process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$ were unchanged following the prior pushforward analysis and remained as univariate priors. Final prior distributions are listed in @tbl-priors. 
+Prior distributions for process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$ were unchanged following the prior pushforward analysis and remained as univariate priors. Final prior distributions are listed in @tbl-priors.
 
-## Model implementation {#sec-model-implementation}
+## Description of one-off sensitivities {#sec-desc-sens}
+
+During the course of model development 32 one-off sensitivity models, organized into 11 groups, were investigated to explore alternative assumptions, model structures and sensitivities to data inputs. These models are listed in @tbl-model-reference and are described in further detail below.
+
+### Index {#sec-desc-sens-index}
+
+The diagnostic case model fits only to the DWFN index. One-off model sensitivities were conducted to explore how model estimates changed as a result of alternative indices:
+
+- `0071`: Fits to the Australian longline index
+- `0072`: Fits to the New Zealand recreational sportfish index
+- `0073`: Fits to the longline observer data combining the programs from New Caledonia, Fiji, Tonga, and French Polynesia
+- `0074`: Fits to the longline observer data excluding the French Polynesia program
+- `0075`: Fits only to the longline observer data from the French Polynesia program
+
+The French Polynesia observer program data was treated seperately as it showed differing trends from the other 3 observer programs [@neubauer_exploring_2025]. 
+
+### Catch observation error $\sigma_C$ {#sec-desc-sens-sigmac}
+
+The diagnostic case model assumes a constant catch observation error of $\sigma_C = 0.2$. Three one-off models explored alternative assumptions about catch uncertainty:
+
+- `0076`: Time-varying $\sigma_C$ following a power curve declining from 0.5 in early years to 0.2 in recent years, assuming improved catch reporting over time
+- `0077`: Constant $\sigma_C = 0.1$, representing lower uncertainty in catch observations throughout the time series
+- `0078`: Time-varying $\sigma_C$ following a power curve declining from 0.5 in early years to 0.1 in recent years, combining both temporal improvement and lower overall uncertainty
+
+### Early data {#sec-desc-sens-early}
+
+Several models explored sensitivity to problematic early data years, particularly 1952 and 1954 which showed unusual catch or effort patterns. In particular the 1952 catch observation was anomalously low especially given the reported effort, and was identified to have high influence on model estimates. This could be a valid observation, as the Japanese longline fleet expanded into the south Pacific in 1952 they fished closer to the equator which tended to have lower striped marlin catch rates than in subsequent years when they fished between Australia and New Caledonia. Alternatively, this outlier point could be the result of erroneous reporting in either catch or effort. In either case, sensitivity to this data point was investigated:
+
+- `0079`: Recalculates the low 1952 catch observation as the expected catch given the effort and average nominal CPUE from 1953-1957 (1952 catch is increased substantially).
+- `0080`: Recalculates 1952 effort given the low 1952 catch and average nominal CPUE from 1953-1957 (1952 effort is decreased substantially)
+
+Additionally, the large catch event in 1954 has been heavily scrutinized. This could be a valid observation as the Japanese longline fleet expended considerable effort during the time of year (3rd and 4th quarters of the year) striped marlin form spawning aggregations, in an area between Australia and New Caledonia where these aggregations form. Regardless, sensitivity to this observation was investigated in case it is a reporting error.
+
+- `0081`: The 1954 catch was reduced by 50%
+- `0082`: Combined alternative catch values for both 1952 and 1954
+- `0083`: Combined alternative 1952 effort and 1954 catch values
+
+These sensitivities address concerns about sensitivity to potentially anomalous observations in the early years of the fishery when reporting systems were less standardized.
+
+### Scaling priors {#sec-desc-sens-scaling}
+
+The diagnostic case model estimates a low population scale relative to the prior. Two models tested the impact of forcing the model toward higher population scale estimates:
+
+- `0093`: Modified priors on log(K) and catchability (qeff) to favor higher carrying capacity and lower catchability estimates
+- `0096`: Same as `0093` but combined with more conservative shape parameter prior (centered on 2)
+
+These models explored whether alternative prior assumptions about population scale could shift model estimates.
+
+### Catch observation model {#sec-desc-sens-catch-obs}
+
+- `0110`: Replaced the default Student-t likelihood for catch observations with a lognormal error structure to test sensitivity to distributional assumptions about catch observation error
+
+### Temporal resolution of catchability deviates {#sec-desc-sens-qdev}
+
+The diagnostic case model estimates catchability deviates in single time steps (annual). Four models explored different temporal resolutions:
+
+- `0111`: Catchability deviates fixed across 2-year periods (n_step = 2)
+- `0112`: Catchability deviates fixed across 3-year periods (n_step = 3)  
+- `0113`: Catchability deviates fixed across 5-year periods (n_step = 5)
+- `0114`: Catchability deviates fixed across 10-year periods (n_step = 10)
+
+These sensitivities tested whether the temporal resolution of catchability changes affected model estimates, with longer periods resulting in a more parsimonious model but potentially diminishing the models ability to fit to data.
+
+### Catch reporting {#sec-desc-sens-catch-reporting}
+
+Striped marlin are a commerically valuable non-target species, and as such it is assumed that if they are caught they are retained, and recorded in the logbook. However, given that they are a non-target species it is possible that they are not, or have not always been reported in the logbook and that under-reporting of catches or discarding could occur (e.g., given value of striped marlin and hold space required relative to target species). Three models explored potential systematic under-reporting of catches:
+
+- `0115`: Doubled all observed catch values to test sensitivity to potential 50% under-reporting throughout the time series
+- `0116`: Applied a linear multiplier increasing from 1x to 2x observed catch over time, representing improving catch reporting
+- `0117`: Applied a linear multiplier decreasing from 2x to 1x observed catch over time, representing deteriorating catch reporting in recent years
+
+### Process error $\sigma_P$ {#sec-desc-sens-process}
+
+The diagnostic case model estimated non-zero process error in the early model period, before the CPUE index began, and balanced process error with the catchability deviates in order to fit to the catch. 
+
+- `0118`: Restricted process error to be negligible ($\sigma_P \sim 0$) to evaluate the impact of environmental stochasticity on model estimates by forcing the population to follow deterministic surplus production dynamics
+
+### Start year {#sec-desc-sens-start}
+
+Given potentially anomalous catch observations in 1952 and 1954, along with uncertainty in the accuracy of early catch observations, four models explored sensitivity to the assumed initial conditions by starting the model in different years:
+
+- `0119`: Model starts in 1955 with assumed initial depletion $x_0$ = 0.9, skipping the early data years
+
+Three models were also tested which started the model in the same year as the CPUE index, and varied the level of initial depletion:
+
+- `0120`: Model starts in 1988 with $x_0$ = 0.5
+- `0121`: Model starts in 1988 with $x_0$ = 0.7
+- `0122`: Model starts in 1988 with $x_0$ = 0.9
+
+### Inclusion of effort deviates {#sec-desc-sens-effort}
+
+Early model development explored a more complex formulation of fishing mortality $F_t$ where effort deviates were also used in addition to the catchability deviates to link effort to $F_t$:
+
+$$F_t = q_{eff} \times \exp(\delta_{q,t} - \sigma_{qdev}^2/2) \times \text{E}_t \times \exp(\delta_{e,t} - \sigma_{edev}^2/2)$$
+
+Two models tested whether estimating deviations from the effort time series improved model performance:
+
+- `0124`: Estimated effort deviates with 2-year temporal resolution (n_step = 2)
+- `0126`: Estimated effort deviates with 5-year temporal resolution (n_step = 5) for more constrained estimation
+
+### Direct estimation of fishing mortality {#sec-desc-sens-direct-f}
+
+Rather than estimating fishing mortality indirectly through catchability and effort, two models directly estimated annual fishing mortality rates to see if the simpler formulation for fishing mortality could replicate the results of the diagnostic case model, or if the formulation of fishing mortality significantly impacted model estimates:
+
+- `0127`: Direct F estimation with $\sigma_F$ calibrated to match the variance in fishing mortality observed in the diagnostic case model
+- `0128`: Direct F estimation with $\sigma_F$ set to 0.25 times the diagnostic case variance, providing more constraint on fishing mortality variability in order to see how estimates of scale are impacted
+
+## Model Implementation {#sec-model-implementation}
 
 ```{r}
 #| label: read-model-config
@@ -268,7 +374,6 @@ Prior distributions for process error $\sigma_P$, index observation error $\sigm
 #| message: false
 
 # Read model configuration data
-library(data.table)
 model_config <- fread(file.path(dir_model_runs,diag_model, "settings.csv"))
 
 # Extract values for inline use
@@ -351,54 +456,167 @@ Simple, status quo catch-based stochastic projections over a 10-year window are 
 # Results {#sec-results}
 
 ```{r}
-#| label: read-model-diagnostics
+#| label: setup-model-tables
 #| echo: false
 #| warning: false
 #| message: false
 
+# Define diagnostics table configuration
+diagnostics_config <- list(
+  columns = list(
+    "Model" = list(var = "model_label", format = "identity"),
+    "n par" = list(var = "n_par", format = "identity"),
+    "n obs" = list(var = "n_obs", format = "identity"),
+    "Max $\\hat{R}$" = list(var = "max_rhat", format = "round", digits = 3),
+    "Min ESS" = list(var = "min_neff", format = "multiply", factor = 1000, round = 0),
+    "Divergent" = list(var = "divergent", format = "multiply", factor = 1000, round = 0),
+    "Tree Depth" = list(var = "treedepth", format = "identity"),
+    "BFMI Issues" = list(var = "low_bfmi", format = "identity"),
+    "LOOIC" = list(var = "looic", format = "round", digits = 1),
+    "p LOO" = list(var = "p_loo", format = "round", digits = 1),
+    "ELPD LOO" = list(var = "elpd_loo", format = "round", digits = 1),
+    "Prop Pareto k" = list(var = "prop_pareto_k", format = "round", digits = 3)
+  ),
+  notes = c(
+    "n par: Number of parameters in the model",
+    "n obs: Number of observations used in model fitting",
+    "Max $\\hat{R}$: Maximum potential scale reduction factor across all parameters (should be < 1.01)",
+    "Min ESS: Minimum effective sample size across all parameters (should be > 500)",
+    "Divergent: Number of divergent transitions during sampling (should be 0)",
+    "Tree Depth: Whether maximum tree depth was exceeded during sampling",
+    "BFMI Issues: Whether low Bayesian Fraction of Missing Information was detected",
+    "LOOIC: Leave-one-out information criterion (lower is better)",
+    "p LOO: Effective number of parameters estimated by LOO",
+    "ELPD LOO: Expected log pointwise predictive density from LOO (higher is better)",
+    "Prop Pareto k: Proportion of Pareto k values <= 0.7 (should be high for reliable LOO estimates)"
+  )
+)
+
+# Define performance table configuration
+performance_config <- list(
+  columns = list(
+    "Model" = list(var = "model_label", format = "identity"),
+    "Index RMSE" = list(var = "median_index_rmse", format = "round", digits = 3),
+    "Catch RMSE" = list(var = "median_catch_rmse", format = "round", digits = 3),
+    "Mohn's $\\rho$" = list(var = "retro", format = "round", digits = 3),
+    "MASE" = list(var = "hcxval", format = "round", digits = 3),
+    "Coverage $D/D_{MSY}$" = list(var = "coverage_pmsy", format = "percent", digits = 1),
+    "Coverage $U/U_{MSY}$" = list(var = "coverage_fmsy", format = "percent", digits = 1)
+  ),
+  notes = c(
+    "Index RMSE: Root mean squared error for fit to standardized CPUE index (lower is better)",
+    "Catch RMSE: Root mean squared error for fit to catch data (lower is better)",
+    "Mohn's $\\rho$: Retrospective bias statistic (values close to 0 indicate low bias)",
+    "MASE: Mean Absolute Scaled Error from hindcast cross-validation (< 1 indicates model outperforms naïve predictor)",
+    "Coverage $D/D_{MSY}$: Percentage of retrospective peels where relative depletion estimates fall within full model credible intervals",
+    "Coverage $U/U_{MSY}$: Percentage of retrospective peels where relative exploitation rate estimates fall within full model credible intervals"
+  )
+)
+
 # Read summary diagnostics
-library(data.table)
 summary_diagnostics <- fread(file.path(proj_dir, "data", "output", "summary_retro0.csv"))
 
-# Extract diagnostics for both models
-baseline <- summary_diagnostics[run_number == "0001-2024cpueExPrior"]
-constrained <- summary_diagnostics[run_number == "0002-2024cpueDepPrior"]
-sigmaF <- summary_diagnostics[run_number == "0003-2024cpueFPrior"]
+# Match model config to actual run numbers in the data
+summary_diagnostics[, short_name := substr(run_number, 1, 4)]
 
-# Read stan data to get catch CV
-stan_data <- fread(file.path(proj_dir, "data", "output", "model_runs", "0001-2024cpueExPrior_0", "stan_data.csv"))
-catch_cv <- stan_data[name == "sigmac" & type == "Data"]$value
+# Preserve the original CSV order by keeping the factor levels
+original_order <- levels(model_desc_config$short_name)
+
+model_desc_config <- merge(model_desc_config, 
+                          summary_diagnostics[, .(short_name, run_number)], 
+                          by = "short_name", 
+                          all.x = TRUE)
+
+# Restore the original order from CSV
+model_desc_config[, short_name := factor(short_name, levels = original_order)]
+model_desc_config <- model_desc_config[order(short_name)]
+
+# Check for any unmatched models
+if(any(is.na(model_desc_config$run_number))) {
+  warning("Some models in config not found in data: ", 
+          paste(model_desc_config[is.na(run_number), short_name], collapse = ", "))
+}
+
+# Function to apply formatting based on configuration
+apply_formatting <- function(value, format_spec) {
+  switch(format_spec$format,
+    "identity" = value,
+    "round" = round(value, format_spec$digits),
+    "multiply" = if(!is.null(format_spec$round)) round(value * format_spec$factor, format_spec$round) else round(value * format_spec$factor),
+    "percent" = paste0(round(value * 100, format_spec$digits), "%"),
+    value  # fallback
+  )
+}
+
+# Function to create table from configuration
+create_model_table <- function(data, model_desc_config, table_config) {
+  # Filter data to only models we have configs for
+  filtered_data <- data[run_number %in% model_desc_config$run_number]
+  
+  # Add model labels using match instead of merge to avoid column issues
+  filtered_data[, model_index := match(run_number, model_desc_config$run_number)]
+  filtered_data[, short_name := model_desc_config$short_name[model_index]]
+  filtered_data[, model_label := paste0("`", as.character(short_name), "`")]
+  
+  # Ensure proper ordering by the original CSV order
+  filtered_data[, short_name := factor(as.character(short_name), levels = levels(model_desc_config$short_name))]
+  filtered_data <- filtered_data[order(short_name)]
+  
+  # Create formatted columns using a list, then convert to data.table
+  formatted_cols <- list()
+  
+  for (col_name in names(table_config$columns)) {
+    col_spec <- table_config$columns[[col_name]]
+    if (col_spec$var %in% names(filtered_data)) {
+      formatted_cols[[col_name]] <- apply_formatting(filtered_data[[col_spec$var]], col_spec)
+    }
+  }
+  
+  # Convert list to data.table
+  table_data <- as.data.table(formatted_cols)
+  
+  return(table_data)
+}
+
+# Function to generate notes section (just metric definitions)
+generate_notes <- function(table_config) {
+  paste0("- ", table_config$notes)
+}
+
+# Create model reference table - preserve CSV order
+model_reference_table <- model_desc_config[order(short_name), .(
+  Model = paste0("`", short_name, "`"),
+  Group = group,
+  Description = description
+)]
+
+# Create both tables
+diagnostics_table <- create_model_table(summary_diagnostics, model_desc_config, diagnostics_config)
+performance_table <- create_model_table(summary_diagnostics, model_desc_config, performance_config)
+
+# Generate notes
+diagnostics_notes <- generate_notes(diagnostics_config)
+performance_notes <- generate_notes(performance_config)
 ```
 
 ## Diagnostic case
 ### Model convergence and diagnostics {#sec-model-convergence}
 
-All three BSPM model variants achieved satisfactory convergence based on standard Hamiltonian Monte Carlo diagnostics (@tbl-summary). All models met convergence criteria with $\hat{R}$ values well below the 1.01 threshold and effective sample sizes exceeding the recommended minimum of 500 (100 samples per chain). No divergent transitions were observed across chains, and maximum tree depth was not exceeded during sampling, indicating successful exploration of the posterior space.
+### Model fit to data {#sec-model-fit}
 
-#### Model fit to data {#sec-model-fit}
+#### Catch data fit
 
-##### Catch data fit
+#### CPUE index fit
 
-All models fitted the observed catch time series (1952-2022) with a coefficient of variation of `r catch_cv` to account for uncertainty in catch estimates. Since fishing mortality required to generate the catch was directly estimated, model fit to the catch was good (@fig-pred-catch). The models consistently predicted lower than observed catch for the large catch event in 1954.
+### Model validation {#sec-model-validation}
 
-##### CPUE index fit
-
-Model fit to the standardized CPUE index (1988-2022) was evaluated using normalized root-mean-squared error (NRMSE). All three models provided reasonable fits to the observed index given the high variability and observation error (@tbl-summary). The `0003-2024cpueFPrior` model showed marginally improved fit with lower RMSE values. All models successfully captured the general declining trend in standardized CPUE from 1988-2022. However, the estimated combination of observation and process error meant models were not tightly constrained to individual observations, resulting in persistent negative residuals in the last decade (@fig-idx-residuals). Posterior predictive checks confirmed that models replicated key features of the observed CPUE data (@fig-idx-fit).
-
-#### Model validation {#sec-model-validation}
-
-Overall retrospective bias was very low and close to zero for all models (@tbl-summary; @fig-retro), indicating lack of persistent bias in terminal estimates as successive years of index data were removed. Estimates of relative exploitation rate ($U/U_{MSY}$​) and relative depletion ($D/D_{MSY}$​) fell within the credible intervals of the full model run 100% of the time (@tbl-summary). For hindcast cross-validation, all models exceeded the performance of the naïve predictor, with the `0003-2024cpueFPrior` model showing the best performance (@tbl-summary; @fig-hcxval). This provides support that models successfully identified and estimated a production function for the stock.
-
-### Population dynamics and stock status {#sec-stock-status}
+### Parameter estimates {#sec-parameter-estimates}
 
 ```{r}
 #| label: read-prior-data
 #| echo: false
 #| warning: false
 #| message: false
-
-# Read and process new Stan data to extract prior values
-library(data.table)
 
 # Read the new CSV file - update path as needed
 stan_data_new <- fread(file.path(dir_model_runs,diag_model,"stan_data.csv"))
@@ -460,75 +678,19 @@ sigma_qdev_median <- round(exp(mv_params[param == "log_sigma_qdev", log_mean]), 
 sigmap_median <- round(exp(prior_mean_logsigmap), 4)
 ```
 
-```{r}
-#| label: calculate-parameter-credible-intervals
-#| echo: false
-#| warning: false
-#| message: false
+## One-off sensitivities {#sec-res-sens}
 
-# Load required libraries
-library(data.table)
-
-# Read HMC samples for both models
-hmc_baseline <- fread(file.path(proj_dir, "data", "output", "model_runs", "0001-2024cpueExPrior_0", "hmc_samples.csv"))
-hmc_constrained <- fread(file.path(proj_dir, "data", "output", "model_runs", "0002-2024cpueDepPrior_0", "hmc_samples.csv"))
-hmc_sigmaF <- fread(file.path(proj_dir, "data", "output", "model_runs", "0003-2024cpueFPrior_0", "hmc_samples.csv"))
-
-# Function to calculate summary statistics for parameters
-calculate_parameter_summary <- function(hmc_data, param_name) {
-  param_values <- hmc_data[variable == param_name]$value
-  list(
-    median = median(param_values, na.rm = TRUE),
-    lower = quantile(param_values, 0.025, na.rm = TRUE),
-    upper = quantile(param_values, 0.975, na.rm = TRUE)
-  )
-}
-
-# Define all parameters from the CSV snippet (reordered)
-all_parameters <- c("logK", "r", "sigmap", "shape", "sigmaf", "sigmao_add", "sigmao_sc", "x[37]")
-
-# Calculate statistics for baseline model
-baseline_estimates <- lapply(all_parameters, function(p) {
-  calculate_parameter_summary(hmc_baseline, p)
-})
-names(baseline_estimates) <- all_parameters
-
-# Calculate statistics for constrained model  
-constrained_estimates <- lapply(all_parameters, function(p) {
-  calculate_parameter_summary(hmc_constrained, p)
-})
-names(constrained_estimates) <- all_parameters
-
-# Calculate statistics for sigmaF model  
-sigmaF_estimates <- lapply(all_parameters, function(p) {
-  calculate_parameter_summary(hmc_sigmaF, p)
-})
-names(sigmaF_estimates) <- all_parameters
-
-# Formatting functions
-format_estimate <- function(stats, digits = 2) {
-  sprintf(paste0("%.", digits, "f (%.", digits, "f-%.", digits, "f)"), 
-          stats$median, stats$lower, stats$upper)
-}
-
-format_rmax <- function(stats) {
-  sprintf("%.2f (%.2f-%.2f)", stats$median, stats$lower, stats$upper)
-}
-
-format_logK <- function(stats) {
-  sprintf("%.1f (%.1f-%.1f)", stats$median, stats$lower, stats$upper)
-}
-```
-
-In all models, most leading parameters (*log(K)*, $R_{Max}$, $\sigma_P$, $n$, $\sigma_F$, and $\sigma_{O,add}$) showed posterior updates from their respective prior distributions (@fig-prior-post), indicating sufficient information in the data to inform parameter estimates. The shape parameter $n$ showed little deviation from the Schaefer-model prior. All models estimated similar levels of $\sigma_P$ and additional observation error $\sigma_{O,add}$ (@tbl-param-hmc), which is unsurprising given they fitted the same catch and standardized index. Although estimates of $\sigma_P$ were elevated from the prior, models primarily reconciled index variability by estimating substantial additional observation error $\sigma_{O,add}$, resulting in approximately a 3:1 ratio of total observation error $\sigma_O$ to process error $\sigma_P$. Similar to findings in @isc_stock_2024, there was a trade-off between *log(K)* and $\sigma_F$ where higher population scale was associated with lower fishing mortality and vice versa.
-
-All models showed substantial posterior updates for the $R_{Max}$ parameter, estimating productivity on the lower end of the biological prior. These median estimates of $R_{Max}$, between 0.2-0.3 (@tbl-param-hmc), are consistent with estimates for an analogous species in the Atlantic Ocean, white marlin (*Kajikia albida*). The most recent ICCAT assessment [@iccat_report_2020], implemented using JABBA [@winker_jabba_2018], estimated $R_{Max}$ at 0.163 (95% credible interval: 0.122-0.215), which falls within the posterior estimates of all three models (@tbl-param-hmc). Notably, the Atlantic white marlin JABBA model showed remarkable consistency with stock status and trend estimates from a fully integrated, length-structured model implemented in Stock Synthesis [@iccat_report_2020]. In the current analysis, the `0003-2024cpueFPrior` model estimated lower productivity $R_{Max}$ with reduced uncertainty (@tbl-param-hmc), consistent with assuming a more depleted stock. Inverse transform sampling to match the $R_{Max}$ posterior distribution from this model reveals that lower productivity is characterized by pronounced shifts toward lower steepness values $h$ and, to a lesser extent, smaller von Bertalanffy $k$ values (@fig-rmax-subsample-bio).
-
-The estimated population depletion time series shows a decline from the assumed unfished state in 1952 to minimum levels around the early 1990s (@fig-timeseries). All three models estimated similar depletion trajectories, with differences primarily related to estimated population scale. The `0003-2024cpueFPrior` model estimated slightly lower depletion levels throughout the time series compared to the other models. From the minimum depletion period, all models estimated gradual recovery through the 2000s and 2010s, with populations stabilizing at moderate depletion levels in recent years. Credible intervals around depletion estimates are relatively wide, particularly in the early period when no abundance index data were available to inform the model, reflecting inherent uncertainty in reconstructing historical population dynamics. The estimated population time series mirrors these depletion patterns. The `0001-2024cpueExPrior` model estimated the highest population scale throughout the time series, while the `0002-2024cpueDepPrior` and `0003-2024cpueFPrior` models estimated lower population levels. While uncertainty in absolute population size is substantial, as reflected in wide credible intervals, relative trends are more precisely estimated.
-
-Process error estimates (@fig-timeseries) showed consistent temporal variability across models, with the largest deviations occurring during periods of rapid population change in the 1970s and 1980s. This indicates that removals alone could not explain the observed changes in the standardized index. The estimated process error variability $\sigma_P$ (@tbl-param-hmc), while similar across all models, was lowest for the `0003-2024cpueFPrior` model, indicating greater internal consistency in the model dynamics.
-
-## One-off sensitivities {#sec-one-off}
+### Index {#sec-res-sens-index}
+### Catch observation error $\sigma_C$ {#sec-res-sens-sigmac}
+### Early data {#sec-res-sens-early}
+### Scaling priors {#sec-res-sens-scaling}
+### Catch observation model {#sec-res-sens-catch-obs}
+### Temporal resolution of catchability deviates {#sec-res-sens-qdev}
+### Catch reporting {#sec-res-sens-catch-reporting}
+### Process error $\sigma_P$ {#sec-res-sens-process}
+### Start year {#sec-res-sens-start}
+### Inclusion of effort deviates {#sec-res-sens-effort}
+### Direct estimation of fishing mortality {#sec-res-sens-direct-f}
 
 ## Model ensemble
 
@@ -536,13 +698,7 @@ Process error estimates (@fig-timeseries) showed consistent temporal variability
 
 ### Biological reference points {#sec-reference-points}
 
-MSY-based reference points were derived from the Fletcher-Schaefer production function for all three BSPM variants. The relative stock status time series (@fig-timeseries) shows consistent trends across all models, albeit at different relative levels. Median estimates of the $D/D_{MSY}$ ratio indicate the stock was above the MSY reference level for the entire model period. Only the `0003-2024cpueFPrior` model indicates risk of falling below the MSY-based reference point in recent years. Similarly, median estimates of the $F/F_{MSY}$ ratio were consistently below the overfishing reference point, with episodic periods of overfishing risk indicated by the `0003-2024cpueFPrior` model. However, recent trends indicate declining overfishing risk, consistent with estimated stock recovery.
-
 ### Future projections {#sec-projections}
-
-Ten-year stochastic projections (2023-2032) were conducted for all three BSPM variants under a status quo catch scenario, with projected removals set to the average catch over 2018-2022 (@fig-projections). Under status quo catch levels, all models projected continued population recovery through 2032. Depletion trajectories show gradual increases from current levels, with the `0001-2024cpueExPrior` model projecting the most optimistic recovery due to higher estimated population scale. The `0002-2024cpueDepPrior` and `0003-2024cpueFPrior` models showed more modest but consistent increases in depletion over the projection period.
-
-Relative to MSY-based reference points, projections indicate the stock will likely remain above $D_{MSY}$ throughout the projection period for the baseline and depletion-constrained models. The `0003-2024cpueFPrior` model showed greater variability and some risk of declining below $D_{MSY}$ in the near term, though the median trajectory suggests stabilization above the reference point by the end of the projection period. Projected fishing mortality rates remained well below $F_{MSY}$ for all models under the status quo catch scenario, indicating that current harvest levels are likely sustainable and consistent with continued stock recovery. Projection uncertainty increased over time, reflecting both parameter uncertainty and stochastic variability in future population dynamics.
 
 # Discussion {#sec-discussion}
 
@@ -576,7 +732,7 @@ While simplified models offer advantages when data conflicts exist, over-simplif
 
 # Acknowledgements {#sec-acknowledgements}
 
-The authors appreciate feedback received on earlier versions of this analysis, and are thankful to the following for their insights and thoughtful discussion which greatly improved the assessment: K. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), M. Nadon (PIFSC), and F. Carvalho (PIFSC).
+The authors appreciate feedback received on earlier versions of this analysis, and are thankful to the following for their insights and thoughtful discussion which greatly improved the assessment: K. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), and M. Nadon (PIFSC).
 
 # Declaration of generative AI use {#sec-ai-declaration}
 
@@ -626,18 +782,18 @@ Table: Biological parameter distributions and sources used in simulation framewo
 
 ::: {.landscape}
 
-Table: Prior distributions for effort-based Bayesian surplus production model leading parameters. {#tbl-priors}
+Table: Prior distributions for diagnostic model leading parameters. {#tbl-priors}
 
 | Parameter | Distribution | Mean | SD | Description | Key Correlations |
 |-----------|-------------|------|----|-----------|-----------------| 
 | **Core Population Parameters** | | | | | |
-| $K$ | Lognormal | $\log(`r format(K_median, big.mark = ",")`)$ | `r round(mv_params[param == "logK", log_sd], 2)` | Carrying capacity (N) | $\rho(K,R_{Max})$ = `r corr_logK_log_r`; $\rho(K,q_{eff})$ = `r corr_logK_log_qeff` |
-| $R_{Max}$ | Lognormal | $\log(`r r_median`)$ | `r round(mv_params[param == "log_r", log_sd], 2)` | Maximum intrinsic rate of increase | $\rho(R_{Max},n)$ = `r corr_log_r_log_shape` |
-| $n$ | Lognormal | $\log(`r shape_median`)$ | `r round(mv_params[param == "log_shape", log_sd], 2)` | Pella-Tomlinson shape parameter | |
-| $x_0$ | Lognormal | $\log(`r x0_median`)$ | `r round(mv_params[param == "log_x0", log_sd], 3)` | Initial depletion | (Independent) |
-| $q_{eff}$ | Lognormal | $\log(`r qeff_median`)$ | `r round(mv_params[param == "log_qeff", log_sd], 2)` | Effort catchability coefficient | $\rho(q_{eff},\sigma_{qdev})$ = `r corr_log_qeff_log_sigma_qdev`; $\rho(q_{eff},\rho)$ = `r corr_log_qeff_atanh_rho` |
-| $\rho$ | Transformed Normal | $\tanh^{-1}(`r rho_median`)$ | `r round(mv_params[param == "atanh_rho", log_sd], 2)` | Autocorrelation in catchability deviations | $\rho(\rho,\sigma_{qdev})$ = `r corr_atanh_rho_log_sigma_qdev` |
-| $\sigma_{qdev}$ | Lognormal | $\log(`r sigma_qdev_median`)$ | `r round(mv_params[param == "log_sigma_qdev", log_sd], 2)` | Catchability variability standard deviation | |
+| $K$ | MV Lognormal | $\log(`r format(K_median, big.mark = ",")`)$ | `r round(mv_params[param == "logK", log_sd], 2)` | Carrying capacity (N) | $\rho(K,R_{Max})$ = `r corr_logK_log_r`; $\rho(K,q_{eff})$ = `r corr_logK_log_qeff` |
+| $R_{Max}$ | MV Lognormal | $\log(`r r_median`)$ | `r round(mv_params[param == "log_r", log_sd], 2)` | Maximum intrinsic rate of increase | $\rho(R_{Max},n)$ = `r corr_log_r_log_shape` |
+| $n$ | MV Lognormal | $\log(`r shape_median`)$ | `r round(mv_params[param == "log_shape", log_sd], 2)` | Pella-Tomlinson shape parameter | |
+| $x_0$ | MV Lognormal | $\log(`r x0_median`)$ | `r round(mv_params[param == "log_x0", log_sd], 3)` | Initial depletion | (Independent) |
+| $q_{eff}$ MV | Lognormal | $\log(`r qeff_median`)$ | `r round(mv_params[param == "log_qeff", log_sd], 2)` | Effort catchability coefficient | $\rho(q_{eff},\sigma_{qdev})$ = `r corr_log_qeff_log_sigma_qdev`; $\rho(q_{eff},\rho)$ = `r corr_log_qeff_atanh_rho` |
+| $\rho$ | MV Transformed Normal | $\tanh^{-1}(`r rho_median`)$ | `r round(mv_params[param == "atanh_rho", log_sd], 2)` | Autocorrelation in catchability deviations | $\rho(\rho,\sigma_{qdev})$ = `r corr_atanh_rho_log_sigma_qdev` |
+| $\sigma_{qdev}$ | MV Lognormal | $\log(`r sigma_qdev_median`)$ | `r round(mv_params[param == "log_sigma_qdev", log_sd], 2)` | Catchability variability standard deviation | |
 | | | | | | |
 | **Process and Observation Error** | | | | | |
 | $\sigma_P$ | Lognormal | $\log(`r sigmap_median`)$ | `r round(prior_sd_logsigmap, 2)` | Process error standard deviation | (Independent) |
@@ -646,42 +802,9 @@ Table: Prior distributions for effort-based Bayesian surplus production model le
 | **Catch Likelihood** | | | | | |
 | $\nu_{catch}$ | Gamma | Shape = `r nu_catch_shape` | Rate = `r nu_catch_rate` | Student-t degrees of freedom for catch | (Independent) |
 
-:::
-
-\newpage
-
-```{=html}
-<br>
-```
-
-::: {.landscape}
-
-Table: Model summary {#tbl-summary}
-
-| Model | Max $\hat{R}$ | Min ESS | Divergent | Tree Depth | BFMI Issues | Index RMSE | Mohn's $\rho$ | MASE | Coverage $D/D_{MSY}$ | Coverage $U/U_{MSY}$ |
-|-------|---------------|---------|-----------|------------|-------------|-------------|---------------|------|--------------------|-------------------|
-| `0001` | `r round(baseline$max_rhat, 3)` | `r round(baseline$min_neff*1000)` | `r baseline$divergent` | `r baseline$treedepth` | `r baseline$low_bfmi` | `r round(baseline$median_rmse, 3)` | `r round(baseline$retro, 3)` | `r round(baseline$hcxval, 3)` | `r round(baseline$coverage_pmsy*100, 1)`% | `r round(baseline$coverage_fmsy*100, 1)`% |
-| `0002` | `r round(constrained$max_rhat, 3)` | `r round(constrained$min_neff*1000)` | `r constrained$divergent` | `r constrained$treedepth` | `r constrained$low_bfmi` | `r round(constrained$median_rmse, 3)` | `r round(constrained$retro, 3)` | `r round(constrained$hcxval, 3)` | `r round(constrained$coverage_pmsy*100, 1)`% | `r round(constrained$coverage_fmsy*100, 1)`% |
-| `0003` | `r round(sigmaF$max_rhat, 3)` | `r round(sigmaF$min_neff*1000)` | `r sigmaF$divergent` | `r sigmaF$treedepth` | `r sigmaF$low_bfmi` | `r round(sigmaF$median_rmse, 3)` | `r round(sigmaF$retro, 3)` | `r round(sigmaF$hcxval, 3)` | `r round(sigmaF$coverage_pmsy*100, 1)`% | `r round(sigmaF$coverage_fmsy*100, 1)`% |
-
 **Notes:** 
 
-`0001` corresponds to the `0001-2024cpueExPrior` model
-
-`0002` corresponds to the `0002-2024cpueDepPrior` model
-
-`0003` corresponds to the `0003-2024cpueFPrior` model
-
-- Max $\hat{R}$: Maximum potential scale reduction factor across all parameters (should be < 1.01)
-- Min ESS: Minimum effective sample size across all parameters (should be > 500)
-- Divergent: Number of divergent transitions during sampling (should be 0)
-- Tree Depth: Whether maximum tree depth was exceeded during sampling
-- BFMI Issues: Whether low Bayesian Fraction of Missing Information was detected
-- Index RMSE: Root mean squared error for fit to standardized CPUE index
-- Mohn's $\rho$: Retrospective bias statistic (values close to 0 indicate low bias)
-- MASE: Mean Absolute Scaled Error from hindcast cross-validation (< 1 indicates model outperforms naïve predictor)
-- Coverage $D/D_{MSY}$: Percentage of retrospective peels where relative depletion estimates fall within full model credible intervals
-- Coverage $U/U_{MSY}$: Percentage of retrospective peels where relative exploitation rate estimates fall within full model credible intervals
+Distributions with *MV* indicate that the parameter is part of the 7-dimensional multivariate prior.
 
 :::
 
@@ -691,34 +814,63 @@ Table: Model summary {#tbl-summary}
 <br>
 ```
 
+```{r}
+#| label: tbl-model-reference
+#| tbl-cap: "Model descriptions"
+#| echo: false
+
+knitr::kable(model_reference_table, format = "markdown")
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
 ::: {.landscape}
 
-Table: Posterior estimates with 95% credible intervals for all BSPM parameters {#tbl-param-hmc}
+```{r}
+#| label: tbl-diagnostics
+#| tbl-cap: "Model diagnostics and fit statistics"
+#| echo: false
 
-| Model | *log(K)*   | $R_{Max}$ | $\sigma_P$ | *Shape ($n$)* | $\sigma_F$ | $\sigma_{O,add}$ | $\sigma_{O}$ | $x_{1988}$ |
-|-------|------------|---------------|----------------|-----------------|----------------|---------------------|-------------------|-------------------|
-| `0001` | `r format_logK(baseline_estimates$logK)` | `r format_rmax(baseline_estimates$r)` | `r format_estimate(baseline_estimates$sigmap)` | `r format_estimate(baseline_estimates$shape)` | `r format_estimate(baseline_estimates$sigmaf)` | `r format_estimate(baseline_estimates$sigmao_add)` | `r format_estimate(baseline_estimates$sigmao_sc)` | `r format_estimate(baseline_estimates[["x[37]"]])` |
-| `0002` | `r format_logK(constrained_estimates$logK)` | `r format_rmax(constrained_estimates$r)` | `r format_estimate(constrained_estimates$sigmap)` | `r format_estimate(constrained_estimates$shape)` | `r format_estimate(constrained_estimates$sigmaf)` | `r format_estimate(constrained_estimates$sigmao_add)` | `r format_estimate(constrained_estimates$sigmao_sc)` | `r format_estimate(constrained_estimates[["x[37]"]])` |
-| `0003` | `r format_logK(sigmaF_estimates$logK)` | `r format_rmax(sigmaF_estimates$r)` | `r format_estimate(sigmaF_estimates$sigmap)` | `r format_estimate(sigmaF_estimates$shape)` | `r format_estimate(sigmaF_estimates$sigmaf)` | `r format_estimate(sigmaF_estimates$sigmao_add)` | `r format_estimate(sigmaF_estimates$sigmao_sc)` | `r format_estimate(sigmaF_estimates[["x[37]"]])` |
+knitr::kable(diagnostics_table, format = "markdown")
+```
 
-**Parameter Definitions:**
+**Notes:**
 
-`0001` corresponds to the `0001-2024cpueExPrior` model
+```{r}
+#| echo: false
+#| results: asis
 
-`0002` corresponds to the `0002-2024cpueDepPrior` model
-
-`0003` corresponds to the `0003-2024cpueFPrior` model
-
-- *log(K)*: Natural logarithm of carrying capacity (total numbers)
-- $R_{Max}$: Maximum intrinsic rate of population increase (per year)  
-- $\sigma_P$: Process error standard deviation
-- *Shape ($n$)*: Pella-Tomlinson production function shape parameter
-- $\sigma_F$: Fishing mortality variability standard deviation
-- $\sigma_{O,add}$: Extra estimated observation error component
-- $\sigma_{O}$: Total observation error (input + additional)
-- $x_{1988}$: Population depletion in 1988 (year 37 of model period)
+cat(paste(diagnostics_notes, collapse = "\n\n"))
+```
 
 :::
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: tbl-performance
+#| tbl-cap: "Model performance and validation statistics"
+#| echo: false
+
+knitr::kable(performance_table, format = "markdown")
+```
+
+**Notes:**
+
+```{r}
+#| echo: false
+#| results: asis
+
+cat(paste(performance_notes, collapse = "\n\n"))
+```
 
 \newpage
 
@@ -734,10 +886,6 @@ Table: Posterior estimates with 95% credible intervals for all BSPM parameters {
 #| warning: false
 #| message: false
 #| fig-cap: "Annual catch (numbers; individuals) of striped marlin and nominal longline effort (hooks fished; thousands) in the Southwest Pacific Ocean (1952-2022)."
-
-library(data.table)
-library(ggplot2)
-library(magrittr)
 
 # Read catch data
 catch_dt = fread(file.path(proj_dir, "data", "input", "catch.csv"))
@@ -926,20 +1074,14 @@ ggplot(plot_dt, aes(x = year, y = obs)) +
     )
 ```
 
-\newpage
-
-```{=html}
-<br>
-```
-
 ```{r}
 #| label: fig-pushforward
 #| echo: false
-#| fig-cap: "Prior pushforward check showing simulated population depletion trajectories under different filtering scenarios. Lines represent population trajectories colored by maximum intrinsic rate of increase ($R_{Max}$). Panels show progressively stricter filtering criteria from left to right."
+#| fig-cap: "Prior pushforward check showing simulated removals and population depletion trajectories under different filtering scenarios (median: colored lines) with 95% quantile of trajectories (shaded polygon)."
 #| out-width: "100%"
 #| fig-pos: "H"
 
-knitr::include_graphics(file.path(proj_dir, "plots", "pushforward", "prior_push.sim_dep.png"))
+knitr::include_graphics(file.path(proj_dir, "plots", "pushforward", "bspm_estqsimple_softdep_mvprior_x0_newlogK","pushforward.ts.png"))
 ```
 
 \newpage
@@ -949,242 +1091,19 @@ knitr::include_graphics(file.path(proj_dir, "plots", "pushforward", "prior_push.
 ```
 
 ```{r}
-#| label: fig-rmax-prior
+#| label: fig-pushforward-pairs
 #| echo: false
-#| fig-cap: "Prior distributions for maximum intrinsic rate of population increase ($R_{Max}$). Upper panel shows baseline filtered values (gray histogram) with fitted lognormal distribution (red line). Middle panel shows extreme filtered values with fitted distribution (dotted red line). Lower panel compares original simulation values (gray), viable populations (blue), and final lognormal priors (red)."
+#| fig-cap: "Prior pushforward diagnostic pairs plot showing parameter correlations and marginal distributions for different filtering scenarios. The plot compares initial priors (blue), catch-filtered priors (cyan), cpue-filtered priors (lime green), and the final updated priors following fitting to the cpue-filtered distribution (orange) across key model parameters (logK, r, shape, x0, log_qeff, atan_rho, sigma_qdev). Diagonal panels show marginal density distributions with overlaid curves for each filtering scenario. Off-diagonal scatter plots display pairwise parameter relationships colored by filtering type. Correlation coefficients in the upper triangle quantify linear relationships between adjacent distributions, with statistical significance indicated by asterisks."
 #| out-width: "100%"
 #| fig-pos: "H"
 
-knitr::include_graphics(file.path(proj_dir, "plots", "pushforward", "prior.rmax.png"))
+knitr::include_graphics(file.path(proj_dir, "plots", "pushforward", "bspm_estqsimple_softdep_mvprior_x0_newlogK","pairs.leading.updated_prior.png"))
 ```
 
 \newpage
 
 ```{=html}
 <br>
-```
-
-```{r}
-#| label: fig-gedamke
-#| echo: false
-#| fig-cap: "Observed versus predicted mean weights from New Zealand recreational fishery data. Points show observed mean weights with error bars, colored lines show model predictions from the transitional mean weight model colored by relative spawning stock biomass (SSB) depletion."
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots", "depletion", "mean_weight_comparison.png"))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-dep-prior
-#| echo: false
-#| fig-cap: "Prior distribution for relative depletion in 1988 derived from New Zealand recreational weight data. Light blue histogram shows depletion estimates from biological parameter combinations that successfully fit the transitional mean weight model. Blue dashed line shows kernel density estimate, red line shows fitted lognormal distribution used as prior in the depletion-constrained BSPM."
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots", "depletion", "prior_rel_dep_ssb.png"))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-```{r}
-#| label: fig-sigmaF-pushforward
-#| echo: false
-#| fig-cap: 'Prior pushforward check for population depletion trajectories under different filtering scenarios. Each line represents a simulated population trajectory colored by fishing mortality variability ($\sigma_F$).'
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(c(
-  file.path(proj_dir, "plots", "pushforward", "prior_push.sim_n.sigmaF.png")
-))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-sigmaF-removals
-#| echo: false
-#| fig-cap: 'Simulated removals from the fishing mortality variability ($\sigma_F$) prior pushforward analysis. Solid blue line indicates the median simulated removals with $95^{th}$ percentile (shaded region). Observed removals are shown by the solid black line.'
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(c(
-  file.path(proj_dir, "plots", "pushforward", "prior_push.removals.sigmaF.png")
-))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-sigmaF-prior
-#| echo: false
-#| fig-cap: 'Prior distributions for fishing mortality variability ($\sigma_F$) under different filtering scenarios. Top three panels show progressively stricter filtering (baseline, extreme, catch-based) with fitted distributions (red lines). Bottom panel compares all distributions: original simulation (gray), viable populations (blue), final priors (red), and prior used in models `0001` and `0002` (green).'
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(c(
-  file.path(proj_dir, "plots", "pushforward", "prior.sigmaF.w_sigmaF.png")
-))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-pred-catch
-#| echo: false
-#| fig-cap: "Time series of observed catch (black dots with uncertainty bounds) and model-predicted catch for three Bayesian surplus production models fitted to SWPO striped marlin data from 1950-2022. The left panel shows model `0001-2024cpueExPrior` (baseline model with expert priors), the central panel shows model `0002-2024cpueDepPrior` (depletion-constrained model incorporating 1988 depletion prior from New Zealand recreational weight data), the right panel shows model `0003-2024cpueFPrior` which assumes a less restrictive prior on fishing mortality variability. Colored lines represent posterior median predictions with shaded uncertainty bands showing 95% credible intervals."
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots", "predicted_catch.png"))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-idx-residuals
-#| echo: false
-#| fig-cap: "Probability-integral transform (PIT) style residuals from each model (colored points) fit to the standardized index."
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots","model_comparison","comparisons", "comparison_index_fit_residuals.png"))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-```{r}
-#| label: fig-idx-fit
-#| echo: false
-#| fig-cap: "Standardized index (black points), observation error (black bars), and posterior predicted model fits (colored lines) with associated 95% credible interval (colored shading)."
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots", "model_comparison", "comparisons", "comparison_index_fit_ppd.png"))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-retro
-#| echo: false
-#| fig-cap: "Retrospective analysis for all models with respect to time series of depletion $D_t$, depletion relative to depletion at MSY $D_t/D_{MSY}$, exploitation rate $U_t$, and exploitation rate relative to the rate of exploitation that produces MSY $U_t/U_{MSY}$. The base model with data included through 2022 (black line – median; dark shading – 50% credible interval; light shading – 95% credible interval) is shown relative to the retrospective models. Colored lines correspond to the last year of index data and the colored point indicates the estimate in the last year of the retrospective peel."
-#| out-width: "90%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots","retro_analysis.png"))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-hcxval
-#| echo: false
-#| fig-cap: "Standardized indices of relative abundance used in the Bayesian Surplus Production Model. Open circles show observed values (standardized to mean of 1; black horizontal line) and the vertical bars indicate the observation error (95% confidence interval). One year ahead 'model-free' hindcast predictions are shown by the colored lines, where the color indicates the last year of index data seen by the model. The predicted value is shown one year-ahead with the colored point."
-#| out-height: "90%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots","hcxval_analysis.png"))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-prior-post
-#| echo: false
-#| fig-cap: 'Posterior parameter distributions (solid lines) for leading parameters (*log(K)*, $R_{Max}$, $\sigma_P$, shape ($n$), $\sigma_F$, $\sigma_{O,add}$, and $\sigma_{O,sc}$), relative to their assumed prior distributions (dotted lines) for all models.'
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots","model_comparison","comparisons", "comparison_prior_posterior_params.png"))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-rmax-subsample-bio
-#| echo: false
-#| fig-cap: "Distributions of biological parameters (maximum age *max_age*, natural mortality reference *M_ref*, length at birth *L1*, asymptotic length *L2*, von Bertalanffy growth coefficient *vbk*, length at 50% maturity *l50*, sex ratio at birth *sex_ratio*, coefficient of variation in length *cv_len*, weight-length relationship parameters *weight_a* and *weight_b*, and steepness *h*) used in the rmax sub-sampling process. Original biological prior distribution (orange shading), distribution based on extreme filtering criteria following the prior pushforward analysis (green shading), and final sub-sampled distribution selected to match the posterior $R_{Max}$ distribution (blue shading)."
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots", "rmax_subsampling_biological_parameters.png"))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-timeseries
-#| echo: false
-#| fig-cap: 'Posterior time series estimates (1952-2022) for key population metrics across all three BSPM models. Solid lines show median estimates with 95% credible intervals (shading). Metrics include depletion (D), population (P), relative depletion ($D/D_{MSY}$), relative fishing mortality ($F/F_{MSY}$), removals, and process error.'
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots","model_comparison","comparisons", "comparison_prior_posterior_timeseries.png"))
-```
-
-\newpage
-
-```{=html}
-<br>
-```
-
-```{r}
-#| label: fig-projections
-#| echo: false
-#| fig-cap: 'Ten-year stochastic projections (2023-2032) under status quo catch scenario. Colored lines show median projections with 95% credible intervals for all three models. Projections assume average 2018-2022 catch levels with resampled process error. Black vertical line indicates start of projection period. Metrics include depletion (D), population (P), relative depletion ($D/D_{MSY}$), relative fishing mortality ($F/F_{MSY}$), removals, and process error.'
-#| out-width: "100%"
-#| fig-pos: "H"
-
-knitr::include_graphics(file.path(proj_dir, "plots","model_comparison","comparisons", "comparison_forecasts.png"))
-
 ```
 
 # Technical Annex {#sec-tech-annex}
@@ -1236,4 +1155,4 @@ $$\phi_0 = \sum_{a=1}^{A_{Max}} l_a f_a$$
 
 This $\alpha$ parameter links the intrinsic rate of increase to recruitment compensation, ensuring that $R_{Max}$ estimates reflect realistic population productivity under the assumed stock-recruitment dynamics.
 
-Successful simulations (those yielding $R_{Max} > 0$ and $R_{Max} < 1.5$) were filtered to create a plausible prior distribution (@fig-pushforward). The resulting distribution was fitted to a lognormal prior for use in the BSPM (@fig-rmax-prior).
+Successful simulations (those yielding $R_{Max} > 0$ and $R_{Max} < 1.5$) were filtered to create a plausible prior distribution. The resulting distribution was fitted to a lognormal prior for use in the BSPM.

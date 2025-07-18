@@ -24,7 +24,7 @@
     dir_helper_fns = file.path(proj_dir,"code","R","helper-fns")
     dir_plot_fns = file.path(proj_dir,"code","R","plot-fns")
     dir_model_runs = file.path(proj_dir,"data","output","model_runs")
-    dir_plots = file.path(proj_dir,"plots","sens-0006-index-v2")
+    dir_plots = file.path(proj_dir,"plots","model-0100")
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # source helper functions
@@ -40,20 +40,16 @@
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # configure global settings
-    set_global_config(
-        year_one = 1952,
-        index_names = c("dwfn","au", "nz","obs"),
-        model_stem = dir_model_runs,
-        height_per_panel = 350
-    )
+  set_global_config(
+    index_names = c("dwfn","au","nz","obs","obsNoPF","obsPFonly"), 
+    model_stem = dir_model_runs,
+    height_per_panel = 350
+  )
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # define model directories
     model_list = c(
-        "0029-dwfn-c0.2-e0.3-s5_0",
-        "0007-au-c0.2-e0.3-s5_0",
-        "0008-nz-c0.2-e0.3-s5_0",
-        "0009-obs-c0.2-e0.3-s5_0"
+        "0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0"
     )
     
     model_dirs = file.path(dir_model_runs, model_list)
@@ -69,7 +65,7 @@
     custom_params = get_default_params()
     
     # HMC diagnostics
-    custom_params$hmc$leading_params = c("logK", "r", "sigmao_add", "sigmap", "shape", "sigmaf","qeff","rho","sigma_qdev")  # Any combination
+    custom_params$hmc$leading_params = c("logK","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","x0","nu_catch")  # Any combination
     custom_params$hmc$raw = FALSE  # TRUE (transformed) | FALSE (raw)
     custom_params$hmc$diag = "Divergences"  # "None" | "Divergences" | "Max. treedepth"
     custom_params$hmc$eps = FALSE  # TRUE | FALSE
@@ -93,21 +89,24 @@
     custom_params$fits$resid = "PIT"  # "Ordinary" | "Standardized" | "PIT"
     custom_params$fits$ncol = 2
     custom_params$fits$resid_ncol = 1
+    custom_params$fits$model_names = c("Diagnostic")
 
     # Prior-posterior parameters
-    custom_params$ppp$leading_params = c("logK", "r", "sigmao_add", "sigmap", "shape", "sigmaf","qeff","rho","sigma_qdev")  # Any combination
+    custom_params$ppp$leading_params = c("logK","r","sigmao_add","sigmap","shape","qeff","rho","sigma_qdev","x0","nu_catch")  # Any combination
     custom_params$ppp$raw = TRUE  # TRUE (transformed) | FALSE (raw)
     custom_params$ppp$show = "Both"  # "Prior" | "Posterior" | "Both"
     custom_params$ppp$combine = FALSE  # TRUE | FALSE
     custom_params$ppp$ncol = 3
+    custom_params$ppp$model_names = c("Diagnostic")
 
     # Time series
-    custom_params$ppts$var = c("Depletion (D)", "Population (P)", "D_Dmsy", "F_Fmsy", "Removals", "Process error","Nominal CPUE","Effort deviate","Catchability deviate")  # Any combination
+    custom_params$ppts$var = c("Depletion (D)", "Population (P)", "D_Dmsy", "F_Fmsy", "Removals", "Process error","Nominal CPUE","Catchability deviate")  # Any combination
     custom_params$ppts$show = "Posterior"  # "Prior" | "Posterior" | "Both"
     custom_params$ppts$combine = FALSE  # TRUE | FALSE
     custom_params$ppts$prop = 0.25  # 0.01 to 1.00 (increments of 0.05)
     custom_params$ppts$quants = 95  # 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100
     custom_params$ppts$ncol = 3
+    custom_params$ppts$model_names = c("Diagnostic")
 
     # Kobe & Majuro
     custom_params$kbmj$show = "Posterior"  # "Prior" | "Posterior" | "Both"
@@ -116,6 +115,7 @@
     custom_params$kbmj$uncertainty = TRUE  # TRUE | FALSE
     custom_params$kbmj$quants = 95  # 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 99
     custom_params$kbmj$resolution = 300  # 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475, 500
+    custom_params$kbmj$model_names = c("Diagnostic")
 
     # Forecasts
     custom_params$forecasts$var = c("Depletion (D)","Population (P)", "D_Dmsy", "F_Fmsy", "Removals", "Process error")  # Any combination
@@ -128,6 +128,8 @@
     custom_params$forecasts$avg_year = 5  # 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
     custom_params$forecasts$scalar = 1.0  # 0.01 to 5.0 (increments of 0.1)
     custom_params$forecasts$ncol = 3
+    custom_params$forecasts$model_names = c("Diagnostic")
+
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # generate all plots with batch processing
@@ -148,7 +150,7 @@
         dpi = 300,
         parallel = TRUE,
         n_cores = 1,
-        comparison_only = TRUE
+        comparison_only = FALSE
     )
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
@@ -164,7 +166,7 @@
         plot_format = "png",
         n_models = length(model_dirs),
         functions_used = c(
-            "HMC diagnostics: 6 functions",
+            "HMC diagnostics: 7 functions",
             "PPC diagnostics: 7 functions", 
             "Model fits: 3 functions",
             "Management plots: 2 functions",
