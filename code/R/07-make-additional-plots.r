@@ -11,16 +11,26 @@
     library(data.table)
     library(magrittr)
     library(ggplot2)
+    library(GGally)
+    library(viridis)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # define directories
     proj_dir = this.path::this.proj()
     dir_helper_fns = file.path(proj_dir,"code","R","helper-fns")
+    dir_plot_fns = file.path(proj_dir,"code","R","plot-fns")
     model_stem = file.path(proj_dir,"data","output","model_runs")
     diag_model = "0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0"
+
+    set_global_config(
+        index_names = c("DWFN","AU","NZ","Obs (all)","Obs (NC,FJ&TO)","Obs (PF)"), 
+        model_stem = file.path("data","output","model_runs"),
+        height_per_panel = 350
+    )
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # source helper functions
     sapply(file.path(dir_helper_fns,(list.files(dir_helper_fns))),source)
+    sapply(file.path(dir_plot_fns,(list.files(dir_plot_fns))),source)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # retrospective analysis - diagnostic
@@ -175,3 +185,163 @@
     ggsave(filename="hcxval_analysis.png", plot = p, device = "png", path = file.path(proj_dir,"plots"),
             scale = 1.25, width =9, height = 6, units = c("in"),
             dpi = 300, limitsize = TRUE)
+
+#________________________________________________________________________________________________________________________________________________________________________________________________________
+# model free hindcast
+    target_model_dirs = sapply(c(diag_model,
+                          "0136-dwfn-exeoFSTTGF-peel5_0",
+                          "0137-dwfn-exeoFSTTGF-peel10_0",
+                          "0138-dwfn-exeoFSTTGF-peel15_0",
+                          "0139-dwfn-exeoFSTTGF-peel20_0"),function(x)file.path(model_stem,x))
+
+    custom_params = get_default_params()
+    # Model fits
+        custom_params$fits$prop = 0.25  # 0.01 to 1.00 (increments of 0.05)
+        custom_params$fits$active = TRUE  # TRUE | FALSE
+        custom_params$fits$obs = TRUE  # TRUE | FALSE
+        custom_params$fits$type = "Quantile"  # "Median" | "Spaghetti" | "Quantile"
+        custom_params$fits$quants = 95  # 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100
+        custom_params$fits$resid = "PIT"  # "Ordinary" | "Standardized" | "PIT"
+        custom_params$fits$ncol = 2
+        custom_params$fits$resid_ncol = 1
+        custom_params$fits$model_names = c("Diagnostic","-5yr (2017)", "-10yr (2012)", "-15yr (2007)", "-20yr (2002)")
+    # Time series
+        custom_params$ppts$var = c("Depletion (D)", "Population (P)", "D_Dmsy", "F_Fmsy", "Removals", "Process error","Nominal CPUE","Catchability deviate")  # Any combination
+        custom_params$ppts$show = "Posterior"  # "Prior" | "Posterior" | "Both"
+        custom_params$ppts$combine = FALSE  # TRUE | FALSE
+        custom_params$ppts$prop = 0.25  # 0.01 to 1.00 (increments of 0.05)
+        custom_params$ppts$quants = 95  # 1, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95, 100
+        custom_params$ppts$ncol = 3
+        custom_params$ppts$model_names = custom_params$fits$model_names
+    
+    
+    # make plots
+    p = generate_index_fit(target_model_dirs, params = custom_params$fits)
+    p = p + geom_point(data=data.table(x=c(2017,2012,2007,2002),y=rep(0,4)),aes(x=x,y=y),
+                        shape=21,color="black",size=3,
+                        fill=viridis::viridis(5, begin = 0.1, end = 0.8, direction = -1, option = "H")[-1])
+    ggsave(filename="model-free-hindcast.idx.png", plot = p, device = "png", path = file.path(proj_dir,"plots"),
+            scale = 1.25, width =9, height = 6, units = c("in"),
+            dpi = 300, limitsize = TRUE)
+
+    point_data = rbindlist(list(
+                    data.table(
+                    name = rep(custom_params$ppts$var[1],4),
+                    x = c(2017, 2012, 2007, 2002),
+                    y = rep(0, 4),
+                    run_label = factor(custom_params$ppts$model_names[-1], levels = custom_params$ppts$model_names)  # Match existing levels
+                    ),
+                    data.table(
+                    name = rep(custom_params$ppts$var[2],4),
+                    x = c(2017, 2012, 2007, 2002),
+                    y = rep(0, 4),
+                    run_label = factor(custom_params$ppts$model_names[-1], levels = custom_params$ppts$model_names)  # Match existing levels
+                    ),
+                    data.table(
+                    name = rep(custom_params$ppts$var[3],4),
+                    x = c(2017, 2012, 2007, 2002),
+                    y = rep(0, 4),
+                    run_label = factor(custom_params$ppts$model_names[-1], levels = custom_params$ppts$model_names)  # Match existing levels
+                    ),
+                    data.table(
+                    name = rep(custom_params$ppts$var[4],4),
+                    x = c(2017, 2012, 2007, 2002),
+                    y = rep(0, 4),
+                    run_label = factor(custom_params$ppts$model_names[-1], levels = custom_params$ppts$model_names)  # Match existing levels
+                    ),
+                    data.table(
+                    name = rep(custom_params$ppts$var[5],4),
+                    x = c(2017, 2012, 2007, 2002),
+                    y = rep(0, 4),
+                    run_label = factor(custom_params$ppts$model_names[-1], levels = custom_params$ppts$model_names)  # Match existing levels
+                    ),
+                    data.table(
+                    name = rep(custom_params$ppts$var[6],4),
+                    x = c(2017, 2012, 2007, 2002),
+                    y = rep(-0.2, 4),
+                    run_label = factor(custom_params$ppts$model_names[-1], levels = custom_params$ppts$model_names)  # Match existing levels
+                    ),
+                    data.table(
+                    name = rep(custom_params$ppts$var[7],4),
+                    x = c(2017, 2012, 2007, 2002),
+                    y = rep(-0.1, 4),
+                    run_label = factor(custom_params$ppts$model_names[-1], levels = custom_params$ppts$model_names)  # Match existing levels
+                    ),
+                    data.table(
+                    name = rep(custom_params$ppts$var[8],4),
+                    x = c(2017, 2012, 2007, 2002),
+                    y = rep(0, 4),
+                    run_label = factor(custom_params$ppts$model_names[-1], levels = custom_params$ppts$model_names)  # Match existing levels
+                    )
+                    ))
+    point_data[,name := factor(name,levels=custom_params$ppts$var)]
+    
+    p = generate_ppts(target_model_dirs, params = custom_params$ppts)
+    p = p + geom_point(data=point_data,aes(x=x,y=y,fill=run_label),
+                        shape=21,color="black",size=3)
+    ggsave(filename="model-free-hindcast.ts.png", plot = p, device = "png", path = file.path(proj_dir,"plots"),
+            scale = 1.25, width = 9, height = 9, units = c("in"),
+            dpi = 300, limitsize = TRUE)
+
+#________________________________________________________________________________________________________________________________________________________________________________________________________
+# realized prior
+
+    # Load data
+    posterior_samples = fread(file.path(model_stem, diag_model, "hmc_samples.csv"))
+    ppc_samples = fread(file.path(model_stem, diag_model, "hmc_samples_ppc.csv"))
+
+    # Generate naive prior samples
+    naive_prior_samples = ssp_prior_pushforward(
+    ssp_summary = fread(file.path(model_stem, diag_model, "fit_summary.csv")),
+    stan_data = fread(file.path(model_stem, diag_model, "stan_data.csv")),
+    settings = fread(file.path(model_stem, diag_model, "settings.csv"))
+    )
+
+    # Variables of interest
+    vars = c("logK", "r", "x0", "shape", "qeff", "rho", "sigma_qdev", "sigmap", "sigmao_add", "nu_catch")
+
+    # Prepare data
+    prep_data = function(dt, type_label, n_sample = 1000) {
+    result = dt[variable %in% vars]
+    if("divergent" %in% colnames(result)) result = result[divergent == 0]
+    result[, value := as.numeric(as.character(value))]
+    result = dcast(result, iter ~ variable, value.var = "value")
+    result[, type := type_label]
+    
+    # Apply transformations
+    if("qeff" %in% colnames(result)) result[, log_qeff := log(qeff)]
+    if("rho" %in% colnames(result)) result[, atanh_rho := atanh(rho)]
+    
+    result[sample(.N, min(n_sample, .N))]
+    }
+
+    # Combine datasets
+    plot_dt = rbind(
+    prep_data(naive_prior_samples, "Naive Prior"),
+    prep_data(ppc_samples, "Realized Prior"),
+    prep_data(posterior_samples, "Posterior"),
+    fill = TRUE
+    )[, type := factor(type, levels = c("Naive Prior", "Realized Prior", "Posterior"))]
+
+    # Update variables to include transformed versions
+    plot_vars = c("logK", "r", "x0", "shape", "log_qeff", "atanh_rho", "sigma_qdev", "sigmap", "sigmao_add", "nu_catch")
+    plot_cols = intersect(plot_vars, colnames(plot_dt))
+
+    # Create pairs plot
+    p_pairs = plot_dt %>%
+    .[, .SD[sample(.N, min(1000, .N))], by = type] %>%
+    ggpairs(columns = match(plot_cols, colnames(.)), aes(color = type, alpha = 0.4)) + 
+    scale_color_viridis_d("Type", begin = 0.1, end = 0.8, option = "H") +
+    scale_fill_viridis_d("Type", begin = 0.1, end = 0.8, option = "H") +
+    theme(
+        text = element_text(size = 20),
+        panel.background = element_rect(fill = "white", color = "black"),
+        panel.grid.major = element_line(color = 'gray70', linetype = "dotted"),
+        strip.background = element_rect(fill = "white"),
+        legend.key = element_rect(fill = "white")
+    )
+
+    ggsave(filename = "realized-prior-plot.png", plot = p_pairs, device = "png", 
+        path = file.path(proj_dir, "plots"),
+        scale = 1.25, width = 9, height = 9, units = "in",
+        dpi = 300, limitsize = TRUE)

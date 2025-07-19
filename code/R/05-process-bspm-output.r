@@ -41,7 +41,7 @@
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # configure global settings
   set_global_config(
-    index_names = c("dwfn","au","nz","obs","obsNoPF","obsPFonly"), 
+    index_names = c("DWFN","AU","NZ","Obs (all)","Obs (NC,FJ&TO)","Obs (PF)"), 
     model_stem = dir_model_runs,
     height_per_panel = 350
   )

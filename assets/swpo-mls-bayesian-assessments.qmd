@@ -461,6 +461,10 @@ $ASE_{2018} = \frac{|I_{2018} - \hat{I}_{2018}|}{|I_{2018} - \ddot{I}_{2018}|}$
 
 Repeating this calculation across all retrospective peels for years 2019-2022 and taking the average across ASE values gives the mean ASE or MASE for the model. An MASE value less than one indicates that the model has greater predictive skill than the naïve predictor.
 
+### Model-free hindcasts {#sec-desc-hindcasts}
+
+Additional model-free hindcasts, similar to those described in @sec-retrospective-analysis, where the model was run for the full period 1952-2022 but without the last $y$ years of index data. Hindcasts excluding the last 5, 10, 15, and 20 years of index data were conducted in order to evaluate the models ability to recapture the dynamics of the full model in the terminal year. Good hindcast performance over a long time horizon is an indication of a well-determined production function, and can give an idea of the reliability of the predictions from the full model.
+
 ## Forecasts
 
 Simple, status quo catch-based stochastic projections over a 10-year window are provided for each model. For each model, projected catch was taken as the average catch over the terminal 5 years (2018-2022). Process error in the projection period was randomly resampled from the estimated process error in the main model period.
@@ -666,7 +670,86 @@ Overall retrospective bias was within the acceptable range proposed by [@hurtado
 
 ### Parameter estimates {#sec-parameter-estimates}
 
-### Future projections {#sec-diag-projections}
+```{r}
+#| label: process-param-estimates
+#| echo: false
+#| warning: false
+#| message: false
+
+# load data
+param_data = fread(file.path(proj_dir,"data","output","parameter_credible_intervals_long.csv"))
+param_data[,model:=sprintf("%04d", model)]
+param_data[,model:=factor(model,levels=levels(model_desc_config$short_name))]
+
+# filter for Final ensemble models
+final_ensemble_models = model_desc_config[group == "Final ensemble", short_name]
+
+if(length(final_ensemble_models) == 0) {
+  cat("No models found in 'Final ensemble' group. Available groups:\n")
+  print(unique(model_desc_config$group))
+  stop("Please check the group name")
+}
+
+ensemble_data = param_data[model %in% final_ensemble_models]
+
+# define parameter labels and order
+param_labels = c(
+  "logK" = "$\\log(K)$",
+  "r" = "$R_{Max}$", 
+  "shape" = "$n$",
+  "x0" = "$x_0$",
+  "qeff" = "$q_{eff}$",
+  "rho" = "$\\rho$",
+  "sigma_qdev" = "$\\sigma_{qdev}$",
+  "sigmap" = "$\\sigma_P$",
+  "sigmao_add" = "$\\sigma_{O,add}$",
+  "nu_catch" = "$\\nu_{catch}$",
+  "sigmaf" = "$\\sigma_F$"
+)
+
+# create formatted table
+format_ci = function(median_val, lower_val, upper_val, digits = 3) {
+  if (is.na(median_val)) return("—")
+  paste0(sprintf(paste0("%.", digits, "f"), median_val), 
+         " (", sprintf(paste0("%.", digits, "f"), lower_val), 
+         ", ", sprintf(paste0("%.", digits, "f"), upper_val), ")")
+}
+
+# create wide format (models as rows, parameters as columns)
+table_wide = dcast(ensemble_data, model ~ parameter, 
+                   value.var = c("median", "lower_ci", "upper_ci"))
+
+# create final table with models as rows
+final_table = data.table(Model = paste0("`",table_wide$model, "`"))
+
+# add formatted columns for each parameter (in correct order)
+for(param in names(param_labels)) {
+  median_col = paste0("median_", param)
+  lower_col = paste0("lower_ci_", param) 
+  upper_col = paste0("upper_ci_", param)
+  
+  if(median_col %in% names(table_wide)) {
+    final_table[[param_labels[param]]] = mapply(
+      format_ci,
+      table_wide[[median_col]],
+      table_wide[[lower_col]],
+      table_wide[[upper_col]],
+      MoreArgs = list(digits = 3)
+    )
+  } else {
+    final_table[[param_labels[param]]] = "—"
+  }
+}
+
+```
+
+Following the guidance from @kim_examining_2025, posterior distributions of parameter estimates were compared to the realized prior in addition to the naïve or input prior. The realized prior represents the effective prior distribution that results from passing naïve parameter combinations through the model structure with likelihoods turned off, revealing how model constraints and structural assumptions modify the input priors before data-based updating occurs [@kim_examining_2025]. Based on these comparisons the diagnostic model showed substantial posterior learning across key leading parameters (@fig-prior-post; @tbl-param-ests), indicating that the data contained sufficient information to update parameter estimates from their prior distributions.
+
+The carrying capacity $\log(K)$ exhibited substantial posterior learning, with the combination of index and catch data in the diagnostic case model strongly supporting lower population scales than suggested by either the naive or realized priors. Similarly, the intrinsic rate of increase $R_{Max}$ showed strong posterior updates, with the data favoring lower productivity than the biological simulation framework initially suggested. Inverse transform sampling to match the $R_{Max}$ posterior distribution to the input biological simulation framework prior for $R_{Max}$ indicates that the lower productivity is characterized by pronounced shifts toward lower steepness values $h$ and, to a lesser extent, smaller von Bertalanffy $k$ values (@fig-rmax-subsample-bio).
+
+The median estimate of $R_{Max}$ from the diagnostic case, `r round(ensemble_data[model=="0100"&parameter=="r"]$median,digits=3)` (@tbl-param-ests), is considerably higher than estimates for an analogous species, white marlin (*Kajikia albida*), assessed using a JABBA surplus production model [@winker_jabba_2018;@iccat_report_2020] in the Atlantic Ocean where $R_{Max}=0.163$ (95% credible interval: 0.122-0.215). However, it is worth noting that the ICCAT assessment assumed a much more precise prior for $R_{Max}$, and that the 95% credible intervals of the diagnostic case model almost completely cover the ICCAT posterior distribution. Notably, the Atlantic white marlin JABBA model showed remarkable consistency with stock status and trend estimates from a fully integrated, length-structured model implemented in Stock Synthesis [@iccat_report_2020].
+
+### Model-free hindcasts {#sec-hindcasts}
 
 ```{r}
 #| label: read-prior-data
@@ -930,6 +1013,22 @@ knitr::kable(performance_table, format = "markdown")
 
 cat(paste(performance_notes, collapse = "\n\n"))
 ```
+
+\newpage
+
+```{=html}
+<br>
+```
+::: {.landscape}
+
+```{r}
+#| label: tbl-param-ests
+#| tbl-cap: "Posterior estimates (median and 95% credible intervals) of the leading model parameters for models in the final ensemble."
+#| echo: false
+
+knitr::kable(final_table, format = "markdown")
+```
+:::
 
 \newpage
 
@@ -1248,7 +1347,7 @@ knitr::include_graphics(file.path(proj_dir, "plots", "model-0100", diag_model, p
 ```{r}
 #| label: fig-retro
 #| echo: false
-#| fig-cap: "Retrospective analysis for the diagnostic case model with respect to time series of depletion $D_t$, depletion relative to depletion at MSY $D_t/D_{MSY}$, fishing mortality $F_t$, and fishing mortality relative to the rate of fishing mortality that produces MSY $F_t/F_{MSY}$. The base model with data included through 2022 (black line – median; dark shading – 50% credible interval; light shading – 95% credible interval) is shown relative to the retrospective models. Colored lines correspond to the last year of index data and the colored point indicates the estimate in the last year of the retrospective peel."
+#| fig-cap: "Retrospective analysis for the diagnostic case model (`0100`) with respect to time series of depletion $D_t$, depletion relative to depletion at MSY $D_t/D_{MSY}$, fishing mortality $F_t$, and fishing mortality relative to the rate of fishing mortality that produces MSY $F_t/F_{MSY}$. The base model with data included through 2022 (black line – median; dark shading – 50% credible interval; light shading – 95% credible interval) is shown relative to the retrospective models. Colored lines correspond to the last year of index data and the colored point indicates the estimate in the last year of the retrospective peel."
 #| out-width: "90%"
 #| fig-pos: "H"
 
@@ -1264,11 +1363,42 @@ knitr::include_graphics(file.path(proj_dir, "plots","retro_analysis.png"))
 ```{r}
 #| label: fig-hcxval
 #| echo: false
-#| fig-cap: "Standardized indices of relative abundance used in the Bayesian Surplus Production Model. Open circles show observed values (standardized to mean of 1; black horizontal line) and the vertical bars indicate the observation error (95% confidence interval). One year ahead 'model-free' hindcast predictions are shown by the colored lines, where the color indicates the last year of index data seen by the model. The predicted value is shown one year-ahead with the colored point."
+#| fig-cap: "Standardized indices of relative abundance used in the diagnostic case model (`0100`). Open circles show observed values (standardized to mean of 1; black horizontal line) and the vertical bars indicate the observation error (95% confidence interval). One year ahead 'model-free' hindcast predictions are shown by the colored lines, where the color indicates the last year of index data seen by the model. The predicted value is shown one year-ahead with the colored point."
 #| out-height: "90%"
 #| fig-pos: "H"
 
 knitr::include_graphics(file.path(proj_dir, "plots","hcxval_analysis.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+```{r}
+#| label: fig-prior-post
+#| echo: false
+#| fig-cap: "Prior-posterior comparison pairs plot for the diagnostic case model showing naive prior (blue), realized prior (green), and posterior (orange) distributions across leading model parameters. Diagonal panels display marginal density distributions for each parameter. Off-diagonal scatter plots show pairwise parameter relationships colored by distribution type. Upper triangle correlation coefficients quantify linear relationships between distributions, with statistical significance indicated by asterisks. The comparison illustrates sequential parameter refinement from initial biological/expert knowledge (naive prior) through model structure filtering (realized prior) to data-based learning (posterior)."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "realized-prior-plot.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-rmax-subsample-bio
+#| echo: false
+#| fig-cap: "Distributions of biological parameters (maximum age *max_age*, natural mortality reference *M_ref*, length at birth *L1*, asymptotic length *L2*, von Bertalanffy growth coefficient *vbk*, length at 50% maturity *l50*, sex ratio at birth *sex_ratio*, coefficient of variation in length *cv_len*, weight-length relationship parameters *weight_a* and *weight_b*, and steepness *h*) used in the rmax sub-sampling process. Original biological prior distribution (orange shading), distribution based on extreme filtering criteria following the prior pushforward analysis (green shading), and final sub-sampled distribution selected to match the posterior $R_{Max}$ distribution (blue shading)."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "rmax_subsampling_biological_parameters.png"))
 ```
 
 \newpage

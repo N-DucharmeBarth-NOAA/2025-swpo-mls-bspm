@@ -47,7 +47,7 @@ summary_dt[, (precision_cols) := lapply(.SD, function(x) round(x, 4)), .SDcols =
 # Configure global settings for plot functions
 if(exists("set_global_config")) {
   set_global_config(
-    index_names = c("dwfn","au","nz","obs","obsNoPF","obsPFonly"), 
+    index_names = c("DWFN","AU","NZ","Obs (All)","Obs (NC,FJ&TO)","Obs (PF)"), 
     model_stem = file.path("data","output","model_runs"),
     height_per_panel = 350
   )
