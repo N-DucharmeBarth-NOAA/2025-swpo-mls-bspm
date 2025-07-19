@@ -142,7 +142,7 @@ generate_index_fit <- function(model_dirs, params = NULL) {
     ylab("Index") +
     xlab("Year") +
     geom_hline(yintercept = 1, linetype = "dashed") +
-      facet_wrap(~index, 
+      facet_wrap(~index, scales = "free_y",
            ncol = plot_ncol,
            nrow = plot_nrow)
   
@@ -292,7 +292,7 @@ generate_index_fit_ppd <- function(model_dirs, params = NULL) {
     ylab("Index") +
     xlab("Year") +
     geom_hline(yintercept = 1, linetype = "dashed") +
-      facet_wrap(~index, 
+      facet_wrap(~index, scales = "free_y",
            ncol = plot_ncol,
            nrow = plot_nrow)
   

@@ -102,7 +102,7 @@ This analysis presents a data-moderate approach for SWPO striped marlin that add
 
 ## Modelling framework {#sec-model-framework}
 
-To address some of the issues raised in @sec-introduction, a series of Bayesian state-space surplus production models (BSPMs) spanning the period 1952-2022 were developed following the Fletcher-Schaefer production model framework [@winker_unifying_2020; @edwards_bdm_2024]. Development of the BSPM followed the approach of [@neubauer_alternative_2019;@isc_stock_2024] and incorporated recent best practices for surplus production models [@kokkalis_good_2024] and Bayesian workflows for stock assessment [@monnahan_toward_2024] as guides for model development, analysis, and presentation.
+To address some of the issues raised in @sec-introduction, a series of Bayesian state-space surplus production models (BSPMs) spanning the period 1952-2022 were developed following the Fletcher-Schaefer production model framework [@winker_unifying_2019; @edwards_bdm_2024]. Development of the BSPM followed the approach of [@neubauer_alternative_2019;@isc_stock_2024] and incorporated recent best practices for surplus production models [@kokkalis_good_2024] and Bayesian workflows for stock assessment [@monnahan_toward_2024] as guides for model development, analysis, and presentation.
 
 The models were implemented in the Stan probabilistic programming language [@stan_development_team_stan_2024] to take advantage of enhanced convergence diagnostics, greater efficiency in posterior sampling through the no-U-turn (NUTS) Hamiltonian Monte Carlo (HMC) algorithm [@betancourt_hamiltonian_2013], and greater flexibility with model configuration and prior specification. Implementation in R using the *rstan* package [@stan_development_team_rstan_2024] provides connection to an ecosystem of R packages for model diagnostics and validation: *bayesplot* [@gabry_bayesplot_2024] for posterior visualization and *loo* [@vehtari_loo_2024].
 
@@ -118,7 +118,7 @@ Annual catch data (in numbers of individuals) spanning 1952-2022 were compiled f
 
 Annual longline effort (in numbers of hooks) matching the SWPO assessment domain, as specified in @castillo-jordan_stock_2024, was extracted from [publicly available WCPFC data](https://www.wcpfc.int/node/4648). Longline effort in the assessment domain (@fig-annual-catch-effort) increased gradually from zero in the early 1950s to ~100 million hooks per year in the early 1970s where it stabilized between 100-150 million hooks per year through the 1990s. Beginning in 2000 effort increased substantially to ~350 million hooks per year in 2003, and has fluctuated around that level for the last 20 years. 
 
-A number of indices were investigated either as one-off sensitivities or included in the structural uncertainty grid (@fig-idx-obs). These included the composite distant water fishing nation (DWFN) longline standardized CPUE index (1988-2022) from the diagnostic case of the 2024 assessment [@castillo-jordan_stock_2024], an Australian longline index, a New Zealand recreational sportfish index, and three different observer data based indices [@neubauer_exploring_2025]. The Pacific Islands observer program indices contained information from New Caledonia, Fiji, Tonga, and French Polynesia observer programs. Three alternative indices were constructed either by including data from all programs together, including data from just the western programs (New Caledonia, Fiji, and Tonga) or including data just from French Polynesia. The DWFN, Australia and observer without French Polynesia indices show recent increases; the New Zealand and observer with only French Polynesia indices show recent declines; and the all observer program index shows no trend. 
+A number of indices were investigated either as one-off sensitivities or included in the structural uncertainty grid (@fig-idx-obs). These included the composite distant water fishing nation (DWFN) longline standardized CPUE index (1988-2022) from the diagnostic case of the 2024 assessment [@castillo-jordan_stock_2024], an Australian longline index [@tremblay-boyer_standardised_2024], a New Zealand recreational sportfish index [@holdsworth_striped_2023], and three different observer data based indices [@neubauer_exploring_2025]. The Pacific Islands observer program indices contained information from New Caledonia, Fiji, Tonga, and French Polynesia observer programs. Three alternative indices were constructed either by including data from all programs together, including data from just the western programs (New Caledonia, Fiji, and Tonga) or including data just from French Polynesia. The DWFN, Australia and observer without French Polynesia indices show recent increases; the New Zealand and observer with only French Polynesia indices show recent declines; and the all observer program index shows no trend. 
 
 ## Population dynamics {#sec-population-dynamics}
 
@@ -358,7 +358,7 @@ Early model development explored a more complex formulation of fishing mortality
 
 $$F_t = q_{eff} \times \exp(\delta_{q,t} - \sigma_{qdev}^2/2) \times \text{E}_t \times \exp(\delta_{e,t} - \sigma_{edev}^2/2)$$
 
-Two models tested whether estimating deviations from the effort time series improved model performance:
+This formulation of fishing mortality is closer to the full catch-errors with effort deviation approaches available in MULTIFAN-CL [@fournier_multifan-cl_1998]. Two models tested whether estimating deviations from the effort time series improved model performance:
 
 - `0124`: Estimated effort deviates with 2-year temporal resolution (n_step = 2)
 - `0126`: Estimated effort deviates with 5-year temporal resolution (n_step = 5) for more constrained estimation
@@ -648,15 +648,25 @@ performance_notes <- generate_notes(performance_config)
 ## Diagnostic case
 ### Model convergence and diagnostics {#sec-model-convergence}
 
+The diagnostic case model `0100` achieved satisfactory convergence based on standard Hamiltonian Monte Carlo diagnostics (@tbl-diagnostics). $\hat{R}$ values were below the 1.01 threshold and effective sample sizes exceeding the recommended minimum of 500 (100 samples per chain) for all parameters. No divergent transitions were observed across chains, and maximum tree depth was not exceeded during sampling, indicating successful exploration of the posterior space. Additionally, LOO-CV identified only two observations with Pareto-k > 0.7 indicating the model structure and choice of likelihoods adequately matched the fitted data. Lastly, the effective number of estimated parameters p_loo was well below both the number of observations and the actual estimated parameter count indicating that model is likely to be reasonably well specified.
+
 ### Model fit to data {#sec-model-fit}
 
-#### Catch data fit
+#### Catch data fit {#sec-catch-fit}
 
-#### CPUE index fit
+The diagnostic case model adequately captured the trend and magnitude of the observed catches (1952-2022) with the obvious exceptions of the 1952 and 1954 observations (@fig-catch-fit). Use of a catch likelihood, student-t, with heavier tails made the model more robust to these outlier observations, and accordingly estimated larger and smaller predicted catches, respectively, for these two observations. However, use of the student-t distribution along with an assumed 20% CV on the observation error did mean that catch observations were not fit exactly though the observed catches did tend to fall within the posterior predicted distribution (@fig-catch-ppc-pit-ecdf). Given that SWPO striped marlin is a non-target species, some uncertainty in the predicted catches is considered to be appropriate.
+
+#### CPUE index fit {#sec-index-fit}
+
+Diagnostic case model fit to the standardized DWFN CPUE index (1988-2022) was evaluated using NRMSE and showed reasonable fits to the observed index given the high variability and observation error (@tbl-performance). The model also successfully captured the general declining trend in standardized CPUE from 1988-2022 (@fig-idx-fit). PIT residuals did not show persistent positive or negative patterns, however they did indicate marginally better fit within the last decade of the index relative to the earlier portion(@fig-idx-fit-residuals). Posterior predictive checks confirmed that models replicated key features of the observed CPUE data (@fig-cpue-ppc-pit-ecdf).
 
 ### Model validation {#sec-model-validation}
 
+Overall retrospective bias was within the acceptable range proposed by [@hurtado-ferro_looking_2015], however it did indicate a slight underestimate to the population recovery indicated by the DWFN index (@tbl-performance; @fig-retro). This is likely driven by the large observation in 2021 that is used by the full model to drag estimates up from the lower values observed in 2015-2019. Estimates of fishing mortality ($U/U_{MSY}$​) and depletion ($D/D_{MSY}$​) relative to MSY fell within the credible intervals of the full model run 100% of the time (@tbl-performance). For hindcast cross-validation, the diagnostic model substantially exceeded the performance of the naïve predictor (@tbl-performance; @fig-hcxval). This provides support that models successfully identified and estimated a production function for the stock.
+
 ### Parameter estimates {#sec-parameter-estimates}
+
+### Future projections {#sec-diag-projections}
 
 ```{r}
 #| label: read-prior-data
@@ -740,6 +750,8 @@ sigmap_median <- round(exp(prior_mean_logsigmap), 4)
 ### Alternative $R_{Max}$ prior {#sec-res-sens-rmax}
 
 ## Model ensemble
+
+### Ensemble diagnostics and fit {#sec-ensemble-diagnostics}
 
 ### Population dynamics and stock status {#sec-grid-stock-status}
 
@@ -1145,6 +1157,118 @@ knitr::include_graphics(file.path(proj_dir, "plots", "pushforward", "bspm_estqsi
 #| fig-pos: "H"
 
 knitr::include_graphics(file.path(proj_dir, "plots", "pushforward", "bspm_estqsimple_softdep_mvprior_x0_newlogK","pairs.leading.updated_prior.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-catch-fit
+#| echo: false
+#| fig-cap: "Model fit to catch data showing observed catch (black points with 95% error bars) and model-predicted catch (colored lines and shaded ribbons representing 95% credible intervals)."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "model-0100", "comparisons", "comparison_catch_fit.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-catch-ppc-pit-ecdf
+#| echo: false
+#| fig-cap: "Posterior predictive check for catch data using probability integral transform empirical cumulative distribution function (PIT-ECDF). The solid blue line shows the empirical CDF of PIT values calculated from observed catch data relative to posterior predictive distributions. Light blue dashed lines indicate 99% simultaneous confidence bands under the assumption of correct model specification. The solid blue line should be contained within the 99% simultaneous confidence bands."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "model-0100", diag_model, paste0(diag_model, "_catch_ppc_pit_ecdf.png")))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-idx-fit
+#| echo: false
+#| fig-cap: "Model fit to the standardized index data showing observations (black points with 95% error bars) and model-predictions (colored lines and shaded ribbons representing 95% credible intervals)."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "model-0100", "comparisons", "comparison_index_fit.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-idx-fit-residuals
+#| echo: false
+#| fig-cap: "Probability Integral Transform (PIT) residuals for catch data from the diagnostic model over time. Orange points with vertical lines show PIT residual values for each year, where values should be uniformly distributed between 0 and 1 under correct model specification. The 'Runs test: Pass' annotation indicates that the runs test for temporal autocorrelation in the residuals passed at the 5% significance level, suggesting no systematic patterns in the residuals over time."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "model-0100", "comparisons", "comparison_index_fit_residuals.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-cpue-ppc-pit-ecdf
+#| echo: false
+#| fig-cap: "Posterior predictive check for index data using probability integral transform empirical cumulative distribution function (PIT-ECDF). The solid blue line shows the empirical CDF of PIT values calculated from observed catch data relative to posterior predictive distributions. Light blue dashed lines indicate 99% simultaneous confidence bands under the assumption of correct model specification. The solid blue line should be contained within the 99% simultaneous confidence bands."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "model-0100", diag_model, paste0(diag_model, "_cpue_ppc_pit_ecdf.png")))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-retro
+#| echo: false
+#| fig-cap: "Retrospective analysis for the diagnostic case model with respect to time series of depletion $D_t$, depletion relative to depletion at MSY $D_t/D_{MSY}$, fishing mortality $F_t$, and fishing mortality relative to the rate of fishing mortality that produces MSY $F_t/F_{MSY}$. The base model with data included through 2022 (black line – median; dark shading – 50% credible interval; light shading – 95% credible interval) is shown relative to the retrospective models. Colored lines correspond to the last year of index data and the colored point indicates the estimate in the last year of the retrospective peel."
+#| out-width: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","retro_analysis.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-hcxval
+#| echo: false
+#| fig-cap: "Standardized indices of relative abundance used in the Bayesian Surplus Production Model. Open circles show observed values (standardized to mean of 1; black horizontal line) and the vertical bars indicate the observation error (95% confidence interval). One year ahead 'model-free' hindcast predictions are shown by the colored lines, where the color indicates the last year of index data seen by the model. The predicted value is shown one year-ahead with the colored point."
+#| out-height: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","hcxval_analysis.png"))
 ```
 
 \newpage
