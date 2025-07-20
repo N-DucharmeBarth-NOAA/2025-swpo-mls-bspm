@@ -260,7 +260,7 @@ Prior distributions for process error $\sigma_P$, index observation error $\sigm
 
 ## Description of one-off sensitivities {#sec-desc-sens}
 
-During the course of model development 38 one-off sensitivity models, organized into 12 groups, were investigated to explore alternative assumptions, model structures and sensitivities to data inputs. These models are listed in @tbl-model-reference and are described in further detail below.
+During the course of model development `r nrow(model_desc_config[group!="Final ensemble"])` one-off sensitivity models, organized into `r uniqueN(model_desc_config[group!="Final ensemble"]$group)` groups, were investigated to explore alternative assumptions, model structures and sensitivities to data inputs. These models are listed in @tbl-model-reference and are described in further detail below.
 
 ### Index {#sec-desc-sens-index}
 
@@ -763,7 +763,7 @@ The model demonstrated remarkably consistent performance across most hindcast sc
 
 Population dynamics estimates showed reasonable consistency across hindcast scenarios (@fig-model-free-hindcast-ts), with the notable exception of the 15 year hindcast model mendtioned in the previous paragraph. Depletion trajectories remained largely stable, with all models estimating similar patterns of decline from unfished conditions to minimum levels around the early 1990s, though predictions begin to diverge slightly in the recovery period post 2015. Population scale estimates also showed good agreement, though with increasing uncertainty for earlier time periods in longer hindcasts, as expected. The stock status metrics ($D/D_{MSY}$ and $F/F_{MSY}$) showed fairly good consistency across most hindcast scenarios particularly for $F/F_{MSY}$. Additionally, given the  The estimated trajectories for these key management metrics were nearly identical between the diagnostic model and all retrospective peels, suggesting that management advice derived from this model would have been stable regardless of when the assessment was conducted over the past two decades.
 
-This consistency across multiple extended hindcast periods provides support that the underlying population dynamics are well described, given the available data. This gives confidence that projections made from the full model will likely capture the stock trajectory within the near to medium term. 
+This consistency across multiple extended hindcast periods provides support that the underlying population dynamics are well described, given the available data. This gives confidence that projections made from the full model will likely capture the stock trajectory within the near to medium term, assuming stationarity in future productivity and carrying capacity. 
 
 ```{r}
 #| label: read-prior-data
@@ -833,7 +833,12 @@ sigmap_median <- round(exp(prior_mean_logsigmap), 4)
 
 ## One-off sensitivities {#sec-res-sens}
 
+As described in @sec-desc-sens, `r nrow(model_desc_config[group!="Final ensemble"])` different one-off sensitivities were conducted to either explore plausible uncertainty in model assumptions and configuration, or to build intuition about the model dynamics and gain confidence in the results.
+
 ### Index {#sec-res-sens-index}
+
+
+
 ### Catch observation error $\sigma_C$ {#sec-res-sens-sigmac}
 ### Early data {#sec-res-sens-early}
 ### Scaling priors {#sec-res-sens-scaling}

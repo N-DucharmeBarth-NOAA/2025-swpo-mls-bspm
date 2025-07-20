@@ -1,0 +1,39 @@
+short_name,group,description,short_label
+0071,One-off: Index,Australia index,AU
+0072,One-off: Index,New Zealand index,NZ
+0073,One-off: Index,Observer (all) index,Obs (all)
+0074,One-off: Index,"Observer (New Caledonia, Fiji & Tonga) index","Obs (NC,FJ&TO)"
+0075,One-off: Index,Observer (French Polynesia) index,Obs (PF)
+0129,One-off: Index,DWFN & Australia index,DWFN & AU
+0130,One-off: Index,New Zealand & Australia index,NZ & AU
+0131,One-off: Index,"DWFN & Observer (New Caledonia, Fiji & Tonga) index",DWFN & Observer
+0132,One-off: Index,"New Zealand & Observer (New Caledonia, Fiji & Tonga) index",NZ & Observer
+0076,One-off: sigma_c,Time-varying sigma_c: Power curve from 0.5-0.2,Power (0.5-0.2)
+0077,One-off: sigma_c,Constant sigma_c: 0.1,Flat (0.1)
+0078,One-off: sigma_c,Time-varying sigma_c: Power curve from 0.5-0.1,Power (0.5-0.1)
+0079,One-off: Early data,Alternative 1952 catch,Alt. 1952 C
+0080,One-off: Early data,Alternative 1952 effort,Alt. 1952 E
+0081,One-off: Early data,Alternative 1954 catch,Alt. 1954 C
+0082,One-off: Early data,Alternative 1952 & 1954 catch,Alt. 1952 C & 1954 C
+0083,One-off: Early data,Alternative 1952 effort & 1954 catch,Alt. 1952 E & 1954 C
+0093,One-off: Scaling priors,Force higher scale (logK & qeff),Increase scale
+0096,One-off: Scaling priors,"Force higher scale (logK & qeff), alternative shape prior",Increase scale & alt. shape
+0110,One-off: Catch obs model,Lognormal error structure,LN error
+0111,One-off: qdev steps,n_step = 2,n_s = 2
+0112,One-off: qdev steps,n_step = 3,n_s = 3
+0113,One-off: qdev steps,n_step = 5,n_s = 5
+0114,One-off: qdev steps,n_step = 10,n_s = 10
+0115,One-off: Catch reporting,2x observed catch,2x catch
+0116,One-off: Catch reporting,Linear increase to 2x observed catch,Inc. to 2x catch
+0117,One-off: Catch reporting,Linear decrease from 2x observed catch,Dec. from 2x catch
+0118,One-off: Process error,Process error restricted to 0,0 proc. error
+0119,One-off: Start year,Start in 1955: x0 = 0.9,1955; 0.9
+0120,One-off: Start year,Start in 1988: x0 = 0.5,1988; 0.5
+0121,One-off: Start year,Start in 1988: x0 = 0.7,1988; 0.7
+0122,One-off: Start year,Start in 1988: x0 = 0.9,1988; 0.9
+0124,One-off: Est. effort devs,Estimate effort deviates & n_step = 2,"Edevs, n_s = 2"
+0126,One-off: Est. effort devs,Estimate effort deviates & n_step = 5,"Edevs, n_s = 5"
+0127,One-off: Direct F estimation,sigmaF to match diagnostic case,sigmaF matches diag case
+0128,One-off: Direct F estimation,0.25x diagnostic case sigmaF,sigmaF 0.25x diag case
+0133,One-off: Rmax prior,Apply lower productivity Rmax prior,ICCAT Rmax
+0134,One-off: Rmax prior,Apply lower productivity Rmax prior and alternative shape prior,ICCAT Rmax & alt. shape
