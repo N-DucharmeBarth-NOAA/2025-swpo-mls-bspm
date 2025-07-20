@@ -23,7 +23,11 @@
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # load data
-    rmax_exprior_id = readRDS(file.path(proj_dir,"data","output","rmax_exprior_id.rds"))
+    load(file.path(proj_dir,"data","output","pushforward","bspm_estqsimple_softdep_mvprior_x0_newlogK","updated_stan_data.RData"))
+    newlogK_stan_data = updated_stan_data
+    prior_logmean = newlogK_stan_data$full_mv_prior_mean[2]
+    prior_logsd = newlogK_stan_data$full_mv_prior_sd[2]
+    
     prior_dt = fread(file.path(proj_dir,"data","output","bspm_parameter_priors_filtered.csv"))
     posterior_dt = fread(file.path(proj_dir,"data","output","model_runs","0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0","hmc_samples.csv"))
     r_posterior = posterior_dt[variable == "r", value]
@@ -100,9 +104,9 @@
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # apply sub-sampling
     prior_original = prior_dt[!is.na(rmax) & is.finite(rmax)]
-    prior_clean = prior_dt[!is.na(rmax) & is.finite(rmax) & id %in% rmax_exprior_id]
-    rmax_clean = prior_clean$rmax
-    id_clean = prior_clean$id
+
+    rmax_clean = prior_original$rmax
+    id_clean = prior_original$id
     r_clean = r_posterior[!is.na(r_posterior) & is.finite(r_posterior)]
 
     idx_subsample_it = subsample_by_inverse_transform(rmax_clean, r_clean)
@@ -136,9 +140,53 @@
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # create final dataset
-    rmax_subsampled_dt = prior_clean[final_indices]
+    rmax_subsampled_dt = prior_original[final_indices]
     rmax_subsampled_dt[, subsample_method := best_method]
     rmax_subsampled_dt[, clean_index := final_indices]
+
+
+#________________________________________________________________________________________________________________________________________________________________________________________________________
+# create lognormal reference distribution and subsample prior_original to match it
+    
+    # Generate lognormal reference distribution
+    n_lognormal_samples = length(r_clean)  # Match target r distribution size
+    set.seed(123)
+    lognormal_reference = rlnorm(n_lognormal_samples, meanlog = prior_logmean, sdlog = prior_logsd)
+    
+    # Apply sub-sampling to match lognormal reference
+    idx_subsample_lognormal_it = subsample_by_inverse_transform(rmax_clean, lognormal_reference)
+    idx_subsample_lognormal_is = subsample_by_importance_sampling(rmax_clean, lognormal_reference)
+    idx_subsample_lognormal_qm = subsample_by_quantile_matching(rmax_clean, lognormal_reference)
+    
+    # Create subsampled distributions
+    rmax_subsample_lognormal_it = rmax_clean[idx_subsample_lognormal_it]
+    rmax_subsample_lognormal_is = rmax_clean[idx_subsample_lognormal_is]
+    rmax_subsample_lognormal_qm = rmax_clean[idx_subsample_lognormal_qm]
+    
+    # Evaluate performance against lognormal reference
+    lognormal_it_similarity = calc_distribution_similarity(rmax_subsample_lognormal_it, lognormal_reference)
+    lognormal_is_similarity = calc_distribution_similarity(rmax_subsample_lognormal_is, lognormal_reference)
+    lognormal_qm_similarity = calc_distribution_similarity(rmax_subsample_lognormal_qm, lognormal_reference)
+    
+    # Select best method for lognormal matching
+    lognormal_ks_stats = c("Inverse Transform" = lognormal_it_similarity$ks_statistic,
+                          "Importance Sampling" = lognormal_is_similarity$ks_statistic,
+                          "Quantile Matching" = lognormal_qm_similarity$ks_statistic)
+    
+    best_lognormal_method = names(lognormal_ks_stats)[which.min(lognormal_ks_stats)]
+    
+    if(best_lognormal_method == "Inverse Transform") {
+        final_lognormal_indices = idx_subsample_lognormal_it
+    } else if(best_lognormal_method == "Importance Sampling") {
+        final_lognormal_indices = idx_subsample_lognormal_is
+    } else {
+        final_lognormal_indices = idx_subsample_lognormal_qm
+    }
+    
+    # Create final lognormal-matched dataset
+    rmax_lognormal_matched_dt = prior_original[final_lognormal_indices]
+    rmax_lognormal_matched_dt[, subsample_method := best_lognormal_method]
+    rmax_lognormal_matched_dt[, clean_index := final_lognormal_indices]
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # make plots
@@ -170,20 +218,20 @@
 # biological parameter comparison plots
     # Compare input parameters for original vs sub-sampled distributions
     p1_bio = prior_original[, .(id, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len, weight_a, weight_b, h)] %>%
-        .[, distribution := "Prior: all"] %>%
+        .[, distribution := "Prior: biological"] %>%
         melt(., id.vars = c("id", "distribution"))
 
-    p2_bio = prior_clean[, .(id, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len, weight_a, weight_b, h)] %>%
-        .[, distribution := "Prior: filtered"] %>%
+    p2_bio = rmax_lognormal_matched_dt[, .(id, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len, weight_a, weight_b, h)] %>%
+        .[, distribution := "Prior: input"] %>%
         melt(., id.vars = c("id", "distribution"))
     
-    p3_bio = prior_clean[final_indices] %>%
+    p3_bio = prior_original[final_indices] %>%
         .[, .(id, max_age, M_ref, L1, L2, vbk, l50, sex_ratio, cv_len, weight_a, weight_b, h)] %>%
         .[, distribution := "Posterior: sub-sampled"] %>%
         melt(., id.vars = c("id", "distribution"))
     
     p_bio = rbind(p1_bio, p2_bio,p3_bio) %>%
-        .[,distribution:=factor(distribution,levels=c("Prior: all","Prior: filtered","Posterior: sub-sampled"))] %>%
+        .[,distribution:=factor(distribution,levels=c("Prior: biological","Prior: input","Posterior: sub-sampled"))] %>%
         ggplot() +
         facet_wrap(~variable, scales = "free") +
         ylim(0, NA) +

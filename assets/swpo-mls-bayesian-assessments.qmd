@@ -106,7 +106,7 @@ To address some of the issues raised in @sec-introduction, a series of Bayesian 
 
 The models were implemented in the Stan probabilistic programming language [@stan_development_team_stan_2024] to take advantage of enhanced convergence diagnostics, greater efficiency in posterior sampling through the no-U-turn (NUTS) Hamiltonian Monte Carlo (HMC) algorithm [@betancourt_hamiltonian_2013], and greater flexibility with model configuration and prior specification. Implementation in R using the *rstan* package [@stan_development_team_rstan_2024] provides connection to an ecosystem of R packages for model diagnostics and validation: *bayesplot* [@gabry_bayesplot_2024] for posterior visualization and *loo* [@vehtari_loo_2024].
 
-In their baseline configuration (diagnostic case), the models begin from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. Population scale or carrying capacity $log(K)$ is given in the units of the catch which is total numbers. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, multiplicative survival after fishing mortality was applied. Fishing mortality was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work [@isc_stock_2024] showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering described in @sec-prior-development.   
+In their baseline configuration (diagnostic case), the models begin from an assumed unfished state in 1952 and incorporate process error in population dynamics, observation error in the relative abundance index and catch time series, and uncertainty in biological parameters. Population scale or carrying capacity $\log(K)$ is given in the units of the catch which is total numbers. The models fit to a single time series of relative abundance (e.g., standardized CPUE index) at a time. Rather than subtracting the catch directly, multiplicative survival after fishing mortality was applied. Fishing mortality was estimated internally by fitting to a time series of observed catches. Computationally, this was necessary to avoid placing hard constraints on the posterior parameter space which can cause convergence issues for the HMC sampling algorithm. Additionally, rather than directly estimating the independent fishing mortality values required to produce the catch, fishing mortality was derived from an estimated time-varying catchability trend and a time series of observed longline fishing effort. The primary rationale for this modelling choice being that it is easier to develop a defensible prior for catchability rather than an arbitrary prior for fishing mortality, given that previous work [@isc_stock_2024] showed a strong correlation between estimated population scale and the fishing mortality prior. Unless otherwise mentioned, all models used the same prior parameterizations (@tbl-priors) based on the biological simulation filtering described in @sec-prior-development.   
 
 Using the diagnostic model^[The Stan code for the diagnostic model `bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT` is publicly available on [GitHub](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/code/Stan/bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT.stan).] as a starting point, a number of one-off sensitivity analyses were conducted to explore key model assumptions or data questions. These are described in @sec-desc-sens and listed in @tbl-model-reference. Based on the results of the sensitivity analyses a model ensemble was developed for the provision of stock status and management reference points. Full model development code and input data are available online at the following GitHub repository: <https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm>.
 
@@ -181,7 +181,7 @@ where the degrees of freedom parameter $\nu_c$ controls the tail behavior^[As $\
 
 The baseline prior distributions for leading estimated model parameters are specified in @tbl-priors. A description of the derivation of these prior distributions follows.
 
-Informed prior distributions for  $R_{Max}$, and the Pella-Tomlinson shape parameter $n$ were developed using numerical simulation based on biological knowledge. Informed prior distributions for $log(K)$, and baseline catchability $q_{eff}$  were developed using numerical simulation based on existing fishing data observations (e.g., catch and effort). Priors for other estimated leading model parameters (initial depletion $x_0$, AR1 correlation in catchability deviates $\rho$, variability in catchability deviates $\sigma_{qdev}$, process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$) were based on expert opinion and values observed in the literature. The naïve or input prior distributions were refined using a prior pushforward analysis. 
+Informed prior distributions for  $R_{Max}$, and the Pella-Tomlinson shape parameter $n$ were developed using numerical simulation based on biological knowledge. Informed prior distributions for $\log(K)$, and baseline catchability $q_{eff}$  were developed using numerical simulation based on existing fishing data observations (e.g., catch and effort). Priors for other estimated leading model parameters (initial depletion $x_0$, AR1 correlation in catchability deviates $\rho$, variability in catchability deviates $\sigma_{qdev}$, process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$) were based on expert opinion and values observed in the literature. The naïve or input prior distributions were refined using a prior pushforward analysis. 
 
 ### Biological simulation framework {#sec-biological-simulation}
 
@@ -743,13 +743,27 @@ for(param in names(param_labels)) {
 
 ```
 
-Following the guidance from @kim_examining_2025, posterior distributions of parameter estimates were compared to the realized prior in addition to the naïve or input prior. The realized prior represents the effective prior distribution that results from passing naïve parameter combinations through the model structure with likelihoods turned off, revealing how model constraints and structural assumptions modify the input priors before data-based updating occurs [@kim_examining_2025]. Based on these comparisons the diagnostic model showed substantial posterior learning across key leading parameters (@fig-prior-post; @tbl-param-ests), indicating that the data contained sufficient information to update parameter estimates from their prior distributions.
+Following the guidance from @kim_examining_2025, posterior distributions of parameter estimates were compared to the realized prior in addition to the naïve or input prior. The realized prior represents the effective prior distribution that results from passing naïve parameter combinations through the model structure with likelihoods turned off, revealing how model constraints and structural assumptions modify the input priors before data-based updating occurs [@kim_examining_2025]. In the current analysis, there was little difference between the naïve and realized priors given the approach taken in developing the priors. Based on these comparisons the diagnostic model showed substantial posterior learning across several key leading parameters (@fig-prior-post; @tbl-param-ests), indicating that the data contained sufficient information to update parameter estimates from their prior distributions.
 
-The carrying capacity $\log(K)$ exhibited substantial posterior learning, with the combination of index and catch data in the diagnostic case model strongly supporting lower population scales than suggested by either the naive or realized priors. Similarly, the intrinsic rate of increase $R_{Max}$ showed strong posterior updates, with the data favoring lower productivity than the biological simulation framework initially suggested. Inverse transform sampling to match the $R_{Max}$ posterior distribution to the input biological simulation framework prior for $R_{Max}$ indicates that the lower productivity is characterized by pronounced shifts toward lower steepness values $h$ and, to a lesser extent, smaller von Bertalanffy $k$ values (@fig-rmax-subsample-bio).
+The carrying capacity $\log(K)$ exhibited substantial posterior learning, with the combination of index and catch data in the diagnostic case model strongly supporting lower population scales than suggested by either the naïve or realized priors. Similarly, the intrinsic rate of increase $R_{Max}$ showed strong posterior updates, with the data favoring lower productivity than the biological simulation framework initially suggested. Inverse transform sampling to match the $R_{Max}$ posterior distribution to the input biological simulation framework prior for $R_{Max}$ indicates that the lower productivity is characterized by pronounced shifts toward lower steepness values $h$ (@fig-rmax-subsample-bio).
 
 The median estimate of $R_{Max}$ from the diagnostic case, `r round(ensemble_data[model=="0100"&parameter=="r"]$median,digits=3)` (@tbl-param-ests), is considerably higher than estimates for an analogous species, white marlin (*Kajikia albida*), assessed using a JABBA surplus production model [@winker_jabba_2018;@iccat_report_2020] in the Atlantic Ocean where $R_{Max}=0.163$ (95% credible interval: 0.122-0.215). However, it is worth noting that the ICCAT assessment assumed a much more precise prior for $R_{Max}$, and that the 95% credible intervals of the diagnostic case model almost completely cover the ICCAT posterior distribution. Notably, the Atlantic white marlin JABBA model showed remarkable consistency with stock status and trend estimates from a fully integrated, length-structured model implemented in Stock Synthesis [@iccat_report_2020].
 
+Shape and initial depletion parameters did not demonstrate notable posterior updates (@fig-prior-post). The Pella-Tomlinson shape parameter $n$ showed limited deviation from the prior, suggesting the data provided weak information about production function curvature. Initial depletion $x_0$ also remained close to the assumed unfished prior, indicating little information in the data to suggest large-scale fishing pressure prior to 1952.
+
+The catchability and temporal variability parameters showed large posterior updates (@fig-prior-post). The base catchability coefficient $q_{eff}$ showed substantial learning, with strong negative correlations with $\log(K)$. This demonstrates a trade-off between population scale and catchability in order to fit the observed catches. If a more precise prior on $q_{eff}$ were to be developed, this would be expected to set population scale and dramatically reduce uncertainty in model estimates. The autocorrelation parameter $\rho$ and catchability variability $\sigma_{qdev}$ both showed posterior updates, with the data informing a highly correlated temporal structure of catchability deviations.
+
+Lastly, process error $\sigma_P$ showed moderate posterior learning, while additional observation error $\sigma_{O,add}$ demonstrated substantial updates from the prior (@fig-prior-post). This indicated that the model estimated additional uncertainty beyond the input index observation error, rather than using process error, to reconcile the observed CPUE variability. This results in a smoother year-on-year population trajectory. The degrees of freedom parameter $\nu_{catch}$ for the catch likelihood showed substantial updating (@fig-prior-post), indicating the model preferred a Student-t distribution with very heavy tails in order to adequately account for the catch observations given the level of observation error.
+
 ### Model-free hindcasts {#sec-hindcasts}
+
+Model-free hindcasting was conducted to evaluate the model's ability to predict population dynamics when fitted to progressively truncated index datasets. The diagnostic model was compared against retrospective peels excluding the final 5, 10, 15, and 20 years of index data (terminating in 2017, 2012, 2007, and 2002, respectively), with the model providing estimates through the full model period based on based only on the estimated production function and predicted catch.
+
+The model demonstrated remarkably consistent performance across most hindcast scenarios (@fig-model-free-hindcast-idx) providing strong evidence of a well-determined production function. In general, the hindcast models successfully captured the general increasing trend in the standardized index after 2015. Model predictions for the DWFN CPUE index showed good coherence between the diagnostic model and all retrospective peels except the 15 year hindcast model, with overlapping 95% credible intervals throughout most of the time series. Estimates from the 15 year hindcast model appear to be strongly influenced by the series of higher observations (2003-2005) which cause it to underestimate the decline in the observed index.
+
+Population dynamics estimates showed reasonable consistency across hindcast scenarios (@fig-model-free-hindcast-ts), with the notable exception of the 15 year hindcast model mendtioned in the previous paragraph. Depletion trajectories remained largely stable, with all models estimating similar patterns of decline from unfished conditions to minimum levels around the early 1990s, though predictions begin to diverge slightly in the recovery period post 2015. Population scale estimates also showed good agreement, though with increasing uncertainty for earlier time periods in longer hindcasts, as expected. The stock status metrics ($D/D_{MSY}$ and $F/F_{MSY}$) showed fairly good consistency across most hindcast scenarios particularly for $F/F_{MSY}$. Additionally, given the  The estimated trajectories for these key management metrics were nearly identical between the diagnostic model and all retrospective peels, suggesting that management advice derived from this model would have been stable regardless of when the assessment was conducted over the past two decades.
+
+This consistency across multiple extended hindcast periods provides support that the underlying population dynamics are well described, given the available data. This gives confidence that projections made from the full model will likely capture the stock trajectory within the near to medium term. 
 
 ```{r}
 #| label: read-prior-data
@@ -933,7 +947,7 @@ Table: Prior distributions for diagnostic model leading parameters. {#tbl-priors
 | $R_{Max}$ | MV Lognormal | $\log(`r r_median`)$ | `r round(mv_params[param == "log_r", log_sd], 2)` | Max rate of increase | $\rho(R_{Max},n)$ = `r corr_log_r_log_shape` |
 | $n$ | MV Lognormal | $\log(`r shape_median`)$ | `r round(mv_params[param == "log_shape", log_sd], 2)` | Pella-Tomlinson shape parameter | |
 | $x_0$ | MV Lognormal | $\log(`r x0_median`)$ | `r round(mv_params[param == "log_x0", log_sd], 3)` | Initial depletion | (Independent) |
-| $q_{eff}$ MV | Lognormal | $\log(`r qeff_median`)$ | `r round(mv_params[param == "log_qeff", log_sd], 2)` | Initial catchability | $\rho(q_{eff},\sigma_{qdev})$ = `r corr_log_qeff_log_sigma_qdev`; $\rho(q_{eff},\rho)$ = `r corr_log_qeff_atanh_rho` |
+| $q_{eff}$ | MV Lognormal | $\log(`r qeff_median`)$ | `r round(mv_params[param == "log_qeff", log_sd], 2)` | Initial catchability | $\rho(q_{eff},\sigma_{qdev})$ = `r corr_log_qeff_log_sigma_qdev`; $\rho(q_{eff},\rho)$ = `r corr_log_qeff_atanh_rho` |
 | $\rho$ | MV Transformed Normal | $\tanh^{-1}(`r rho_median`)$ | `r round(mv_params[param == "atanh_rho", log_sd], 2)` | Autocorrelation in catchability deviations | $\rho(\rho,\sigma_{qdev})$ = `r corr_atanh_rho_log_sigma_qdev` |
 | $\sigma_{qdev}$ | MV Lognormal | $\log(`r sigma_qdev_median`)$ | `r round(mv_params[param == "log_sigma_qdev", log_sd], 2)` | Catchability variability | |
 | | | | | | |
@@ -1378,7 +1392,7 @@ knitr::include_graphics(file.path(proj_dir, "plots","hcxval_analysis.png"))
 ```{r}
 #| label: fig-prior-post
 #| echo: false
-#| fig-cap: "Prior-posterior comparison pairs plot for the diagnostic case model showing naive prior (blue), realized prior (green), and posterior (orange) distributions across leading model parameters. Diagonal panels display marginal density distributions for each parameter. Off-diagonal scatter plots show pairwise parameter relationships colored by distribution type. Upper triangle correlation coefficients quantify linear relationships between distributions, with statistical significance indicated by asterisks. The comparison illustrates sequential parameter refinement from initial biological/expert knowledge (naive prior) through model structure filtering (realized prior) to data-based learning (posterior)."
+#| fig-cap: "Prior-posterior comparison pairs plot for the diagnostic case model showing naïve prior (blue), realized prior (green), and posterior (orange) distributions across leading model parameters. Diagonal panels display marginal density distributions for each parameter. Off-diagonal scatter plots show pairwise parameter relationships colored by distribution type. Upper triangle correlation coefficients quantify linear relationships between distributions, with statistical significance indicated by asterisks. The comparison illustrates sequential parameter refinement from initial biological/expert knowledge (naïve prior) through model structure filtering (realized prior) to data-based learning (posterior)."
 #| out-width: "100%"
 #| fig-pos: "H"
 
@@ -1394,11 +1408,43 @@ knitr::include_graphics(file.path(proj_dir, "plots", "realized-prior-plot.png"))
 ```{r}
 #| label: fig-rmax-subsample-bio
 #| echo: false
-#| fig-cap: "Distributions of biological parameters (maximum age *max_age*, natural mortality reference *M_ref*, length at birth *L1*, asymptotic length *L2*, von Bertalanffy growth coefficient *vbk*, length at 50% maturity *l50*, sex ratio at birth *sex_ratio*, coefficient of variation in length *cv_len*, weight-length relationship parameters *weight_a* and *weight_b*, and steepness *h*) used in the rmax sub-sampling process. Original biological prior distribution (orange shading), distribution based on extreme filtering criteria following the prior pushforward analysis (green shading), and final sub-sampled distribution selected to match the posterior $R_{Max}$ distribution (blue shading)."
+#| fig-cap: "Distributions of biological parameters (maximum age *max_age*, natural mortality reference *M_ref*, length at birth *L1*, asymptotic length *L2*, von Bertalanffy growth coefficient *vbk*, length at 50% maturity *l50*, sex ratio at birth *sex_ratio*, coefficient of variation in length *cv_len*, weight-length relationship parameters *weight_a* and *weight_b*, and steepness *h*) used in the rmax sub-sampling process. Original biological prior distribution (orange shading), input prior distribution following the prior pushforward analysis (green shading), and final sub-sampled distribution selected to match the posterior $R_{Max}$ distribution (blue shading)."
 #| out-width: "100%"
 #| fig-pos: "H"
 
 knitr::include_graphics(file.path(proj_dir, "plots", "rmax_subsampling_biological_parameters.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-model-free-hindcast-idx
+#| echo: false
+#| fig-cap: "Model-free hindcast performance for the DWFN CPUE index. The diagnostic model fitted to the full dataset (orange line and shading) is compared against retrospective models excluding the final 5, 10, 15, and 20 years of index data. Colored lines show model predictions with 95% credible intervals (shading). Observed index values are shown as black points with error bars. Colored points at the bottom indicate the terminal year of each retrospective peel: 2017 (yellow), 2012 (green), 2007 (cyan), and 2002 (blue)."
+#| out-width: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "model-free-hindcast.idx.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-model-free-hindcast-ts
+#| echo: false
+#| fig-cap: "Model-free hindcast performance for key population dynamics parameters. Time series show posterior distributions (median and 95% credible intervals) for depletion (D), population (P), relative depletion ($D/D_{MSY}$), relative fishing mortality ($F/F_{MSY}$), removals, process error, nominal CPUE, and catchability deviates. The diagnostic model (orange) is compared against retrospective models terminating in 2017 (yellow), 2012 (green), 2007 (cyan), and 2002 (blue). Colored points indicate the terminal year of each retrospective peel."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "model-free-hindcast.ts.png"))
 ```
 
 \newpage
