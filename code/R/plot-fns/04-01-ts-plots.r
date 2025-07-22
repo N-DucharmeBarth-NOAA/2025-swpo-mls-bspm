@@ -102,22 +102,29 @@ generate_ppts <- function(model_dirs, params = NULL) {
     plot_dt <- prior_dt %>%
       merge(., tmp_summary[, .(run_id, run_label)])
   }
-  
+
+  # add year
+  yo_dt = tmp_summary[,.(run_label)] %>%
+          unique(.) %>%
+          .[,year_one:=extract_model_start_year(run_label)]
+  plot_dt = plot_dt %>%
+            merge(.,yo_dt,by="run_label") %>%  
+            .[row >= 1, year := year_one + (row - 1)] %>%
+            .[row < 1, year := year_one + (row - 1)] %>%
+            .[name %in% c("Process error", "Process error (raw)") & row > 0, year := year + 1]
+
   # Handle combine option
   if (params$combine) {
     plot_dt <- plot_dt %>%
       .[type == "Posterior", run_label := "Combined posterior"] %>%
       .[type == "Prior", run_label := "Combined prior"] %>%
-      .[, run_label := factor(run_label, levels = c("Combined prior", "Combined posterior"))]
+      .[, run_label := factor(run_label, levels = c("Combined prior", "Combined posterior"))] %>%
+      .[, run_label := droplevels(run_label)]
   }
   
   if (nrow(plot_dt) == 0) {
     stop("No data available for plotting")
   }
-
-  yo_dt = tmp_summary[,.(run_label)] %>%
-          unique(.) %>%
-          .[,year_one:=extract_model_start_year(run_label)]
 
   # Summarize data
   obs_quant <- 0.5 * (1 - (as.numeric(params$quants) - 1e-1) / 100)
@@ -126,11 +133,7 @@ generate_ppts <- function(model_dirs, params = NULL) {
     .[, .(med = median(value), avg = mean(value), 
           lp = quantile(value, probs = obs_quant), 
           up = quantile(value, probs = 1 - obs_quant)), 
-      by = .(run_label, type, name, row)] %>%
-    merge(.,yo_dt,by="run_label") %>%  
-    .[row >= 1, year := year_one + (row - 1)] %>%
-    .[row < 1, year := year_one + (row - 1)] %>%
-    .[name %in% c("Process error", "Process error (raw)") & row > 0, year := year + 1]
+      by = .(run_label, type, name, year)] 
   
   # Define plot dims
   facet_variable = uniqueN(plot_dt$name)
@@ -138,7 +141,9 @@ generate_ppts <- function(model_dirs, params = NULL) {
   plot_nrow = ceiling(facet_variable/plot_ncol)
   
   # Create plot
-  plot_dt = plot_dt %>% .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)]
+  if (!params$combine) {
+    plot_dt = plot_dt %>% .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)]
+  }
   p <- plot_dt %>%
     ggplot() +
     ylab("Metric") +

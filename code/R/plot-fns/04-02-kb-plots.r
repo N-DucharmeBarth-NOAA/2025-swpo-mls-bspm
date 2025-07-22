@@ -101,6 +101,16 @@ generate_kb <- function(model_dirs, params = NULL) {
     plot_dt <- prior_dt %>%
       merge(., tmp_summary[, .(run_id, run_label)])
   }
+
+  # add year
+  yo_dt = tmp_summary[,.(run_label)] %>%
+          unique(.) %>%
+          .[,year_one:=extract_model_start_year(run_label)]
+  plot_dt = plot_dt %>%
+            merge(.,yo_dt,by="run_label") %>%  
+            .[row >= 1, year := year_one + (row - 1)] %>%
+            .[row < 1, year := year_one + (row - 1)] %>%
+            .[name %in% c("Process error", "Process error (raw)") & row > 0, year := year + 1]
   
   # Handle combine option
   if (params$combine) {
@@ -122,7 +132,7 @@ generate_kb <- function(model_dirs, params = NULL) {
   if (params$uncertainty) {
     contour_points_dt <- plot_dt[row == max(plot_dt$row)] %>%
       .[, .(type, run_label, name, iter, value)] %>%
-      dcast(., type + run_label + iter ~ name) %>%
+      dcast(., type + run_label + iter ~ name, fun.aggregate=mean) %>%
       .[, group_id := paste0(type, "-", run_label)]
     
     unique_id <- unique(contour_points_dt$group_id)
@@ -189,13 +199,23 @@ generate_kb <- function(model_dirs, params = NULL) {
   }
   
   # Summarize trajectory data
-  plot_dt <- plot_dt %>%
+  if(uniqueN(plot_dt$run_label)>1){
+    plot_dt <- plot_dt %>%
     .[!is.na(value)] %>%
     .[, .(med = median(value)), by = .(run_label, type, name, row)] %>%
     dcast(., run_label + type + row ~ name)
+  } else {
+    plot_dt <- plot_dt %>%
+    .[!is.na(value)] %>%
+    .[, .(med = median(value)), by = .(run_label, type, name, year)] %>%
+    dcast(., run_label + type + year ~ name)
+  }
+  
   
   # Create Kobe plot
+  if (!params$combine) {
     plot_dt = plot_dt %>% .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)]
+  }
 
   p <- plot_dt %>%
     ggplot() +
@@ -216,19 +236,33 @@ generate_kb <- function(model_dirs, params = NULL) {
     geom_hline(yintercept = 0, color = "black") +
     geom_vline(xintercept = 0, color = "black") +
     geom_hline(yintercept = 1, linewidth = 1.15, color = "black") +
-    geom_vline(xintercept = 1, linewidth = 1.15, color = "black") +
-    geom_path(aes(x = P_Pmsy, y = F_Fmsy, linetype = type, color = run_label), linewidth = 1.25)
+    geom_vline(xintercept = 1, linewidth = 1.15, color = "black")
+    
+  if(uniqueN(plot_dt$run_label)>1){  
+    p = p + geom_path(aes(x = P_Pmsy, y = F_Fmsy, linetype = type, color = run_label), linewidth = 1.25)
+  } else {
+    p = p + geom_path(aes(x = P_Pmsy, y = F_Fmsy, linetype = type),color = "gray60", linewidth = 1)
+    p = p + geom_point(aes(x = P_Pmsy, y = F_Fmsy, fill = year),color = "black", shape=21,size=2)
+  }
   
   # Add uncertainty contours if available
   if (!is.null(contour_dt)) {
-    contour_dt = contour_dt %>% .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)]
-    p <- p + geom_polygon(data = contour_dt, 
-                        aes(x = P_Pmsy, y = F_Fmsy, fill = run_label, group = plot_id), 
-                        alpha = 0.1, show.legend = FALSE)
+    if (!params$combine) {
+      contour_dt = contour_dt %>% .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)]
+    }
+    if(uniqueN(plot_dt$run_label)>1){  
+      p <- p + geom_polygon(data = contour_dt, 
+                          aes(x = P_Pmsy, y = F_Fmsy, fill = run_label, group = plot_id), 
+                          alpha = 0.1, show.legend = FALSE)
+    } else {
+      p <- p + geom_polygon(data = contour_dt, 
+                          aes(x = P_Pmsy, y = F_Fmsy, group = plot_id), fill="gray60", 
+                          alpha = 0.2, show.legend = FALSE)
+    }
   }
   
-  # Add start and end points
-  p <- p +
+  if(uniqueN(plot_dt$run_label)>1){  
+    p <- p +
     geom_point(data = plot_dt[row == 1], aes(x = P_Pmsy, y = F_Fmsy, color = run_label), 
               shape = 21, fill = "white", size = 3) +
     geom_point(data = plot_dt[row == max(plot_dt$row)], aes(x = P_Pmsy, y = F_Fmsy, fill = run_label), 
@@ -237,6 +271,19 @@ generate_kb <- function(model_dirs, params = NULL) {
     viridis::scale_color_viridis("Model run", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE, drop = FALSE) +
     viridis::scale_fill_viridis("Model run", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE, drop = FALSE) +
     get_ssp_theme()
+  } else {
+    p <- p +
+    geom_point(data = plot_dt[year == min(plot_dt$year)], aes(x = P_Pmsy, y = F_Fmsy, color = run_label), 
+              shape = 21, fill = "white", size = 3) +
+    geom_point(data = plot_dt[year == max(plot_dt$year)], aes(x = P_Pmsy, y = F_Fmsy), 
+              fill="black",color = "black", shape = 21, size = 3) +
+    scale_linetype_manual("Distribution type", values = c("dotted", "solid"), drop = FALSE) +
+    viridis::scale_color_viridis("Model run", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE, drop = FALSE) +
+    viridis::scale_fill_viridis("Year", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = FALSE) +
+    get_ssp_theme()
+  }
+    
+    
   
   return(p)
 }

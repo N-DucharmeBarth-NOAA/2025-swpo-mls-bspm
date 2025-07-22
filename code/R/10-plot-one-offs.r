@@ -88,6 +88,7 @@ label_file = file.path(dir_output, "oneoff_short_labels_hand_edit.csv")
 
 # read back the labels
 label_lookup = fread(label_file)
+label_lookup[,short_name := sprintf("%04d", short_name)]
 setkey(label_lookup, short_name)
 
 #________________________________________________________________________________________________________________________________________________________________________________________________________
@@ -123,9 +124,17 @@ process_group <- function(group_name, model_desc_config, label_lookup, model_ste
     
     # create labels
     group_lookup = label_lookup[short_name %in% group_models$short_name]
+    if(nrow(group_lookup) == 0) {
+        cat("  Warning: No labels found for models in group\n")
+        return(NULL)
+    }
+    
     group_labels = paste0(group_lookup$short_name, ": ", group_lookup$short_label)
     labels = c("Diagnostic", group_labels)
     labels = labels[1:length(all_dirs)]  # trim to match found directories
+    
+    cat("  Model directories:", length(all_dirs), "\n")
+    cat("  Labels:", paste(labels, collapse = " | "), "\n")
     
     # setup parameters
     custom_params = get_default_params()
@@ -147,7 +156,7 @@ process_group <- function(group_name, model_desc_config, label_lookup, model_ste
     custom_params$ppp$ncol = 3
     
     custom_params$ppts$model_names = labels
-    custom_params$ppts$var = c("Depletion (D)", "Population (P)", "D_Dmsy", "F_Fmsy", "Removals", "Process error","Nominal CPUE","Catchability deviate")  # Any combination
+    custom_params$ppts$var = c("Depletion (D)", "Population (P)", "F", "D_Dmsy", "F_Fmsy", "Removals", "Process error","Nominal CPUE","Catchability deviate")  # Any combination
     custom_params$ppts$show = "Posterior"  # "Prior" | "Posterior" | "Both"
     custom_params$ppts$combine = FALSE  # TRUE | FALSE
     custom_params$ppts$prop = 0.25  # 0.01 to 1.00 (increments of 0.05)
@@ -156,15 +165,24 @@ process_group <- function(group_name, model_desc_config, label_lookup, model_ste
     
     # generate plots
     tryCatch({
+        cat("  Generating index fit plot...\n")
         p1 = generate_index_fit(all_dirs, custom_params$fits)
         ggsave(file.path(plot_dir, "index_fit.png"), p1, width = 12, height = 8, dpi = 300)
         
-        p2 = generate_catch_fit(all_dirs, custom_params$fits)
-        ggsave(file.path(plot_dir, "catch_fit.png"), p2, width = 12, height = 6, dpi = 300)
+        tryCatch({
+            cat("  Generating catch fit plot...\n")
+            p2 = generate_catch_fit(all_dirs, custom_params$fits)
+            ggsave(file.path(plot_dir, "catch_fit.png"), p2, width = 12, height = 6, dpi = 300)
+        }, error = function(e) {
+            cat("  Warning: Catch fit plot failed for group", group_name, "- skipping this plot\n")
+            cat("  Error:", e$message, "\n")
+        })
         
+        cat("  Generating prior-posterior params plot...\n")
         p3 = generate_ppp(all_dirs, custom_params$ppp)
         ggsave(file.path(plot_dir, "prior_posterior_params.png"), p3, width = 12, height = 10, dpi = 300)
         
+        cat("  Generating prior-posterior timeseries plot...\n")
         p4 = generate_ppts(all_dirs, custom_params$ppts)
         ggsave(file.path(plot_dir, "prior_posterior_timeseries.png"), p4, width = 12, height = 8, dpi = 300)
         
@@ -173,6 +191,7 @@ process_group <- function(group_name, model_desc_config, label_lookup, model_ste
         
     }, error = function(e) {
         cat("  Error generating plots:", e$message, "\n")
+        cat("  Error details:", paste(e$call, collapse = " "), "\n")
         return(NULL)
     })
 }
@@ -182,28 +201,125 @@ process_group <- function(group_name, model_desc_config, label_lookup, model_ste
 groups = unique(model_desc_config[group != "Final ensemble"]$group)
 
 # set number of cores (adjust as needed)
-n_cores = min(parallel::detectCores() - 1, length(groups))
+n_cores = min(parallel::detectCores(logical=FALSE) - 1, length(groups))
 
-if(n_cores > 1) {
-    cat("Processing", length(groups), "groups in parallel using", n_cores, "cores\n")
+cat("=== One-off Sensitivity Analysis Plot Generation ===\n")
+cat("Groups to process:", length(groups), "\n")
+cat("Available cores:", parallel::detectCores(logical=FALSE), "\n")
+cat("Using cores:", n_cores, "\n")
+cat("Groups:", paste(groups, collapse = ", "), "\n\n")
+
+# Process groups in parallel
+if (n_cores > 1 && length(groups) > 1) {
+    cat("PARALLEL PROCESSING MODE\n")
+    cat("========================\n")
     
-    # export necessary objects for parallel processing
-    cluster_vars = list(
-        model_desc_config = model_desc_config,
-        label_lookup = label_lookup,
-        model_stem = model_stem,
-        diag_dir = diag_dir,
-        proj_dir = proj_dir
-    )
+    # Create cluster
+    cl = parallel::makeCluster(n_cores)
     
-    results = parallel::mclapply(groups, function(group_name) {
-        process_group(group_name, cluster_vars$model_desc_config, cluster_vars$label_lookup, 
-                     cluster_vars$model_stem, cluster_vars$diag_dir, cluster_vars$proj_dir)
-    }, mc.cores = n_cores)
+    # Load packages on all workers
+    parallel::clusterEvalQ(cl, {
+        library(data.table)
+        library(magrittr)
+        library(ggplot2)
+        library(GGally)
+        library(viridis)
+    })
+    
+    # Export key objects and functions to workers
+    parallel::clusterExport(cl, c(
+        # Data objects
+        "model_desc_config", "label_lookup", "model_stem", "diag_dir", "proj_dir","process_group",
+        "dir_helper_fns","dir_plot_fns"
+    ), envir = environment())
+
+    parallel::clusterEvalQ(cl, {
+        # Source the helper functions on each worker
+        sapply(file.path(dir_helper_fns,(list.files(dir_helper_fns))),source)
+        sapply(file.path(dir_plot_fns,(list.files(dir_plot_fns))),source)
+        
+        # Set global config on each worker
+        set_global_config(
+            index_names = c("DWFN","AU","NZ","Obs (all)","Obs (NC,FJ&TO)","Obs (PF)"), 
+            model_stem = file.path("data","output","model_runs"),
+            height_per_panel = 350
+        )
+    })
+    
+    # Process groups in parallel
+    start_time = Sys.time()
+
+    results <- parallel::parLapply(cl, groups, function(x) {
+        process_group(x[1], model_desc_config, label_lookup, model_stem, diag_dir, proj_dir)
+      })
+    
+    # Stop cluster
+    parallel::stopCluster(cl)
+    
+    end_time = Sys.time()
+    processing_time = end_time - start_time
+    
+    # Collect successful results
+    successful_groups = unlist(results[!sapply(results, is.null)])
+    failed_groups = groups[sapply(results, is.null)]
+    
+    cat("\nPARALLEL PROCESSING COMPLETED\n")
+    cat("============================\n")
+    cat("Processing time:", round(as.numeric(processing_time, units = "mins"), 2), "minutes\n")
+    cat("Successfully processed groups:", length(successful_groups), "\n")
+    if(length(successful_groups) > 0) {
+        cat("  -", paste(successful_groups, collapse = "\n  - "), "\n")
+    }
+    if(length(failed_groups) > 0) {
+        cat("Failed groups:", length(failed_groups), "\n")
+        cat("  -", paste(failed_groups, collapse = "\n  - "), "\n")
+    }
     
 } else {
-    cat("Processing", length(groups), "groups sequentially\n")
-    results = lapply(groups, process_group, model_desc_config, label_lookup, model_stem, diag_dir, proj_dir)
+    cat("SEQUENTIAL PROCESSING MODE\n")
+    cat("==========================\n")
+    cat("(Using sequential mode because n_cores=1 or only 1 group)\n\n")
+    
+    start_time = Sys.time()
+    
+    successful_groups = c()
+    failed_groups = c()
+    
+    for(group_name in groups) {
+        result = process_group(group_name, model_desc_config, label_lookup, model_stem, diag_dir, proj_dir)
+        if(!is.null(result)) {
+            successful_groups = c(successful_groups, result)
+        } else {
+            failed_groups = c(failed_groups, group_name)
+        }
+    }
+    
+    end_time = Sys.time()
+    processing_time = end_time - start_time
+    
+    cat("\nSEQUENTIAL PROCESSING COMPLETED\n")
+    cat("===============================\n")
+    cat("Processing time:", round(as.numeric(processing_time, units = "mins"), 2), "minutes\n")
+    cat("Successfully processed groups:", length(successful_groups), "\n")
+    if(length(successful_groups) > 0) {
+        cat("  -", paste(successful_groups, collapse = "\n  - "), "\n")
+    }
+    if(length(failed_groups) > 0) {
+        cat("Failed groups:", length(failed_groups), "\n")
+        cat("  -", paste(failed_groups, collapse = "\n  - "), "\n")
+    }
 }
 
-cat("Completed one-off sensitivity plots\n")
+#________________________________________________________________________________________________________________________________________________________________________________________________________
+# Final summary and cleanup
+cat("\n=== FINAL SUMMARY ===\n")
+cat("Total groups:", length(groups), "\n")
+cat("Successful:", length(successful_groups), "\n") 
+cat("Failed:", length(failed_groups), "\n")
+cat("Success rate:", round(length(successful_groups)/length(groups)*100, 1), "%\n")
+
+if(length(successful_groups) > 0) {
+    cat("\nPlots saved in individual directories under:", file.path(proj_dir, "plots", "one-off"), "\n")
+}
+
+cat("\nOne-off sensitivity analysis plotting completed!\n")

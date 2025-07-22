@@ -239,8 +239,8 @@
         ylab("Relative count") +
         geom_density(aes(x = value, fill = distribution), alpha = 0.5) +
         geom_hline(yintercept = 0) +
-        viridis::scale_color_viridis("Distribution", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE) +
-        viridis::scale_fill_viridis("Distribution", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE) +
+        viridis::scale_color_viridis("Distribution", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
+        viridis::scale_fill_viridis("Distribution", begin = 0.1, end = 0.8, direction = 1, option = "H", discrete = TRUE) +
         theme(text = element_text(size = 20),
               panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
               panel.grid.major = element_line(color = 'gray70', linetype = "dotted"), 

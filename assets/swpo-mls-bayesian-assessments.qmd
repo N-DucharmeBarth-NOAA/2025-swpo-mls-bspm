@@ -837,27 +837,99 @@ As described in @sec-desc-sens, `r nrow(model_desc_config[group!="Final ensemble
 
 ### Index {#sec-res-sens-index}
 
+The first one-off sensitivity group explores alternative abundance indices compared to the diagnostic case model that fits only to the DWFN index. This group includes models testing individual indices (0071-0075) and combinations of indices (0129-0132). In general model fit to individual indices (0071-0075) was acceptable (@fig-oneoff-index-idx-fit), though model predictions tended to over-predict the last 5 years of the New Zealand recreational sportfish index (`0072`). However, observation errors for these observations were fairly large relative to earlier observations meaning that the model was not overly constrained to fit them, and could instead follow the trajectory implied by the production function. Notably, only the two longer indices (DWFN and New Zealand recreational) showed sufficient contrast with the catches to meaningfully move the scale estimate from the prior and models fitting either of those indices estimated similar population scales (@fig-oneoff-index-ppp). The Australia longline index (`0071`) showed some posterior update but still estimated a larger overall population scale, the observer index with only data from French Polynesia (`0075`) also showed a noticeable posterior update however had poor convergence diagnostics (@tbl-diagnostics).
 
+For the models fitting to multiple simultaneous indices (0129-0132), estimates of model quantities were largely consistent with the diagnostic case model in terms of scale and trend (@fig-oneoff-index-ppts), even for models fitting to the New Zealand index. This indicated that scale estimates from models fitting to shorter indices may not be reliable. Additionally, fits to the shorter indices were not substantially degraded when also simultaneously fitting to the longer indices.
 
 ### Catch observation error $\sigma_C$ {#sec-res-sens-sigmac}
+
+The diagnostic case model assumes a constant catch observation error of $\sigma_C=0.2$. Three one-off models (`0076`-`0078`) explored alternative assumptions about catch uncertainty including time-varying error structures and different constant error levels. In general parameter estimates were very consistent regardless of the assumed catch observation error level and temporal pattern (@fig-oneoff-catch-obs-error-ppp). The one exception was with the estimation of $\nu_{catch}$, which showed a preference for a Student-t distribution with lighter tails (e.g., more *Normal* distribution-like) when catch observation error was structured to decline overtime from 0.5 following a power curve (`0076` & `0078`). This suggests that the earlier observations may warrant a higher level of observation error. Regardless, estimated model quantities, including key management metrics $D/D_{MSY}$ and $F/F_{MSY}$,were largely unchanged no matter what structure was used with the exceptions that models assuming less catch uncertainty had predictably less estimated uncertainty, and models using a power curve to structure the observation error estimated lower levels of initial nominal CPUE (@fig-oneoff-catch-obs-error-ppts).
+
 ### Early data {#sec-res-sens-early}
+
+Several models explored sensitivity to problematic early data years, particularly 1952 and 1954 which showed unusual catch or effort patterns. Five one-off models (`0079`-`0083`) explored alternative assumptions about the catch and or effort in these years. Parameter estimates were very similar across all formulations (@fig-oneoff-early-data-ppp). However, estimation of $\nu_{catch}$, showed a preference for a Student-t distribution with lighter tails when either alternative catch or effort was assumed for the 1952 observation. This in combination with the results from @sec-res-sens-sigmac suggests that the 1952 observation may be a reporting error and could be modified or downweighted with larger observation error. Fortunately, estimated model quantities, including key management metrics, do not appear sensitive to the treatment of the 1952 observation (@fig-oneoff-catch-obs-error-ppts). 
+
 ### Scaling priors {#sec-res-sens-scaling}
+
+The diagnostic case model estimates a low population scale relative to the prior. Two models (`0093` & `0096`) tested the impact of forcing the model toward higher population scale estimates through modified priors on carrying capacity and catchability. This was more of an academic sensitivity analysis to see if the model could be moved through the prior information from the low estimate. While the sensitivity was successful in shifting the estimated scale higher (@fig-oneoff-scaling-priors-ppp), it showed a clear trade-off with the ability to fit the index (@fig-oneoff-scaling-priors-idx-fit) and showed an incompatibility between the data and larger estimates of scale. This provides additional evidence that the smaller estimates of population scale are driven by the data.
+
+While not investigated in the current analysis, it would be interesting to see how sensitive estimates of population scale are to just changes in the precision of the catchability prior as suggested in @sec-parameter-estimates.
+
 ### Catch observation model {#sec-res-sens-catch-obs}
+
+A single model (`0110`) replaced the default Student-t likelihood for catch observations with a lognormal error structure which is less statistically robust and more impacted by outlier observations. This tested sensitivity to distributional assumptions about catch observation error. Parameter estimates, particularly those related to population scale, showed some sensitivity to choice of catch observation model (@fig-oneoff-catch-obs-model-ppp), and this did translate into some differences in estimated management quantities (@fig-oneoff-catch-obs-model-ppts). However, as previous sensitivity analyses have identified (@sec-res-sens-sigmac & @sec-res-sens-early), some of these early observations appear less reliable and should potentially be made less influential in the likelihood (e.g., use of a Student-t distribution). This finding, combined with the `0110` model showing substantially more observations with large Pareto-k values (@tbl-diagnostics) did not support further use of the lognormal error structure.
+
 ### Temporal resolution of catchability deviates {#sec-res-sens-qdev}
+
+The diagnostic case model estimates catchability deviates in single time steps (annual). Four models explored different temporal resolutions with catchability deviates fixed across 2, 3, 5, and 10-year periods (`0111`-`0114`). Reducing the temporal resolution of the catchability deviates (increasing $n_{step}$) predictably degraded fit to the catch as $n_{step}$ increased (@tbl-performance; @fig-oneoff-temporal-resolution-catch-fit). It also changed estimates of $\sigma_P$ and $q_{eff}$ (@fig-oneoff-temporal-resolution-ppp) which in turn impacted estimates of management quantities particularly depletion and $D/D_{MSY}$ (@fig-oneoff-temporal-resolution-ppts), again particularly for larger values of $n_{step}$. Reducing the temporal resolution of the catchability deviates did improve model parsimony, and the model with $n_{step}=2$ (`0111`) was the best performaing according to LOO-ELPD. However, the LOO-ELPD for this model was not statistically different to the diagnostic case model (ELPD difference = `r diff(summary_diagnostics[short_name%in%c("0100","0111")]$elpd_loo)`; @tbl-diagnostics) and model estimates were nearly identical. In general, the increase in process error estimation as $n_{step}$ increased, the reduced ability to fit the catch were undesireable, and the model equivalence according to LOO-ELPD supported maintaining the diagnostic case model with $n_{step} = 1$.   
+
 ### Catch reporting {#sec-res-sens-catch-reporting}
+
+Striped marlin are a commercially valuable non-target species, and systematic under-reporting of catches or discarding could occur. Three models (`0115`-`0117`) explored potential systematic under-reporting scenarios including constant and time-varying multipliers. As expected, increasing the magnitude of all the catches by $2\times$ (`0115`) shifted the population scale of the population up by ~2 (@fig-oneoff-catch-reporting-ppp) though relative quantites were unchanged (@fig-oneoff-catch-reporting-ppts). However, increasing either the terminal (`0116`) or initial (`0117`) catches by $2\times$ resulted in an increase in population scale, change in the depletion trend, and change in the management advice (@fig-oneoff-catch-reporting-ppts). The `0116` model represented a scenario where potential non-reported catch increased over time, but resulted in a less depleted stock with a removals time series that increased. The `0117` model represented a scenario where non-reported catch decreased over time producing a more depleted stock with a decresing removals time series.
+
+Though there is no evidence at this stage that this level of systematic under-reporting of catches is occuring for SWPO striped marlin, it is useful to be aware of the impacts that changes to our perception of population removals can have on our understanding of stock status. Additionally, for future analyses that may consider changes to the level of catch reporting, it may be useful to do so on a *per hook* basis to take into account the impact of the change in the number of hooks fished over time on total population removals.
+
 ### Process error $\sigma_P$ {#sec-res-sens-process}
+
+The diagnostic case model estimated non-zero process error in the early model period before the CPUE index began. Process error was restricted $\sigma_P \sim 0$ as a one-off sensitivity (`0118`) in order to evaluate if larger initial process error deviates impacted scale estimates or other management quantities. Turning-off the process error did degrade fit to the index slightly (@fig-oneoff-process-error-idx-fit), but overall parameter estimates (@fig-oneoff-process-error-ppp) and management quantities (@fig-oneoff-process-error-ppts) were largely insenstive to a lack of process error. This confirms that the early process error deviates are not impacting the estimation of key management quantities, and also provides further evidence of a well-determined production function.
+
 ### Start year {#sec-res-sens-start}
+
+Given potentially anomalous catch observations in 1952 and 1954, four models (`0119`-`0122`) explored sensitivity to the assumed initial conditions. Models started in either 1955 or 1988 with varying levels of initial depletion. In every case, model results (@fig-oneoff-start-year-ppts) appeared to be fairly sensitive to the choice of prior, however all models except perhaps model `0122` (1988 start with $x_0=0.9$) still estimated substantially lower population carrying capacity $\log(K)$ than the prior (@fig-oneoff-start-year-ppp). However, these models all assumed fairly restrictive priors on $x_0$, and future analyses could evaluate sensitivity to less informative priors or alternatively develop more specific priors for given years based on a prior pushforward analysis.
+
 ### Inclusion of effort deviates {#sec-res-sens-effort}
+
+Early model development explored a more complex formulation of fishing mortality where effort deviates were used in addition to catchability deviates. Two models (`0124`-`0126`) tested whether returning to a full MULTIFAN-CL style *catch-errors* formulation and estimating effort deviates improved model performance. Estimating effort deviates as expected, did produce an improved fit to the catch (@fig-oneoff-effort-deviates-catch-fit) however parameter estimates (@fig-oneoff-effort-deviates-ppp) and model quantities (@fig-oneoff-effort-deviates-ppts) showed negligible differences from the diagnostic case model.
+
 ### Direct estimation of fishing mortality {#sec-res-sens-direct-f}
+
+Rather than estimating fishing mortality indirectly through catchability and effort, two models (`0127`-`0128`) directly estimated annual fishing mortality rates. This tested whether the simpler formulation for fishing mortality could replicate the results of the diagnostic case model, or if the highly parametrized structure of the fishing mortality calculation determined model outcomes. Removing the relationship with effort, and directly estimating fishing mortality allowed the catch to be fit exactly (@fig-oneoff-direct-f-catch-fit) though this resulted in high levels of catch observations showing large Pareto-k values (@tbl-diagnostics) which is undesireable. Matching the prior variability on fishing mortality $\sigma_F$ to the level of variability in fishing mortality seen in the diagnostic case model (`0127`) more or less replicated the estimates from the diagnostic case model (@fig-oneoff-direct-f-ppts). Assuming a smaller, more restrictive prior on $\sigma_F$ (`0128`) resulted in a large increase to population scale to accomodate a time-series of fishing mortality with smaller variability (@fig-oneoff-direct-f-ppts). These results showed that model outcomes were insensitive to how fishing mortality was parametrized, and reaffirmed the sensitivity of model results, particularly population scale, to the priors placed on fishing mortality. 
+
 ### Alternative $R_{Max}$ prior {#sec-res-sens-rmax}
+
+The diagnostic case model estimated a stock with higher productivity than an analogous species, Atlantic white marlin. Two models (`0133`-`0134`) tested sensitivity to a more conservative productivity assumption based on the white marlin $R_{Max}$ estimates from ICCAT [@iccat_report_2020]. As hypothesized, forcing productivity $R_{Max}$ to be lower did result in the model estimating a larger population scale (@fig-oneoff-alt-rmax-ppts). However, this did not necessarily translate to differences in estimated relative management metrics (depletion, $D/D_{MSY}$, or $F/F_{MSY}$), particularly in recent years.
 
 ## Model ensemble
 
+Following extensive sensitivity analysis, and iterative rounds of model development, a four model ensemble is proposed to be considered for the provision of management advice:
+
+- `0100`: DWFN index & life history based shape prior
+- `0102`: New Zealand index & life history based shape prior
+- `0105`: DWFN index & alternative shape prior
+- `0107`: New Zealand index & alternative shape prior
+
+Both candidate indices were the only indices of sufficient length and contrast to inform estimates of population scale. Additionally, the shape parameter is very difficult to estimate from data, and as such model estimates are depedent on the choice of prior. While the baseline shape parameter prior (@tbl-priors) may be sensibly derived from striped marlin life history characteristics, this derivation is sensitive to underlying assumptions and relationships [@fowler_population_1988;@grant_demography_1992]. In the absence of other information, a conservative assumption for the shape parameter is to assume it is centered on $n\sim2$, with uncertainty from @tbl-priors. This reduces the production model to a Schaefer-type production model where $D_{MSY} = 0.5$.
+
 ### Ensemble diagnostics and fit {#sec-ensemble-diagnostics}
 
-### Population dynamics and stock status {#sec-grid-stock-status}
+#### Convergence {#sec-ensemble-diags-convergence}
 
-### Biological reference points {#sec-reference-points}
+All ensemble models achieved satisfactory convergence based on standard Hamiltonian Monte Carlo diagnostics (@tbl-diagnostics). All models met convergence criteria with $\hat{R}$ values well below the 1.01 threshold and effective sample sizes exceeding the recommended minimum of 500 (100 samples per chain). No divergent transitions were observed across chains, and maximum tree depth was not exceeded during sampling, indicating successful exploration of the posterior space. The proportion of observations with Pareto-k > 0.7 was very low (<5%) across all models and the effective number of estimated parameters p_loo was well below both the number of observations and the actual estimated parameter count.
+
+#### Data fit {#sec-ensemble-data-fit}
+
+Model fits to the catch data were equivalent between models and captured the trend and magnitude of the catches adequately (@fig-ens-catch-fit). For models fitting to the same index (e.g., `0100` & `0105`), the alternative assumption for shape $n$ had no influence on the estimated fit. However, comparing relative fits between models fitting to different indices, the models fitting to the DWFN index did a noticeably better job (lower RMSE) capturing the trend than models fitting to the New Zealand index (@tbl-performance;@fig-ens-idx-fit). As mentioned in @sec-res-sens-index, models fitting to the New Zealand index failed to capture the trend over the last five years. 
+
+#### Model validation {#sec-ensemble-model-val}
+
+Overall retrospective bias was within the acceptable range proposed by [@hurtado-ferro_looking_2015] for all models, with the models fitting to the New Zealand index showing positive retrospective bias rather than negative for models fitting to the DWFN index (@tbl-performance). Furthermore, all quantities were within the 95% credible interval of the full time-series model for all peels (@tbl-performance; @fig-ens-retro).
+
+For hindcast cross-validation, both models fitting to the DWFN index substantially exceeded the performance of the naïve predictor (@tbl-performance; @fig-ens-hcxval). Models fitting to the New Zealand recreational index showed poor performance (MASE > 1), as the models were unable to follow the declining trend over the last five years.
+
+### Population dynamics and trends {#sec-ensemble-trends}
+
+The estimated depletion^[Note that depletion for the surplus producation model is a *static* depletion defined relative to total unfished numbers $D_t=P_t/P_0$; where $P_t$ is the total population level in numbers at time $t$, and $P_0 = K$ the unfished population numbers or carrying capacity. This is different from the *dynamic* depletion of spawning biomass $SB_t/SB_{t,F=0}$ that is typically reported from integrated age-structured models such as MULTIFAN-CL or Stock Synthesis [@methot_jr_stock_2013].] time series from the model ensemble shows a decline from the assumed unfished state in 1952 to minimum levels around the mid-2010s (@fig-ens-timeseries). The decline was most pronounced during the 1950s and 1960s, followed by relatively stable depletion levels from the 1970s through the early 2000s which fluctuated round $\sim 0.4-0.6$. The stock has been estimated to be recovering from the mid-2010s. Credible intervals around depletion estimates are relatively wide, reflecting inherent uncertainty in the population scale.
+
+The estimated population time series mirrors these depletion patterns. It is important to note that while the uncertainty in absolute population size is substantial, as reflected in wide credible intervals, this uncertainty is asymmetric. The model is fairly confident that the model can not be much smaller than what it currently is estimated to be due to the hard constraint of at least being large enough to support the 70 year time-series of catches. As seen in the one-off sensitivites (@sec-res-sens-scaling & @sec-res-sens-rmax), uncertainty to the high-side is driven in part by the prior assumptions for $\log(K)$, $q_{eff}$, and $R_{Max}$, as well as by model structrual choices with regards to treatment of catch uncertainty (@sec-res-sens-catch-obs) and structure of fishing mortality (@sec-res-sens-effort). 
+
+Process error estimates showed consistent temporal variability across ensemble models, with the largest deviations occurring in the 1970s and 1980s. This indicates that removals alone could not explain the observed changes in the standardized indices in these time periods, suggesting additional factors influencing population dynamics during these periods or insufficient observation error. 
+
+[Fishing mortality estimates display high variability throughout the time series, with substantial uncertainty reflected in wide credible intervals. The F time series shows episodic peaks during the 1970s and 1980s, corresponding to periods of intensive fishing pressure, followed by more variable but generally declining trends in recent decades. This pattern is consistent with the observed recovery in population depletion during the same period.
+
+Catchability deviations demonstrate substantial temporal variation, particularly during the early period of the fishery. The estimates show generally declining trends from elevated levels in the 1950s and 1960s toward more stable values in recent decades. This temporal pattern likely reflects changes in fishing technology, fleet behavior, and spatial distribution of fishing effort over the model period.
+Nominal CPUE estimates from the model ensemble track the general declining trend observed in the standardized index, showing elevated values during the early unfished period followed by substantial declines through the 1980s and 1990s. Recent nominal CPUE estimates show stabilization at lower levels consistent with the moderate depletion levels estimated for the contemporary period, though with continued high uncertainty around point estimates.]
+
+### Stock status {#sec-ensemble-stock-status}
 
 ### Future projections {#sec-projections}
 
@@ -1413,7 +1485,7 @@ knitr::include_graphics(file.path(proj_dir, "plots", "realized-prior-plot.png"))
 ```{r}
 #| label: fig-rmax-subsample-bio
 #| echo: false
-#| fig-cap: "Distributions of biological parameters (maximum age *max_age*, natural mortality reference *M_ref*, length at birth *L1*, asymptotic length *L2*, von Bertalanffy growth coefficient *vbk*, length at 50% maturity *l50*, sex ratio at birth *sex_ratio*, coefficient of variation in length *cv_len*, weight-length relationship parameters *weight_a* and *weight_b*, and steepness *h*) used in the rmax sub-sampling process. Original biological prior distribution (orange shading), input prior distribution following the prior pushforward analysis (green shading), and final sub-sampled distribution selected to match the posterior $R_{Max}$ distribution (blue shading)."
+#| fig-cap: "Distributions of biological parameters (maximum age *max_age*, natural mortality reference *M_ref*, length at birth *L1*, asymptotic length *L2*, von Bertalanffy growth coefficient *vbk*, length at 50% maturity *l50*, sex ratio at birth *sex_ratio*, coefficient of variation in length *cv_len*, weight-length relationship parameters *weight_a* and *weight_b*, and steepness *h*) used in the rmax sub-sampling process. Original biological prior distribution (blue shading), input prior distribution following the prior pushforward analysis (green shading), and final sub-sampled distribution selected to match the posterior $R_{Max}$ distribution (orange shading)."
 #| out-width: "100%"
 #| fig-pos: "H"
 
@@ -1445,11 +1517,524 @@ knitr::include_graphics(file.path(proj_dir, "plots", "model-free-hindcast.idx.pn
 ```{r}
 #| label: fig-model-free-hindcast-ts
 #| echo: false
-#| fig-cap: "Model-free hindcast performance for key population dynamics parameters. Time series show posterior distributions (median and 95% credible intervals) for depletion (D), population (P), relative depletion ($D/D_{MSY}$), relative fishing mortality ($F/F_{MSY}$), removals, process error, nominal CPUE, and catchability deviates. The diagnostic model (orange) is compared against retrospective models terminating in 2017 (yellow), 2012 (green), 2007 (cyan), and 2002 (blue). Colored points indicate the terminal year of each retrospective peel."
+#| fig-cap: "Model-free hindcast performance for key population dynamics parameters. Time series show posterior distributions (median and 95% credible intervals) for depletion (D), population (P), fishing mortality (F), relative depletion ($D/D_{MSY}$), relative fishing mortality ($F/F_{MSY}$), removals, process error, nominal CPUE, and catchability deviates. The diagnostic model (orange) is compared against retrospective models terminating in 2017 (yellow), 2012 (green), 2007 (cyan), and 2002 (blue). Colored points indicate the terminal year of each retrospective peel."
 #| out-width: "100%"
 #| fig-pos: "H"
 
 knitr::include_graphics(file.path(proj_dir, "plots", "model-free-hindcast.ts.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-index-idx-fit
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Index`.Model fit to standardized index data showing observations (black points with 95% error bars) and model-predictions (colored lines and shaded ribbons representing 95% credible intervals). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Index", "index_fit.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-index-ppp
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Index`.Prior and posterior parameter distributions showing the evolution from prior (dotted line) to posterior (shaded) distributions for leading model parameters: carrying capacity (logK), intrinsic growth rate (r), observation error (sigmao_add), process error (sigmap), shape parameter, effective catchability (qeff), autocorrelation in catchability (rho), catchability deviation variability (sigma_qdev), initial depletion (x0), and catch likelihood degrees of freedom (nu_catch). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Index", "prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-index-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Index`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Index", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-catch-obs-error-ppp
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Catch observation error`. Prior and posterior parameter distributions showing the evolution from prior (dotted line) to posterior (shaded) distributions for leading model parameters: carrying capacity (logK), intrinsic growth rate (r), observation error (sigmao_add), process error (sigmap), shape parameter, effective catchability (qeff), autocorrelation in catchability (rho), catchability deviation variability (sigma_qdev), initial depletion (x0), and catch likelihood degrees of freedom (nu_catch). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__sigma_c", "prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-catch-obs-error-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Catch observation error`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__sigma_c", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+
+```{r}
+#| label: fig-oneoff-early-data-ppp
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Early data`. Prior and posterior parameter distributions showing the evolution from prior (dotted line) to posterior (shaded) distributions for leading model parameters: carrying capacity (logK), intrinsic growth rate (r), observation error (sigmao_add), process error (sigmap), shape parameter, effective catchability (qeff), autocorrelation in catchability (rho), catchability deviation variability (sigma_qdev), initial depletion (x0), and catch likelihood degrees of freedom (nu_catch). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Early_data", "prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-early-data-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Early data`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Early_data", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-scaling-priors-ppp
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Scaling priors`. Prior and posterior parameter distributions showing the evolution from prior (dotted line) to posterior (shaded) distributions for leading model parameters: carrying capacity (logK), intrinsic growth rate (r), observation error (sigmao_add), process error (sigmap), shape parameter, effective catchability (qeff), autocorrelation in catchability (rho), catchability deviation variability (sigma_qdev), initial depletion (x0), and catch likelihood degrees of freedom (nu_catch). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Scaling_priors", "prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-scaling-priors-idx-fit
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Scaling priors`. Model fit to standardized index data showing observations (black points with 95% error bars) and model-predictions (colored lines and shaded ribbons representing 95% credible intervals). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Scaling_priors", "index_fit.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-catch-obs-model-ppp
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Catch observation model`. Prior and posterior parameter distributions showing the evolution from prior (dotted line) to posterior (shaded) distributions for leading model parameters: carrying capacity (logK), intrinsic growth rate (r), observation error (sigmao_add), process error (sigmap), shape parameter, effective catchability (qeff), autocorrelation in catchability (rho), catchability deviation variability (sigma_qdev), initial depletion (x0), and catch likelihood degrees of freedom (nu_catch). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Catch_obs_model", "prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-catch-obs-model-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Catch observation model`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Catch_obs_model", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-temporal-resolution-catch-fit
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Temporal resolution of catchability deviates`. Model fit to catch data showing observed catch (black points with 95% error bars) and model-predicted catch (colored lines and shaded ribbons representing 95% credible intervals). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__qdev_steps", "catch_fit.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-temporal-resolution-ppp
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Temporal resolution of catchability deviates`. Prior and posterior parameter distributions showing the evolution from prior (dotted line) to posterior (shaded) distributions for leading model parameters: carrying capacity (logK), intrinsic growth rate (r), observation error (sigmao_add), process error (sigmap), shape parameter, effective catchability (qeff), autocorrelation in catchability (rho), catchability deviation variability (sigma_qdev), initial depletion (x0), and catch likelihood degrees of freedom (nu_catch). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__qdev_steps", "prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-temporal-resolution-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Temporal resolution of catchability deviates`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__qdev_steps", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-catch-reporting-ppp
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Catch reporting`. Prior and posterior parameter distributions showing the evolution from prior (dotted line) to posterior (shaded) distributions for leading model parameters: carrying capacity (logK), intrinsic growth rate (r), observation error (sigmao_add), process error (sigmap), shape parameter, effective catchability (qeff), autocorrelation in catchability (rho), catchability deviation variability (sigma_qdev), initial depletion (x0), and catch likelihood degrees of freedom (nu_catch). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Catch_reporting", "prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-catch-reporting-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Catch reporting`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Catch_reporting", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-process-error-idx-fit
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Process error`. Model fit to standardized index data showing observations (black points with 95% error bars) and model-predictions (colored lines and shaded ribbons representing 95% credible intervals). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Process_error", "index_fit.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-process-error-ppp
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Process error`. Prior and posterior parameter distributions showing the evolution from prior (dotted line) to posterior (shaded) distributions for leading model parameters: carrying capacity (logK), intrinsic growth rate (r), observation error (sigmao_add), process error (sigmap), shape parameter, effective catchability (qeff), autocorrelation in catchability (rho), catchability deviation variability (sigma_qdev), initial depletion (x0), and catch likelihood degrees of freedom (nu_catch). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Process_error", "prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-process-error-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Process error`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Process_error", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-start-year-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Start year`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Start_year", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-start-year-ppp
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Start year`. Prior and posterior parameter distributions showing the evolution from prior (dotted line) to posterior (shaded) distributions for leading model parameters: carrying capacity (logK), intrinsic growth rate (r), observation error (sigmao_add), process error (sigmap), shape parameter, effective catchability (qeff), autocorrelation in catchability (rho), catchability deviation variability (sigma_qdev), initial depletion (x0), and catch likelihood degrees of freedom (nu_catch). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Start_year", "prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-effort-deviates-catch-fit
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Inclusion of effort deviates`. Model fit to catch data showing observed catch (black points with 95% error bars) and model-predicted catch (colored lines and shaded ribbons representing 95% credible intervals). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Est__effort_devs", "catch_fit.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-effort-deviates-ppp
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Inclusion of effort deviates`. Prior and posterior parameter distributions showing the evolution from prior (dotted line) to posterior (shaded) distributions for leading model parameters: carrying capacity (logK), intrinsic growth rate (r), observation error (sigmao_add), process error (sigmap), shape parameter, effective catchability (qeff), autocorrelation in catchability (rho), catchability deviation variability (sigma_qdev), initial depletion (x0), and catch likelihood degrees of freedom (nu_catch). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Est__effort_devs", "prior_posterior_params.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-effort-deviates-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Inclusion of effort deviates`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Est__effort_devs", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-direct-f-catch-fit
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Direct estimation of fishing mortality`. Model fit to catch data showing observed catch (black points with 95% error bars) and model-predicted catch (colored lines and shaded ribbons representing 95% credible intervals). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Direct_F_estimation", "catch_fit.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-direct-f-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Direct estimation of fishing mortality`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Direct_F_estimation", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-oneoff-alt-rmax-ppts
+#| echo: false
+#| fig-cap: "One-off sensitivity group: `Alternative RMax prior`. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "one-off", "One-off__Rmax_prior", "prior_posterior_timeseries.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-ens-catch-fit
+#| echo: false
+#| fig-cap: "**Model ensemble**. Model fit to catch data showing observed catch (black points with 95% error bars) and model-predicted catch (colored lines and shaded ribbons representing 95% credible intervals). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "ensemble.catch_fit.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-ens-idx-fit
+#| echo: false
+#| fig-cap: "**Model ensemble**.. Model fit to standardized index data showing observations (black points with 95% error bars) and model-predictions (colored lines and shaded ribbons representing 95% credible intervals). The diagnostic model (`0100`) is shown in orange."
+#| out-width: "100%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots", "ensemble.idx_fit.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-ens-retro
+#| echo: false
+#| fig-cap: "Retrospective analysis for the four ensemble models with respect to time series of depletion $D_t$, depletion relative to depletion at MSY $D_t/D_{MSY}$, fishing mortality $F_t$, and fishing mortality relative to the rate of fishing mortality that produces MSY $F_t/F_{MSY}$. The base model with data included through 2022 (black line – median; dark shading – 50% credible interval; light shading – 95% credible interval) is shown relative to the retrospective models. Colored lines correspond to the last year of index data and the colored point indicates the estimate in the last year of the retrospective peel."
+#| out-width: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","ensemble.retro_analysis.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-ens-hcxval
+#| echo: false
+#| fig-cap: "Standardized indices of relative abundance used in the model ensemble. Open circles show observed values (standardized to mean of 1; black horizontal line) and the vertical bars indicate the observation error (95% confidence interval). One year ahead 'model-free' hindcast predictions are shown by the colored lines, where the color indicates the last year of index data seen by the model. The predicted value is shown one year-ahead with the colored point."
+#| out-height: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","ensemble.hcxval_analysis.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-ens-timeseries
+#| echo: false
+#| fig-cap: "**Model ensemble**. Posterior time series distributions for key derived quantities over time (line = median, shading = 95% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The model ensemble is shown in orange."
+#| out-height: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","ensemble.ppts.png"))
 ```
 
 \newpage

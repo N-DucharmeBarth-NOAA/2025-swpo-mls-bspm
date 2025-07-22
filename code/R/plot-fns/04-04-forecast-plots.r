@@ -76,6 +76,18 @@ generate_fcast <- function(model_dirs, params = NULL) {
   plot_dt <- posterior_dt %>%
     merge(., tmp_summary[, .(run_id, run_label)])
   
+
+
+  # add year
+  yo_dt = tmp_summary[,.(run_label)] %>%
+          unique(.) %>%
+          .[,year_one:=extract_model_start_year(run_label)]
+  plot_dt = plot_dt %>%
+            merge(.,yo_dt,by="run_label") %>%  
+            .[row >= 1, year := year_one + (row - 1)] %>%
+            .[row < 1, year := year_one + (row - 1)] %>%
+            .[name %in% c("Process error", "Process error (raw)") & row > 0, year := year + 1]
+
   # Handle combine option
   if (params$combine) {
     plot_dt <- plot_dt %>%
@@ -86,10 +98,6 @@ generate_fcast <- function(model_dirs, params = NULL) {
     stop("No data available for plotting")
   }
 
-  yo_dt = tmp_summary[,.(run_label)] %>%
-          unique(.) %>%
-          .[,year_one:=extract_model_start_year(run_label)]
-  
   # Summarize data
   obs_quant <- 0.5 * (1 - (as.numeric(params$quants) - 1e-1) / 100)
   plot_dt <- plot_dt %>%
@@ -97,19 +105,17 @@ generate_fcast <- function(model_dirs, params = NULL) {
     .[, .(med = median(value), avg = mean(value), 
           lp = quantile(value, probs = obs_quant), 
           up = quantile(value, probs = 1 - obs_quant)), 
-      by = .(run_label, type, name, row)] %>%
-     merge(.,yo_dt,by="run_label") %>%   
-    .[row >= 1, year := year_one + (row - 1)] %>%
-    .[row < 1, year := year_one + (row - 1)] %>%
-    .[name %in% c("Process error", "Process error (raw)") & row > 0, year := year + 1]
+      by = .(run_label, type, name, year)] 
   
   # Define plot dims
   facet_variable = uniqueN(plot_dt$name)
   plot_ncol = if(is.null(params$ncol)) min(c(3, facet_variable)) else params$ncol
   plot_nrow = ceiling(facet_variable/plot_ncol)
-
-  # Create forecast plot
-  plot_dt = plot_dt %>% .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)]
+  
+  # Create plot
+  if (!params$combine) {
+    plot_dt = plot_dt %>% .[,run_label:=factor(run_label,levels=tmp_summary$run_label,labels=short_plot_names)]
+  }
   p <- plot_dt %>%
     ggplot() +
     ylab("Metric") +
