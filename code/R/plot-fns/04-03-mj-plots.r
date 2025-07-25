@@ -217,7 +217,7 @@ generate_mj <- function(model_dirs, params = NULL) {
   }
   p <- plot_dt %>%
     ggplot() +
-    xlab(expression(P/P[0])) +
+    xlab(expression("Depletion "(P/P[0]))) +
     ylab(expression(F/F["MSY"])) +
     coord_fixed(ylim = c(0, 2.25), xlim = c(0, 1.25)) +
     scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +

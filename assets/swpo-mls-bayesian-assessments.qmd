@@ -11,9 +11,6 @@ author:
     affiliations:
       - id: spc
         name: "Oceanic Fisheries Programme of the Pacific Community"
-  - name: "F. Carvalho"
-    affiliations:
-      - ref: pifsc
   - name: "P. Hamer"
     affiliations:
       - ref: spc
@@ -76,11 +73,81 @@ diag_model = "0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0"
 model_desc_config = fread(file.path(proj_dir,"data","output","model_desc_config.csv"))
 model_desc_config[,short_name:=sprintf("%04d", short_name)]
 model_desc_config[,short_name:=factor(short_name,levels=short_name)]
+
+# Read catch data
+catch_dt = fread(file.path(proj_dir, "data", "input", "catch.csv"))
+
+# Load effort data 
+effort_dt = fread(file.path(proj_dir, "data", "input", "WCPFC_L_PUBLIC_BY_FLAG_YR.CSV")) %>%
+                .[, lat_short_d := ifelse(grepl("S$", lat_short), 
+                                        -as.numeric(gsub("[NS]", "", lat_short)), 
+                                        as.numeric(gsub("[NS]", "", lat_short))) + 2.5] %>%
+                .[, lon_short_d := ifelse(grepl("W$", lon_short), 
+                                        360 - as.numeric(gsub("[EW]", "", lon_short)), 
+                                            as.numeric(gsub("[EW]", "", lon_short))) + 2.5] %>%
+                .[lat_short_d > -60 & lat_short_d < 0 & lon_short_d < 230] %>%
+                .[!(lat_short_d > -5 & lon_short_d > 210)] %>%
+                .[,.(effort_scaled = sum(hhooks)/1e6),by=yy] %>%
+                .[yy %in% 1952:2022] %>%
+                setnames(., "yy", "time")
+    
+catch_annual = catch_dt[,.(total_catch = sum(Obs * 1000)), by = .(year = floor(Time))]
+setorder(catch_annual, year)
+    
+# Merge with effort data
+catch_effort_annual = merge(catch_annual, effort_dt, by.x = "year", by.y = "time", all.x = TRUE)
+    
+# Fill missing effort with mean (if any)
+if(any(is.na(catch_effort_annual$effort_scaled))) {
+    catch_effort_annual[is.na(effort_scaled), effort_scaled := mean(effort_scaled, na.rm = TRUE)]
+}
+
+catch_effort_annual[,effort_scaled:=(effort_scaled*1e6*100)/1e3]
+catch_effort_annual[,nominal_cpue:=total_catch/effort_scaled]
+
 ```
 
 \newpage
 
 # Executive summary
+
+```{r}
+#| label: exec-data
+#| echo: false
+#| warning: false
+#| message: false
+ens_summary = fread(file.path(proj_dir,"data","output","ens_derived_summary.csv"))
+ens_probs = fread(file.path(proj_dir,"data","output","ens_derived_probs.csv"))
+ens_joint_probs = fread(file.path(proj_dir,"data","output","ens_joint_probs.csv"))
+ens_forecast_summary = fread(file.path(proj_dir,"data","output","ens_forecast_summary.csv"))
+ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_probs.csv"))
+```
+
+This working paper presents part II of the 2025 stock assessment of Southwest Pacific Ocean (SWPO) striped marlin (*Kajikia audax*) and describes a data-moderate Bayesian surplus production model (BSPM) approach. This assessment represents a strategic shift from the integrated age-structured models used previously, given challenges with data conflicts, poor fits to size composition data, and difficulties in estimating model initial conditions in the integrated age-structured model. The complexity of integrated age-structured models becomes problematic when fundamental data conflicts exist or when key biological parameters are uncertain, making the simplified yet robust BSPM framework a reasonable alternative. In combination with information from the integrated stock assessment, the BSPM can provide a holistic view on likely stock status and population trajectory.
+
+In order to evaluate stock status, a series of BSPMs spanning 1952-2022 were developed following the Fletcher-Schaefer production model framework, incorporating biological uncertainty through simulation-based priors, process error in population dynamics, and observation error in abundance indices and catch data. Informative priors for maximum intrinsic rate of increase $R_{Max}$ and carrying capacity $\log(K)$ were developed through numerical simulation based on biological and fishery characteristics, with prior distributions refined using pushforward analysis to ensure biological realism. The assessment utilized annual catch data in numbers aggregated into total removals and fitted to standardized CPUE indices, primarily the distant water fishing nation (DWFN) longline index and New Zealand recreational sportfish index. An extensive sensitivity analysis including `r nrow(model_desc_config[group!="Final ensemble"])` one-off models was conducted to explore uncertainties in data inputs, model structure, and biological assumptions, with a four-model ensemble ultimately proposed for the provision of management advice.
+
+Key uncertainties and limitations of the assessment include:
+
+- **Population scale**: Substantial uncertainty in absolute population scale, though minimum scale is well-constrained by the 70-year catch history
+- **Stock structure**: Potential stock connectivity issues given genetic evidence of SWPO fish in North Pacific catches  
+- **Data representativeness**: Uncertainty in how well available abundance indices represent true stock trends and whether catch reporting has been complete over the assessment period
+- **Model structure**: The BSPM approach inherently simplifies complex age-structured population dynamics, assuming a single well-mixed population with knife-edged selectivity
+- **Biological parameters**: Uncertainty in key biological parameters (e.g., natural mortality, steepness, and growth) propagates through prior distributions and contributes to wide credible intervals around stock status estimates
+
+The general conclusions of this assessment are as follows:
+
+- **Population trajectory**: The SWPO striped marlin stock declined substantially from the assumed unfished state in 1952, reaching minimum levels around the mid-2010s, with strong evidence of recovery since approximately 2015
+- **Current stock status**: The stock is estimated to be overfished but not undergoing overfishing, with recent depletion relative to $D_{MSY}$ at `r round(ens_summary[name == "recent_D_Dmsy", median], 2)` (95% CI: `r round(ens_summary[name == "recent_D_Dmsy", q025], 2)` – `r round(ens_summary[name == "recent_D_Dmsy", q975], 2)`) and recent fishing mortality relative to $F_{MSY}$ at `r round(ens_summary[name == "recent_F_Fmsy", median], 2)` (95% CI: `r round(ens_summary[name == "recent_F_Fmsy", q025], 2)` – `r round(ens_summary[name == "recent_F_Fmsy", q975], 2)`)
+- **Stock status probabilities**: There is a `r round((ens_probs[name == "recent_D_Dmsy", prop_meeting_condition]) * 100, 0)`% probability that the stock is below $D_{MSY}$ and only a `r round(ens_probs[name == "recent_F_Fmsy", prop_meeting_condition] * 100, 1)`% probability that overfishing is occurring
+- **Future projections**: Ten-year projections assuming recent average catch levels indicate continued recovery, with median $D/D_{MSY}$ projected to reach `r round(ens_forecast_summary[year==2032&name == "D_Dmsy", median], 2)` by 2032 and only a `r round(ens_forecast_probs[year==2032&name=="D_Dmsy"]$prop_meeting_condition*100,digits=2)`% chance of remaining overfished
+
+The assessment provides the following recommendations:
+
+- **Stock structure research**: Development of a conceptual model for SWPO striped marlin, potentially in collaboration with the ISC Billfish Working Group, to address stock connectivity given genetic evidence of SWPO fish in North Pacific catches
+- **Biological parameter refinement**: Reduction of uncertainty in growth, maturity, natural mortality, and steepness parameters through targeted research, and data collection
+- **Future modeling approach**: Progressive development within a Bayesian framework toward full age-structure through delay-difference models, age-structured production models, and fully integrated age-structured models 
+- **Management strategy evaluation (MSE)**: Development of robust management measures through MSE approaches can provide utility given substantial uncertainties in model inputs
 
 \newpage
 
@@ -133,7 +200,7 @@ R_{Max} \cdot x_{t-1} \left(1 - \frac{x_{t-1}}{h}\right), & x_{t-1} \leq D_{MSY}
 \gamma \cdot m \cdot x_{t-1} \left(1 - x_{t-1}^{n-1}\right), & x_{t-1} > D_{MSY}
 \end{cases}$$
 
-Here, $R_{Max}$ is the maximum intrinsic rate of increase, $n$ is the shape parameter, $F_{t-1}$ is the fishing mortality in year $t-1$, and $\epsilon_t$ represents multiplicative process error with $\epsilon_t = \exp(\delta_t - \sigma_P^2/2)$ and $\delta_t \sim N(0, \sigma_P)$. The intermediate parameters are: $D_{MSY} = (1/n)^{1/(n-1)}$, $h = 2D_{MSY}$, $m = R_{Max} \cdot h/4$, and $\gamma = n^{n/(n-1)}/(n-1)$.
+Here, $R_{Max}$ is the maximum intrinsic rate of increase, $n$ is the shape parameter, $F_{t-1}$ is the fishing mortality in year $t-1$, and $\epsilon_t$ represents multiplicative process error with $\epsilon_t = \exp(\delta_t - \sigma_P^2/2)$ and $\delta_t \sim N(0, \sigma_P)$. The intermediate parameters are: $D_{MSY} = (1/n)^{1/(n-1)}$, $h = 2D_{MSY}$, $m = R_{Max} \cdot h/4$, and $\gamma = n^{n/(n-1)}/(n-1)$. MSY is the maximum sustainable yield.
 
 Fishing mortality $F_t$ is in turn defined as a function of fishing effort and time-varying catchability:
 
@@ -220,7 +287,7 @@ Prior distributions for carrying capacity $\log(K)$ and initial catchability coe
 
 #### Carrying capacity prior ($\log(K)$)
 
-The carrying capacity prior was constructed by assuming the maximum observed catch approximates maximum sustainable yield (MSY). This provides a conservative assumption for the upper limit of population scale^[The upper limit of population scale is typically more challenging to estimate than the lower population limit as population scales of infinite sizes can support any observed catches. However, there typically is a hard floor to population scale in that it must be sufficiently large to maintain a population that produces the time series of observed catches.] as larger MSY correlates positively with larger population scale. To account for uncertainty in the maximum catch $\sim$ MSY relationship (e.g., true MSY was above or below the maximum observed catch), candidate $MSY$ values were sampled from a lognormal distribution centered on the maximum observed catch with moderate levels of uncertainty ($MSY \sim \text{Lognormal}(\log(\text{max catch}), 0.5)$).
+The carrying capacity prior was constructed by assuming the maximum observed catch approximates MSY. This provides a conservative assumption for the upper limit of population scale^[The upper limit of population scale is typically more challenging to estimate than the lower population limit as population scales of infinite sizes can support any observed catches. However, there typically is a hard floor to population scale in that it must be sufficiently large to maintain a population that produces the time series of observed catches.] as larger MSY correlates positively with larger population scale. To account for uncertainty in the maximum catch $\sim$ MSY relationship (e.g., true MSY was above or below the maximum observed catch), candidate $MSY$ values were sampled from a lognormal distribution centered on the maximum observed catch with moderate levels of uncertainty ($MSY \sim \text{Lognormal}(\log(\text{max catch}), 0.5)$).
 
 For each combination of MSY, biologically-derived $R_{Max}$ and shape parameter $n$, carrying capacity was calculated as:
 
@@ -238,7 +305,7 @@ where CPUE was calculated from early fishery data (first 10 years of catch and e
 
 ### Other priors {#sec-other-priors}
 
-As mentioned previously, initial prior distributions for the remaining leading model parameters (initial depletion $x_0$, AR1 correlation in catchability deviates $\rho$, variability in catchability deviates $\sigma_{qdev}$, process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$) were specified either using expert opinion or literture.
+As mentioned previously, initial prior distributions for the remaining leading model parameters (initial depletion $x_0$, AR1 correlation in catchability deviates $\rho$, variability in catchability deviates $\sigma_{qdev}$, process error $\sigma_P$, index observation error $\sigma_{O,add}$, and degrees of freedom of the catch likelihood $\nu_{catch}$) were specified either using expert opinion or literature.
 
 Given that the limited large-scale industrial fishing existed in the SWPO prior to the expansion of the Japanese distant-water longline fleet in 1952, the population was assumed to start at an unfished condition with some uncertainty. Initial depletion $x_0$ was modeled with a lognormal distribution centered on 1. A lognormal prior was used for the standard deviation of the process error where the parameters were converted from the JABBA default prior for process error [@winker_jabba_2018]. The degrees of freedom $nu_{catch}$ parameter assumed a gamma prior based on suggestions in the literature that it serves as a sensible default choice [@juarez_model-based_2010]. The prior for index observation error $\sigma_{O,add}$ assumed a half-normal distribution following @isc_stock_2024 which provides sufficient support for a broad range of extra estimated observation error. For the autocorrelation coefficient in catchability deviations ($\rho$) and the standard deviation of catchability deviations ($\sigma_{qdev}$), initial priors were derived from data-filtering simulation results and specified as a bivariate distribution on the transformed scale: $\tanh^{-1}(\rho)$ and $\log(\sigma_{qdev})$.
 
@@ -272,7 +339,7 @@ The diagnostic case model fits only to the DWFN index. One-off model sensitiviti
 - `0074`: Fits to the longline observer data excluding the French Polynesia program
 - `0075`: Fits only to the longline observer data from the French Polynesia program
 
-The French Polynesia observer program data was treated seperately as it showed differing trends from the other 3 observer programs [@neubauer_exploring_2025]. Additionally, given that the shorter indices (Australia and longline observer) provided little information about population scale, several other models were set-up to simultaneously fit them with the two longer indices (DWFN and New Zealand).
+The French Polynesia observer program data was treated separately as it showed differing trends from the other 3 observer programs [@neubauer_exploring_2025]. Additionally, given that the shorter indices (Australia and longline observer) provided little information about population scale, several other models were set-up to simultaneously fit them with the two longer indices (DWFN and New Zealand).
 
 - `0129`: Fits to the DWFN & Australia index
 - `0130`: Fits to the New Zealand & Australia index
@@ -338,7 +405,7 @@ Striped marlin are a commerically valuable non-target species, and as such it is
 
 The diagnostic case model estimated non-zero process error in the early model period, before the CPUE index began, and balanced process error with the catchability deviates in order to fit to the catch. 
 
-- `0118`: Restricted process error to be negligible ($\sigma_P \sim 0$) to evaluate the impact of environmental stochasticity on model estimates by forcing the population to follow deterministic surplus production dynamics
+- `0118`: Restricted process error to be negligible ($\sigma_P \sim 0$) to evaluate the impact of environmental stochasticity on model estimates by forcing the population to follow deterministic surplus production dynamics. This is essentially the same thing as the deterministic recruitment model diagnostic [@merino_investigating_2022;@kapur_good_2025], and can be informative for determining the strength of the estimated production function.
 
 ### Start year {#sec-desc-sens-start}
 
@@ -761,7 +828,7 @@ Model-free hindcasting was conducted to evaluate the model's ability to predict 
 
 The model demonstrated remarkably consistent performance across most hindcast scenarios (@fig-model-free-hindcast-idx) providing strong evidence of a well-determined production function. In general, the hindcast models successfully captured the general increasing trend in the standardized index after 2015. Model predictions for the DWFN CPUE index showed good coherence between the diagnostic model and all retrospective peels except the 15 year hindcast model, with overlapping 95% credible intervals throughout most of the time series. Estimates from the 15 year hindcast model appear to be strongly influenced by the series of higher observations (2003-2005) which cause it to underestimate the decline in the observed index.
 
-Population dynamics estimates showed reasonable consistency across hindcast scenarios (@fig-model-free-hindcast-ts), with the notable exception of the 15 year hindcast model mendtioned in the previous paragraph. Depletion trajectories remained largely stable, with all models estimating similar patterns of decline from unfished conditions to minimum levels around the early 1990s, though predictions begin to diverge slightly in the recovery period post 2015. Population scale estimates also showed good agreement, though with increasing uncertainty for earlier time periods in longer hindcasts, as expected. The stock status metrics ($D/D_{MSY}$ and $F/F_{MSY}$) showed fairly good consistency across most hindcast scenarios particularly for $F/F_{MSY}$. Additionally, given the  The estimated trajectories for these key management metrics were nearly identical between the diagnostic model and all retrospective peels, suggesting that management advice derived from this model would have been stable regardless of when the assessment was conducted over the past two decades.
+Population dynamics estimates showed reasonable consistency across hindcast scenarios (@fig-model-free-hindcast-ts), with the notable exception of the 15 year hindcast model mentioned in the previous paragraph. Depletion trajectories remained largely stable, with all models estimating similar patterns of decline from unfished conditions to minimum levels around the early 1990s, though predictions begin to diverge slightly in the recovery period post 2015. Population scale estimates also showed good agreement, though with increasing uncertainty for earlier time periods in longer hindcasts, as expected. The stock status metrics ($D/D_{MSY}$ and $F/F_{MSY}$) showed fairly good consistency across most hindcast scenarios particularly for $F/F_{MSY}$. Additionally, given the  The estimated trajectories for these key management metrics were nearly identical between the diagnostic model and all retrospective peels, suggesting that management advice derived from this model would have been stable regardless of when the assessment was conducted over the past two decades.
 
 This consistency across multiple extended hindcast periods provides support that the underlying population dynamics are well described, given the available data. This gives confidence that projections made from the full model will likely capture the stock trajectory within the near to medium term, assuming stationarity in future productivity and carrying capacity. 
 
@@ -861,17 +928,17 @@ A single model (`0110`) replaced the default Student-t likelihood for catch obse
 
 ### Temporal resolution of catchability deviates {#sec-res-sens-qdev}
 
-The diagnostic case model estimates catchability deviates in single time steps (annual). Four models explored different temporal resolutions with catchability deviates fixed across 2, 3, 5, and 10-year periods (`0111`-`0114`). Reducing the temporal resolution of the catchability deviates (increasing $n_{step}$) predictably degraded fit to the catch as $n_{step}$ increased (@tbl-performance; @fig-oneoff-temporal-resolution-catch-fit). It also changed estimates of $\sigma_P$ and $q_{eff}$ (@fig-oneoff-temporal-resolution-ppp) which in turn impacted estimates of management quantities particularly depletion and $D/D_{MSY}$ (@fig-oneoff-temporal-resolution-ppts), again particularly for larger values of $n_{step}$. Reducing the temporal resolution of the catchability deviates did improve model parsimony, and the model with $n_{step}=2$ (`0111`) was the best performaing according to LOO-ELPD. However, the LOO-ELPD for this model was not statistically different to the diagnostic case model (ELPD difference = `r diff(summary_diagnostics[short_name%in%c("0100","0111")]$elpd_loo)`; @tbl-diagnostics) and model estimates were nearly identical. In general, the increase in process error estimation as $n_{step}$ increased, the reduced ability to fit the catch were undesireable, and the model equivalence according to LOO-ELPD supported maintaining the diagnostic case model with $n_{step} = 1$.   
+The diagnostic case model estimates catchability deviates in single time steps (annual). Four models explored different temporal resolutions with catchability deviates fixed across 2, 3, 5, and 10-year periods (`0111`-`0114`). Reducing the temporal resolution of the catchability deviates (increasing $n_{step}$) predictably degraded fit to the catch as $n_{step}$ increased (@tbl-performance; @fig-oneoff-temporal-resolution-catch-fit). It also changed estimates of $\sigma_P$ and $q_{eff}$ (@fig-oneoff-temporal-resolution-ppp) which in turn impacted estimates of management quantities particularly depletion and $D/D_{MSY}$ (@fig-oneoff-temporal-resolution-ppts), again particularly for larger values of $n_{step}$. Reducing the temporal resolution of the catchability deviates did improve model parsimony, and the model with $n_{step}=2$ (`0111`) was the best performing according to LOO-ELPD. However, the LOO-ELPD for this model was not statistically different to the diagnostic case model (ELPD difference = `r diff(summary_diagnostics[short_name%in%c("0100","0111")]$elpd_loo)`; @tbl-diagnostics) and model estimates were nearly identical. In general, the increase in process error estimation as $n_{step}$ increased, the reduced ability to fit the catch were undesirable, and the model equivalence according to LOO-ELPD supported maintaining the diagnostic case model with $n_{step} = 1$.   
 
 ### Catch reporting {#sec-res-sens-catch-reporting}
 
-Striped marlin are a commercially valuable non-target species, and systematic under-reporting of catches or discarding could occur. Three models (`0115`-`0117`) explored potential systematic under-reporting scenarios including constant and time-varying multipliers. As expected, increasing the magnitude of all the catches by $2\times$ (`0115`) shifted the population scale of the population up by ~2 (@fig-oneoff-catch-reporting-ppp) though relative quantites were unchanged (@fig-oneoff-catch-reporting-ppts). However, increasing either the terminal (`0116`) or initial (`0117`) catches by $2\times$ resulted in an increase in population scale, change in the depletion trend, and change in the management advice (@fig-oneoff-catch-reporting-ppts). The `0116` model represented a scenario where potential non-reported catch increased over time, but resulted in a less depleted stock with a removals time series that increased. The `0117` model represented a scenario where non-reported catch decreased over time producing a more depleted stock with a decresing removals time series.
+Striped marlin are a commercially valuable non-target species, and systematic under-reporting of catches or discarding could occur. Three models (`0115`-`0117`) explored potential systematic under-reporting scenarios including constant and time-varying multipliers. As expected, increasing the magnitude of all the catches by $2\times$ (`0115`) shifted the population scale of the population up by ~2 (@fig-oneoff-catch-reporting-ppp) though relative quantities were unchanged (@fig-oneoff-catch-reporting-ppts). However, increasing either the terminal (`0116`) or initial (`0117`) catches by $2\times$ resulted in an increase in population scale, change in the depletion trend, and change in the management advice (@fig-oneoff-catch-reporting-ppts). The `0116` model represented a scenario where potential non-reported catch increased over time, but resulted in a less depleted stock with a removals time series that increased. The `0117` model represented a scenario where non-reported catch decreased over time producing a more depleted stock with a decreasing removals time series.
 
-Though there is no evidence at this stage that this level of systematic under-reporting of catches is occuring for SWPO striped marlin, it is useful to be aware of the impacts that changes to our perception of population removals can have on our understanding of stock status. Additionally, for future analyses that may consider changes to the level of catch reporting, it may be useful to do so on a *per hook* basis to take into account the impact of the change in the number of hooks fished over time on total population removals.
+Though there is no evidence at this stage that this level of systematic under-reporting of catches is occurring for SWPO striped marlin, it is useful to be aware of the impacts that changes to our perception of population removals can have on our understanding of stock status. Additionally, for future analyses that may consider changes to the level of catch reporting, it may be useful to do so on a *per hook* basis to take into account the impact of the change in the number of hooks fished over time on total population removals.
 
 ### Process error $\sigma_P$ {#sec-res-sens-process}
 
-The diagnostic case model estimated non-zero process error in the early model period before the CPUE index began. Process error was restricted $\sigma_P \sim 0$ as a one-off sensitivity (`0118`) in order to evaluate if larger initial process error deviates impacted scale estimates or other management quantities. Turning-off the process error did degrade fit to the index slightly (@fig-oneoff-process-error-idx-fit), but overall parameter estimates (@fig-oneoff-process-error-ppp) and management quantities (@fig-oneoff-process-error-ppts) were largely insenstive to a lack of process error. This confirms that the early process error deviates are not impacting the estimation of key management quantities, and also provides further evidence of a well-determined production function.
+The diagnostic case model estimated non-zero process error in the early model period before the CPUE index began. Process error was restricted $\sigma_P \sim 0$ as a one-off sensitivity (`0118`) in order to evaluate if larger initial process error deviates impacted scale estimates or other management quantities. Turning-off the process error did degrade fit to the index slightly (@fig-oneoff-process-error-idx-fit), but overall parameter estimates (@fig-oneoff-process-error-ppp) and management quantities (@fig-oneoff-process-error-ppts) were largely insensitive to a lack of process error. This confirms that the early process error deviates are not impacting the estimation of key management quantities, and also provides further evidence of a well-determined production function.
 
 ### Start year {#sec-res-sens-start}
 
@@ -883,7 +950,7 @@ Early model development explored a more complex formulation of fishing mortality
 
 ### Direct estimation of fishing mortality {#sec-res-sens-direct-f}
 
-Rather than estimating fishing mortality indirectly through catchability and effort, two models (`0127`-`0128`) directly estimated annual fishing mortality rates. This tested whether the simpler formulation for fishing mortality could replicate the results of the diagnostic case model, or if the highly parametrized structure of the fishing mortality calculation determined model outcomes. Removing the relationship with effort, and directly estimating fishing mortality allowed the catch to be fit exactly (@fig-oneoff-direct-f-catch-fit) though this resulted in high levels of catch observations showing large Pareto-k values (@tbl-diagnostics) which is undesireable. Matching the prior variability on fishing mortality $\sigma_F$ to the level of variability in fishing mortality seen in the diagnostic case model (`0127`) more or less replicated the estimates from the diagnostic case model (@fig-oneoff-direct-f-ppts). Assuming a smaller, more restrictive prior on $\sigma_F$ (`0128`) resulted in a large increase to population scale to accomodate a time-series of fishing mortality with smaller variability (@fig-oneoff-direct-f-ppts). These results showed that model outcomes were insensitive to how fishing mortality was parametrized, and reaffirmed the sensitivity of model results, particularly population scale, to the priors placed on fishing mortality. 
+Rather than estimating fishing mortality indirectly through catchability and effort, two models (`0127`-`0128`) directly estimated annual fishing mortality rates. This tested whether the simpler formulation for fishing mortality could replicate the results of the diagnostic case model, or if the highly parametrized structure of the fishing mortality calculation determined model outcomes. Removing the relationship with effort, and directly estimating fishing mortality allowed the catch to be fit exactly (@fig-oneoff-direct-f-catch-fit) though this resulted in high levels of catch observations showing large Pareto-k values (@tbl-diagnostics) which is undesirable. Matching the prior variability on fishing mortality $\sigma_F$ to the level of variability in fishing mortality seen in the diagnostic case model (`0127`) more or less replicated the estimates from the diagnostic case model (@fig-oneoff-direct-f-ppts). Assuming a smaller, more restrictive prior on $\sigma_F$ (`0128`) resulted in a large increase to population scale to accommodate a time-series of fishing mortality with smaller variability (@fig-oneoff-direct-f-ppts). These results showed that model outcomes were insensitive to how fishing mortality was parametrized, and reaffirmed the sensitivity of model results, particularly population scale, to the priors placed on fishing mortality. 
 
 ### Alternative $R_{Max}$ prior {#sec-res-sens-rmax}
 
@@ -898,7 +965,9 @@ Following extensive sensitivity analysis, and iterative rounds of model developm
 - `0105`: DWFN index & alternative shape prior
 - `0107`: New Zealand index & alternative shape prior
 
-Both candidate indices were the only indices of sufficient length and contrast to inform estimates of population scale. Additionally, the shape parameter is very difficult to estimate from data, and as such model estimates are depedent on the choice of prior. While the baseline shape parameter prior (@tbl-priors) may be sensibly derived from striped marlin life history characteristics, this derivation is sensitive to underlying assumptions and relationships [@fowler_population_1988;@grant_demography_1992]. In the absence of other information, a conservative assumption for the shape parameter is to assume it is centered on $n\sim2$, with uncertainty from @tbl-priors. This reduces the production model to a Schaefer-type production model where $D_{MSY} = 0.5$.
+Both candidate indices were the only indices of sufficient length and contrast to inform estimates of population scale. Additionally, the shape parameter is very difficult to estimate from data, and as such model estimates are dependent on the choice of prior. While the baseline shape parameter prior (@tbl-priors) may be sensibly derived from striped marlin life history characteristics, this derivation is sensitive to underlying assumptions and relationships [@fowler_population_1988;@grant_demography_1992]. In the absence of other information, a conservative assumption for the shape parameter is to assume it is centered on $n\sim2$, with uncertainty from @tbl-priors. This reduces the production model to a Schaefer-type production model where $D_{MSY} = 0.5$.
+
+Despite use of a model ensemble to capture uncertainty in stock status and trend, there remains considerable uncertainty not captured within the proposed BSPM ensemble. Important context to the interpretation of ensemble results and conclusions can be found in @tbl-uncertainty-desc.
 
 ### Ensemble diagnostics and fit {#sec-ensemble-diagnostics}
 
@@ -918,42 +987,75 @@ For hindcast cross-validation, both models fitting to the DWFN index substantial
 
 ### Population dynamics and trends {#sec-ensemble-trends}
 
-The estimated depletion^[Note that depletion for the surplus producation model is a *static* depletion defined relative to total unfished numbers $D_t=P_t/P_0$; where $P_t$ is the total population level in numbers at time $t$, and $P_0 = K$ the unfished population numbers or carrying capacity. This is different from the *dynamic* depletion of spawning biomass $SB_t/SB_{t,F=0}$ that is typically reported from integrated age-structured models such as MULTIFAN-CL or Stock Synthesis [@methot_jr_stock_2013].] time series from the model ensemble shows a decline from the assumed unfished state in 1952 to minimum levels around the mid-2010s (@fig-ens-timeseries). The decline was most pronounced during the 1950s and 1960s, followed by relatively stable depletion levels from the 1970s through the early 2000s which fluctuated round $\sim 0.4-0.6$. The stock has been estimated to be recovering from the mid-2010s. Credible intervals around depletion estimates are relatively wide, reflecting inherent uncertainty in the population scale.
+The estimated depletion^[Note that depletion for the surplus production model is a *static* depletion defined relative to total unfished numbers $D_t=P_t/P_0$; where $P_t$ is the total population level in numbers at time $t$, and $P_0 = K$ the unfished population numbers or carrying capacity. This is different from the *dynamic* depletion of spawning biomass $SB_t/SB_{t,F=0}$ that is typically reported from integrated age-structured models such as MULTIFAN-CL or Stock Synthesis [@methot_jr_stock_2013].] time series from the model ensemble shows a decline from the assumed unfished state in 1952 to minimum levels around the mid-2010s (@fig-ens-timeseries). The decline was most pronounced during the 1950s and 1960s, followed by relatively stable depletion levels from the 1970s through the early 2000s which fluctuated around $\sim 0.4-0.6$. The stock has been estimated to be recovering from the mid-2010s. Credible intervals around depletion estimates are relatively wide, reflecting inherent uncertainty in the population scale.
 
-The estimated population time series mirrors these depletion patterns. It is important to note that while the uncertainty in absolute population size is substantial, as reflected in wide credible intervals, this uncertainty is asymmetric. The model is fairly confident that the model can not be much smaller than what it currently is estimated to be due to the hard constraint of at least being large enough to support the 70 year time-series of catches. As seen in the one-off sensitivites (@sec-res-sens-scaling & @sec-res-sens-rmax), uncertainty to the high-side is driven in part by the prior assumptions for $\log(K)$, $q_{eff}$, and $R_{Max}$, as well as by model structrual choices with regards to treatment of catch uncertainty (@sec-res-sens-catch-obs) and structure of fishing mortality (@sec-res-sens-effort). 
+The estimated population time series mirrors these depletion patterns. It is important to note that while the uncertainty in absolute population size is substantial, as reflected in wide credible intervals, this uncertainty is asymmetric. The model is fairly confident that the model can not be much smaller than what it currently is estimated to be due to the hard constraint of at least being large enough to support the 70 year time-series of catches. As seen in the one-off sensitivities (@sec-res-sens-scaling & @sec-res-sens-rmax), uncertainty to the high-side is driven in part by the prior assumptions for $\log(K)$, $q_{eff}$, and $R_{Max}$, as well as by model structural choices with regards to treatment of catch uncertainty (@sec-res-sens-catch-obs) and structure of fishing mortality (@sec-res-sens-effort). 
 
-Process error estimates showed consistent temporal variability across ensemble models, with the largest deviations occurring in the 1970s and 1980s. This indicates that removals alone could not explain the observed changes in the standardized indices in these time periods, suggesting additional factors influencing population dynamics during these periods or insufficient observation error. 
+Process error estimates showed consistent temporal variability across ensemble models, with the largest deviations occurring in the 1970s and 1980s. This indicates that removals alone could not completely explain the observed changes in the standardized indices in these time periods, suggesting additional factors influenced population dynamics or insufficient observation error was estimated. 
 
-[Fishing mortality estimates display high variability throughout the time series, with substantial uncertainty reflected in wide credible intervals. The F time series shows episodic peaks during the 1970s and 1980s, corresponding to periods of intensive fishing pressure, followed by more variable but generally declining trends in recent decades. This pattern is consistent with the observed recovery in population depletion during the same period.
+Fishing mortality $F$ estimates jump up initially in the mid-1950s with the expansion of industrial fishing into broader areas of the south Pacific. Though $F$ appears highly variable, with substantial uncertainty reflected in wide credible intervals, it generally trends upwards to a peak ($\sim 0.275$) in the early 2000s. Since then, $F$ was generally predicted to decline in recent decades. The recent decline is consistent with the observed recovery in population depletion during the same period.
 
-Catchability deviations demonstrate substantial temporal variation, particularly during the early period of the fishery. The estimates show generally declining trends from elevated levels in the 1950s and 1960s toward more stable values in recent decades. This temporal pattern likely reflects changes in fishing technology, fleet behavior, and spatial distribution of fishing effort over the model period.
-Nominal CPUE estimates from the model ensemble track the general declining trend observed in the standardized index, showing elevated values during the early unfished period followed by substantial declines through the 1980s and 1990s. Recent nominal CPUE estimates show stabilization at lower levels consistent with the moderate depletion levels estimated for the contemporary period, though with continued high uncertainty around point estimates.]
+The catchability deviations show declining trends from elevated levels in the mid-1950s, with the largest declines occurring before 1970 and more gradual decline through the current year. This matches the pattern seen in the estimated nominal CPUE (catch per 1000 hooks) estimates from the model ensemble, where the estimated nominal CPUE is simply the predicted removals divided by the nominal effort. In the earliest years of the fishery nominal CPUE approached 3 fish per 1000 hooks before declining to $\sim 0.45$ fish per 1000 hooks in 1970, and $\sim 0.05$ fish per 1000 hooks at the end of the model period. 
 
 ### Stock status {#sec-ensemble-stock-status}
 
+The SWPO striped marlin stock lacks formal, agreed upon reference points. Accordingly, stock status is summarized in terms of the following MSY and depletion based reference points (TABLE): total depletion relative to total depletion at MSY ($D/D_{MSY}$), fishing mortality relative to fishing mortality at MSY ($F/F_{MSY}$), and total depletion relative to generalized limit reference point of 20% depletion from the unfished state ($D/D_{0.2F=0}$). All ratios are calculated with respect to two periods: *recent* and *latest*. For depletion ratios, $D_{recent}$ refers to the average over 2019-2022 and $D_{latest}$ refers to 2022. For fishing mortality ratios, $F_{recent}$ refers to the average over 2018-2021 and $F_{latest}$ refers to 2021.
+
+On average, the stock is estimated to be in an overfished state according to both $D_{recent}/D_{MSY}$ (`r round(ens_summary[name == "recent_D_Dmsy", median], 2)` median; `r round(ens_summary[name == "recent_D_Dmsy", q025], 2)` – `r round(ens_summary[name == "recent_D_Dmsy", q975], 2)` 95% credible interval) and $D_{latest}/D_{MSY}$ (`r round(ens_summary[name == "latest_D_Dmsy", median], 2)` median; `r round(ens_summary[name == "latest_D_Dmsy", q025], 2)` – `r round(ens_summary[name == "latest_D_Dmsy", q975], 2)` 95% credible interval), but is not currently estimated to be undergoing overfishing according to $F_{recent}/F_{MSY}$ (`r round(ens_summary[name == "recent_F_Fmsy", median], 2)` median; `r round(ens_summary[name == "recent_F_Fmsy", q025], 2)` – `r round(ens_summary[name == "recent_F_Fmsy", q975], 2)` 95% credible interval) or $F_{latest}/F_{MSY}$ (`r round(ens_summary[name == "latest_F_Fmsy", median], 2)` median; `r round(ens_summary[name == "latest_F_Fmsy", q025], 2)` – `r round(ens_summary[name == "latest_F_Fmsy", q975], 2)` 95% credible interval).
+
+Considering the full range of uncertainty, it is likely that the stock is currently below $D_{MSY}$ (`r round((ens_probs[name == "recent_D_Dmsy", prop_meeting_condition]) * 100, 0)`% for recent period, `r round((ens_probs[name == "latest_D_Dmsy", prop_meeting_condition]) * 100, 0)`% for latest year) and it is unlikely that the stock is currently undergoing overfishing (`r round(1-ens_probs[name == "recent_F_Fmsy", prop_meeting_condition] * 100, 1)`% for recent period, `r round(1-ens_probs[name == "latest_F_Fmsy", prop_meeting_condition] * 100, 1)`% for latest year).
+
+Relative to the generalized limit reference point of 20% depletion from the unfished state, the stock shows a very unlikely probability of being in a critically depleted state. The probability of the stock being below $D_{0.2F=0}$ is `r round(ens_probs[name == "recent_D_Dlrp", prop_meeting_condition] * 100, 1)`% for the recent period and `r round(ens_probs[name == "latest_D_Dlrp", prop_meeting_condition] * 100, 1)`% for the latest year, with median ratios of `r round(ens_summary[name == "recent_D_Dlrp", median], 2)` (`r round(ens_summary[name == "recent_D_Dlrp", q025], 2)` – `r round(ens_summary[name == "recent_D_Dlrp", q975], 2)` 95% credible interval) and `r round(ens_summary[name == "latest_D_Dlrp", median], 2)` (`r round(ens_summary[name == "latest_D_Dlrp", q025], 2)` – `r round(ens_summary[name == "latest_D_Dlrp", q975], 2)` 95% credible interval), respectively.
+
+The stock status indicators suggest that while the median estimates indicate the stock is currently overfished but not undergoing overfishing, there remains uncertainty around these conclusions (@fig-kb). The relatively wide credible intervals reflect substantial uncertainty in absolute population scale, however there is still only a `r round(ens_joint_probs[name=="recent_joint_kb"]$prop_meeting_condition*100,digits=2)`% joint probability that $D_{recent}/D_{MSY}<1$ and $F_{recent}/F_{MSY}>1$ so it is unlikely that the stock is simultaneously overfished and undergoing overfishing. The very unlikely risk relative to the generalized limit reference point provides additional confidence that the stock is not in a critically depleted state (@fig-mj) and, as described in @sec-ensemble-trends, the population appears to be trending in a positive direction.
+
 ### Future projections {#sec-projections}
+
+The 10-year stochastic projections from the ensemble, setting future catch as the recent average catch over the last 5 years (2018-2022), showed the stock expected to continue on the estimated recovery trajectory (@fig-ens-timeseries-forecast). Given that the assessment period ends in 2022, projections to the current year 2025 indicate median $D_{latest}/D_{MSY}$ = `r round(ens_forecast_summary[year==2025&name == "D_Dmsy", median], 2)` (`r round(ens_forecast_summary[year==2025&name == "D_Dmsy", q025], 2)` – `r round(ens_forecast_summary[year==2025&name == "D_Dmsy", q975], 2)` 95% credible interval) with only a `r round(ens_forecast_probs[year==2025&name=="D_Dmsy"]$prop_meeting_condition*100,digits=2)`% chance that the stock is overfished according to the MSY based reference point. By next year, 2026, there is a less than 50% chance that the stock is overfished. Looking out to the end of the projection period, 2032, the picture continues to improve with median $D_{latest}/D_{MSY}$ = `r round(ens_forecast_summary[year==2032&name == "D_Dmsy", median], 2)` (`r round(ens_forecast_summary[year==2032&name == "D_Dmsy", q025], 2)` – `r round(ens_forecast_summary[year==2032&name == "D_Dmsy", q975], 2)` 95% credible interval) with only a `r round(ens_forecast_probs[year==2032&name=="D_Dmsy"]$prop_meeting_condition*100,digits=2)`% chance that the stock is overfished.
+
+Fishing mortality is also predicted to keep declining through 2032 with median $F_{latest}/F_{MSY}$ = `r round(ens_forecast_summary[year==2032&name == "F_Fmsy", median], 2)` (`r round(ens_forecast_summary[year==2032&name == "F_Fmsy", q025], 2)` – `r round(ens_forecast_summary[year==2032&name == "F_Fmsy", q975], 2)` 95% credible interval) with only a `r round(ens_forecast_probs[year==2032&name=="F_Fmsy"]$prop_meeting_condition*100,digits=2)`% chance that overfishing is occurring.
+
+Though circumstances are expected to improve on average, and overfished and overfishing risk levels are expected to decrease throughout the projection period there is still a chance that the population collapses ($D_{2032}<0.05$) under recent average catch levels by the end of the 10-year projection period. This is estimated to be very unlikely with only a `r round(ens_forecast_probs[year==2032&name=="D"]$prop_meeting_condition*100,digits=2)`% chance of occurring. However, risk of stock collapse would be expected to increase if catches rose above recent average levels.
 
 # Discussion {#sec-discussion}
 
 ## General remarks
 
-The three BSPM variants provide a consistent picture of stock trajectory and current status. All models estimated similar depletion patterns: decline from unfished conditions in 1952 to minimum levels around the early 1990s, followed by gradual recovery through recent decades. This trajectory suggests the stock is currently recovering. While median estimates indicate the stock was not overfished or undergoing overfishing during the assessment period, the `0003-2024cpueFPrior` model suggests some recent risk of falling below these thresholds.
+The BSPM ensemble approach, and sensitivity analyses, present a coherent picture of stock trajectory and current status. The SWPO striped marlin stock was estimated to decline substantially in the 1950s from an unfished condition with minimum levels being experienced within the last decade, and the stock showing signs of recovery. Though median estimates suggest that the stock is overfished and undergoing overfishing at the end of the model period (2022), the stock is expected to no longer be overfished or undergoing overfishing by 2026 assuming recent catches have not increased.
 
-The BSPM approach addresses key limitations encountered in previous integrated assessments while providing robust stock status estimates. The primary advantage lies in condensing complex biological and fishery uncertainties into a manageable parameter set. Integrated assessments can be influenced by size composition data, which are sensitive to assumptions about growth, mortality, selectivity, and reproduction parameters. When these assumptions are uncertain or mis-specified, population scale estimates informed by size composition data can be biased. Production models circumvent this issue by aggregating these uncertainties into productivity parameters, allowing more efficient exploration of plausible population dynamics while maintaining biological realism through informed priors.
+The BSPM approach addresses key limitations encountered in previous integrated assessments while providing robust stock status estimates. The primary advantage lies in condensing complex biological and fishery uncertainties into a manageable parameter set. Integrated assessments can be influenced by size composition data, which are sensitive to assumptions about growth, mortality, selectivity, and reproduction parameters. Additionally, there is the added burden of ensuring that the input size composition data, along with the indices, are unbiased and representative of the stock dynamics. When these assumptions are uncertain or mis-specified, population scale estimates informed by size composition data can be biased. Production models can help circumvent this issue by aggregating these uncertainties into productivity parameters, allowing more efficient exploration of plausible population dynamics while maintaining biological realism through informed priors. Uncertainty in these processes is propagated both through the prior and through full Bayesian Markov Chain Monte-Carlo sampling of the posterior distribution. Use of a model ensemble approach also captures uncertainties in data or structural components of the model that can not be estimated.
+
+However, BSPMs are an inherent simplification of the stock dynamics. All age-structure is collapsed, a single well mixed population is assumed, and only a single fishery (with implicit knife-edged selectivity) operates. Though previous simulation work [@winker_unifying_2019] has shown that correctly specified BSPMs can provide robust estimates of MSY based reference points, this is conditioned on the dynamics of the underlying population not being too different from the assumed BSPM dynamics. If movement dynamics are complex, selectivities are strongly dome-shaped, substantial mortality occurs before reproduction, and/or there is a long lag between recruitment and reproduction this can all introduce bias into the BSPM estimates. 
+
+The origin of this analysis was rooted in a skepticism in the depletion and fishing mortality patterns estimated from the integrated assessment model. The BSPM results paint a complimentary picture to the integrated assessment, and demonstrates that estimates of initial depletion and population scale are strongly informed by the magnitude of catches in contrast with the standardized index. Moreover, the predicted recovery is based on a well determined production function as evidenced by the performance of the model free hindcasts (@sec-hindcasts), and should give confidence that projections from this model can capture the stock dynamics.
+
+The estimated trajectory of the stock, including patterns in estimated catchability and nominal CPUE make sense in the context of both Japanese and global longline fishing development [@honma_population_1958;@ahrens_global_2010]. Post World War II MacArthur lines restricted Japanese fishing to the northern hemisphere in the Pacific prior to 1952. Expansion in the south Pacific took place in 1952 in waters close to the equator. Expansion by the Japanese south of $20^\circ S$ did not occur until November 1953 [@honma_population_1958] at which point striped marlin was targeted alongside albacore (*Thunnus alalunga*) initially due to high catch rates but eventually to supply the developing Japanese fish ham and sausage industry [@joseph_review_1974]. High catch rates to start the fishery make sense given the targeted nature of the fishery, but also due to fishing on spawning aggregations [@honma_population_1958], and early gear configurations (rope or hemp line with few hooks per basket) which kept gear closer to the surface where striped marlin are present. As Japanese (and eventually other DWFNs) longline fishing effort expanded throughout the south Pacific, away from striped marlin hotspots and with more targeted fishing towards albacore and the tropical tunas (bigeye *Thunnus obesus* and yellowfin *Thunnus albacares*) striped marlin catchability and nominal CPUE declined. Furthermore, more modern longline gear configuration (monofilament main lines with large numbers of hooks per basket) places more hooks at deeper depths, which may increase tropical tuna catchability but reduce striped marlin catch rates.
+
+This fisheries context can also provide more insight on the two catch observations (1952 & 1954) that were investigated as being potentially problematic. The initial 1952 low catch observation may be legitimate as effort was not deployed spatially in an area (north of $20^\circ S$) where striped marlin are highly abundant [@honma_population_1958]. We can also see that the large catch observation in 1954 may also be legitimate:
+
+- observed nominal CPUE in 1954 ($\sim$ `r round(catch_effort_annual[year==1954]$nominal_cpue,digits=2)`) is comparable to observations in 1953 ($\sim$ `r round(catch_effort_annual[year==1953]$nominal_cpue,digits=2)`) and 1955 ($\sim$ `r round(catch_effort_annual[year==1955]$nominal_cpue,digits=2)`)
+- fishing occurred in an area ($15^\circ S - 30^\circ S$) and time period (austral spring and summer) when striped marlin form spawning aggregations [@honma_population_1958;@kopf_reproductive_2012]
+- the Japanese considered striped marlin to be a target species in the 1950s and 1960s [@honma_population_1958;@joseph_review_1974]
+
+Of a more technical nature, this assessment applies multiplicative fishing mortality to the population, and estimates fishing mortality from a time-varying relationship with effort by fitting to the observed catch. While such an approach is less conventional for surplus production models^[Most surplus production models subtract observed catch directly [@millar_non-linear_2000;@best_parameterizations_2020;@kim_examining_2025]], and more common in integrated age-structured modelling approaches, it appears to yield important computational benefits particularly when fitting models in a Bayesian context with HMC. Modelling fishing mortality as a multiplicative process ensures that populations stay non-negative, and avoids the hard, implicit constraints that direct subtraction of the catch places on the posterior sampling space. Though applying multiplicative fishing mortality improves model convergence (e.g., 0 or small numbers of divergent transitions), it does mean that fishing mortality, surplus production and process error happen simultaneously rather then sequentially as in the subtractive case. This assumption may not be appropriate for some fisheries which operate in distinct seasons relative to reproduction.
 
 ## Challenges, limitations & key uncertainties
 
-Several important limitations affect this analysis. The assumption of no age-specific population dynamics may be problematic when mortality or reproductive potential varies significantly by age. This simplification prevents incorporation of biological information beyond production function parameters and excludes explicit use of size composition data. 
+While the BSPM ensemble approach provides a robust framework for stock assessment, several important limitations and uncertainties constrain the interpretation of these results and their applicability to management decision-making.
 
-The aggregated nature of surplus production models can potentially bias MSY estimates when age-specific processes differ from production function assumptions. For species with complex life histories like striped marlin, managers should consider these limitations when applying MSY-based reference points derived from surplus production models.
+Though not specific to the current SWPO striped marlin stock, assessments are only as good or informative as the underlying data. In this case while the results appear robust, and the model appears to appropriately capture the underlying population dynamics, this is all conditioned on the data being representative of the stock. From the one-off sensitivities it was apparent that introducing alternative trend to the catch via systematic under-reporting (@sec-res-sens-catch-reporting) could produce different population trajectories and management advice. Similarly, the population trend is driven by the index. The two primary indices used in the ensemble (DWFN and New Zealand recreational) each have their own separate issues. The DWFN index, while providing a long time series of information, is a composite multi-flag index with limited gear covariates. Changes in fleet composition or fishing location within this index can be incorrectly interpreted by the model as population-level changes. On the other hand the New Zealand recreational index includes more catchability covariates is spatially restricted to index the striped marlin population vulnerable to the East Northland^[North Island of New Zealand] sportfish fishery. While historically this fishery is believed to have interacted with the spawning component of the population during the austral summer as fish approached the southern end of their distribution, there is evidence of increasing striped marlin encounters further south along the western side of New Zealand's South Island [@holdsworth_striped_2023]. If the distribution of striped marlin has shifted or is shifting further south following warmer waters as a result of climate change, then these data may no longer be representative and the decline seen in terminal years of the New Zealand index (@fig-ens-idx-fit) may not represent a true decline in the stock.
 
-Data limitations also constrain the analysis. Fitting to a single standardized abundance index limits evaluation of uncertainty in abundance trends. Multiple indices would enable model ensemble approaches to better characterize this uncertainty. 
+While $R_{MAX}$ and $\log(K)$ showed meaningful posterior updates, the uncertainty reflected in their prior distributions translated into the large uncertainty evident in model predictions. In the case of $R_{MAX}$, uncertainty in growth, maturity, natural mortality, and steepness all contributed to the broad prior uncertainty. Reductions in the uncertainty in any one of these biological processes would reduce uncertainty in the prior, and could help reduce uncertainty in model estimated population scale (see @sec-res-sens-rmax). Population scale $\log(K)$ estimates also showed particular sensitivity to prior assumptions and model configuration, as well as a strong negative correlation with baseline catchability $q_{eff}$. Reducing the uncertainty in catchability $q_{eff}$ would presumably directly lower uncertainty in population scale. 
 
-The incorporation of depletion information from New Zealand recreational size data through a 1988 depletion prior, while novel, represents a simplified approach. More sophisticated modeling frameworks like delay-difference or age-structured models could explicitly fit size composition time series in a likelihood-based framework, providing more elegant integration of this information.
+In contrast to $R_{MAX}$ and $\log(K)$ which were estimable from the data, the production function shape parameter $n$ was not and posterior estimates did not deviate much from prior assumptions. Uncertainty in shape $n$ translates directly to uncertainty in $D_{MSY}$ and the position of MSY-based reference points. The ensemble approach attempts to capture this uncertainty through alternative shape priors, but the true production function shape remains a key unknown.
 
-Modeling assumptions introduce additional uncertainties. Current modeling assumes the same level of catch uncertainty across all time periods. Future versions could allow time-varying catch uncertainty (e.g., greater uncertainty in historical versus recent observations) or accommodate effort-driven removals similar to catch-errors with effort deviation approaches available in MULTIFAN-CL [@fournier_multifan-cl_1998].
+While the BSPM approach makes a number of simplifications to the stock population dynamics, assuming a single well-mixed stock may be problematic given the broad spatial distribution and known seasonal migrations [@honma_population_1958]. Of particular concern is recent genetic work [@martinez_stock_2021] that identified mixing of SWPO striped marlin and central north Pacific Ocean striped marlin in the catch of the U.S. Hawai'i based longline fishery. This is a fishery that operates exclusively in the north Pacific Ocean around the main Hawaiian islands, away from the typical stock boundary assumed for SWPO striped marlin. Additional genetic work is needed to more properly elucidate the patterns in spatial connectivity. However, at a minimum, evidence of SWPO striped marlin in catch taken in the north Pacific Ocean indicates that the catch levels assumed in the current assessment may be an underestimate of total removals, and that potentially important fishing impacts from north Pacific Ocean fleets on SWPO striped marlin are unaccounted for. Development of a conceptual model for SWPO striped marlin, perhaps in collaboration with the ISC Billfish Working Group, that accounts for this stock structure hypothesis is critically needed so that this important uncertainty can be properly addressed in the next stock assessment.
 
-Population scale estimates were highly uncertain and sensitive to model configuration choices, while depletion estimates were more precisely estimated. The choice of prior on $\sigma_F$ was particularly influential. Although this prior was developed using prior pushforward analysis [@kim_examining_2025], it represents a key uncertainty. Similarly, uncertainty in biological parameters (growth, maturity, natural mortality) due to limited sample sizes contributed to broad initial priors for $R_{Max}$. While the posterior distribution for $R_{Max}$ was substantially updated from the prior, reducing uncertainty in key biological productivity parameters could help reduce model uncertainty estimates and facilitate development of age-structured models.
+Though not a limitation unique to the BSPM approach, this assessment assumes stationary productivity and carrying capacity over the 70-year assessment period, which may not reflect reality given environmental changes in the Pacific Ocean over the same time period. Additionally, climate variability affecting prey distribution, ocean temperature, and ecosystem productivity could influence striped marlin population dynamics in ways not captured by the surplus production framework. The large process error deviations estimated in some periods suggest environmental factors may be influencing population dynamics beyond what can be explained by fishing removals alone. More sophisticated modeling approaches incorporating environmental and/or ecosystem drivers are likely needed to appropriately capture the process, however this will likely stretch the limits of what is possible given the data currently available. Absent other sources of information coming online, development of robust management measures (e.g., through a management strategy evaluation; MSE) will likely be more useful than a more sophisticated stock assessment model.
+
+Specifically with regards to management, the substantial uncertainty in absolute population scale, while not preventing relative status determination, constrains the precision of catch-based management advice. Though uncertainty in population scale is large, it is asymmetrical and the minimum stock size is likely to be well defined which can be useful when developing potential management measures. Additionally, the stock status projections, while suggesting continued recovery under recent catch levels, carry forward all the uncertainties inherent in the assessment model. The projections assume continued stationarity in productivity, catchability, and environmental conditions that may not hold over the 10-year projection period. Furthermore, the status quo catch assumption may not reflect actual future fishing patterns. If management action is to be taken, alternative future projection scenarios (including effort based projection scenarios) should be developed.
+
+Despite these limitations, the BSPM approach provides valuable insights into stock trajectory and status when viewed as part of a broader assessment framework. The consistency of results across sensitivity analyses and the validation through retrospective and hindcast analyses suggest that the qualitative conclusions about stock recovery are robust to many of the identified uncertainties. However, managers should consider these limitations when translating assessment results into specific management actions, particularly those requiring precise abundance estimates or long-term projections.
 
 ## Future stock assessment modeling considerations
 
@@ -961,11 +1063,13 @@ Future assessment efforts should progressively build toward full age-structure t
 
 Developing Bayesian age-structured modeling approaches can provide more stable estimation of increased parameters due to the use of priors, explicitly account for parameter uncertainty rather than making fixed assumptions, potentially enable informed estimation of difficult-to-observe biological relationships (e.g., stock-recruit relationships), address BSPM limitations by explicitly considering age-structured processes and fishery selectivity, and estimate leading parameters with likelihood components for indices and size composition.
 
-While simplified models offer advantages when data conflicts exist, over-simplification of age-structured processes could result in biases. Future modeling must balance complexity with data quality and conflicts. The transition should be guided by careful evaluation of whether increased model complexity is supported by available data and whether it improves the reliability of management advice.
+While simplified models offer advantages when data conflicts exist, over-simplification of age-structured processes could result in biases. Future modeling must balance complexity with data quality and conflicts. The transition should be guided by careful evaluation of whether increased model complexity is supported by available data and whether it improves the reliability of management advice. A crucial part of the assessment process is careful scrutiny of the representativeness of the available data, and matching the modeling approach to the information content in the data available. While it is important to also match the modeling approach to our best understanding of stock dynamics, ideally informed by a conceptual model [@minte-vera_use_2024], this must be done in a manner that does not overextend the model beyond what can be reliably estimated from the data given parameter uncertainties and structural assumptions.
+
+Lastly, this assessment greatly benefited from collaboration with a broad group of interested parties and stock assessment experts (see @sec-acknowledgements) where feedback was provided in an iterative manner throughout the model development process. Leveraging this diverse pool of experience helped produce a stronger scientific product. 
 
 # Acknowledgements {#sec-acknowledgements}
 
-The authors appreciate feedback received on earlier versions of this analysis, and are thankful to the following for their insights and thoughtful discussion which greatly improved the assessment: K. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), and M. Nadon (PIFSC).
+The authors appreciate feedback received on earlier versions of this analysis, and are thankful to the following for their insights and thoughtful discussion which improved the assessment: K. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), F. Carvalho (PIFSC) and M. Nadon (PIFSC).
 
 # Declaration of generative AI use {#sec-ai-declaration}
 
@@ -1127,6 +1231,151 @@ knitr::kable(final_table, format = "markdown")
 <br>
 ```
 
+::: {.landscape}
+
+Table: Key sources of uncertainty {#tbl-uncertainty-desc}
+
+| Type | Rationale | Uncertainty | Impact | Confidence |
+|------|-----------|-------------|--------|------------|
+| **Data** | | | | |
+| CPUE | Best available long-term indices (DWFN & New Zealand recreational) | DWFN index is a composite, multi-flag index with limited gear covariates. New Zealand index is spatially restricted  | Changes in the fleet composition and or fishing location in the DWFN index can be interpreted by the model as population level changes. For the New Zealand index, if the stock distribution has shifted this may impact representativeness | Medium |
+| Catch | Best available information | Situationally targeted species so catch reporting may be inconsistent | Reported catches are highly influential to estimated population scale | High |
+| **Model** | | | | |
+| Bayesian surplus production model | Parsimonious and robust model | Over simplifies population and spatial dynamics | Unknown | Medium |
+| **Spatial assumptions** | | | | |
+| No spatial structure | Little tagging data to understand structure | Unclear | Potentially important not quantified impact unknown | Low |
+| **Key parameter uncertainty** | | | | |
+| Productivity ($R_{MAX}$) | Estimated from informative prior | Uncertainty in key biological processes | Wide prior contributes to high uncertainty within model runs | High |
+| Population scale ($\log(K)$ & $q_{eff}$) | Estimated from informative prior | Scale prior dependent on maximum observed catch being representative of MSY | Broad prior contributes to high uncertainty within model runs | High |
+| Shape $n$ | Estimated from informative prior | Alternative priors used to capture shape of the production function | Uncertainty in where MSY occurs as a fraction of the unfished condition | Medium |
+| **Structural uncertainties** | | | | |
+| Catch observation error | Fixed $\sigma_C = 0.2$ | Choice of $\sigma_C$ and observation model impacts estimated removals | Removal estimates may not exactly match observations | Medium |
+| **Estimation uncertainty** | | | | |
+| MCMC | Full Bayesian estimation integrating uncertainty over key parameters | Estimated | Basis for model ensemble | High |
+| **Other sources of uncertainty** | | | | |
+| Stock structure | Genetic sampling of catch in the north Pacific indicates presence of SWPO fish | Not considered | Actual population removals may be under-counted impacting scale and stock status | Low |
+
+:::
+
+\newpage
+
+```{=html}
+<br>
+```
+
+::: {.landscape}
+
+```{r}
+#| echo: false
+
+# Helper functions
+get_ipcc_likelihood <- function(prob,print_prob=TRUE) {
+  if(print_prob){
+      if (prob > 0.99) {
+        return("Virtually Certain (>99%)")
+      } else if (prob > 0.90) {
+        return("Very Likely (> 90%)")
+      } else if (prob > 0.66) {
+        return("Likely (>66%)")
+      } else if (prob >= 0.33) {
+        return("About as Likely as Not (33-66%)")
+      } else if (prob > 0.10) {
+        return("Unlikely (<33%)")
+      } else if (prob > 0.01) {
+        return("Very Unlikely (<10%)")
+      } else {
+        return("Exceptionally Unlikely (<1%)")
+      }
+  } else {
+      if (prob > 0.99) {
+        return("Virtually Certain")
+      } else if (prob > 0.90) {
+        return("Very Likely")
+      } else if (prob > 0.66) {
+        return("Likely")
+      } else if (prob >= 0.33) {
+        return("About as Likely as Not")
+      } else if (prob > 0.10) {
+        return("Unlikely")
+      } else if (prob > 0.01) {
+        return("Very Unlikely")
+      } else {
+        return("Exceptionally Unlikely")
+      }
+  }
+
+}
+
+format_estimate <- function(param_name, units = "", decimals = 0, dt = ens_summary) {
+  row <- dt[name == param_name]
+  if(decimals == 0) {
+    paste0(format(round(row$mean), big.mark = ","), units, 
+           " [", format(round(row$q025), big.mark = ","), 
+           " – ", format(round(row$q975), big.mark = ","), "]")
+  } else {
+    paste0(round(row$mean, decimals), units,
+           " [", round(row$q025, decimals),
+           " – ", round(row$q975, decimals), "]")
+  }
+}
+
+get_prob <- function(param_name,dt=ens_probs) {
+  dt[name == param_name]$prop_meeting_condition
+}
+
+# Stock status determination
+biomass_status <- ifelse(get_prob("recent_D_Dmsy") > 0.5, "Stock is overfished", "Stock is not overfished")
+fishing_status <- ifelse(get_prob("recent_F_Fmsy") < 0.5, "Overfishing is not occurring", "Overfishing is occurring")
+```
+
+Table: SWPO Striped Marlin stock status summary {#tbl-stock-status}
+
+
+| **Summary** | | | | |
+|--|--|--|--|--|
+| | | | | |
+| **Year of assessment:** 2025 | **Depletion ($D_{recent}$)** | `r get_ipcc_likelihood(get_prob("recent_D_Dmsy"),print_prob=FALSE)` (`r round(get_prob("recent_D_Dmsy")*100)`%) to be below $D_{MSY}$ | | `r biomass_status` |
+| **Last year of data:** 2022  | **Fishing mortality ($F_{recent}$)** | `r get_ipcc_likelihood(get_prob("recent_F_Fmsy"),print_prob=FALSE)` (`r round(get_prob("recent_F_Fmsy")*100)`%) to be above $F_{MSY}$ | | `r fishing_status` |
+| | **Projection** | $F$ `r tolower(get_ipcc_likelihood(get_prob("F_lt_2021",ens_forecast_probs[year==2027])))` to decline further by 2027 | | The stock is `r tolower(get_ipcc_likelihood(get_prob("F_Fmsy",ens_forecast_probs[year==2027])))` to be undergoing overfishing in the near term under recent average catch levels. |
+| |  | $D$ `r tolower(get_ipcc_likelihood(get_prob("D_gt_2022",ens_forecast_probs[year==2027])))` to decline further by 2027 | | The stock is `r tolower(get_ipcc_likelihood(get_prob("D_Dmsy",ens_forecast_probs[year==2027])))` to be overfished in the near term under recent average catch levels. |
+| | | | | |
+| **Reference points** | **Metric** | **Median [2.5%-97.5% CI]** | **Likelihood** | **Recent trend / projection** |
+| Depletion | LRP ($D_{MSY}$) | `r format_estimate("Dmsy", decimals = 2)` | | |
+| Abundance | LRP ($P_{MSY}$) | `r format_estimate("Pmsy", " n")` | | |
+| Abundance | LRP ($0.2\times\log(K)$) | `r format_estimate("Plrp", " n")` | | |
+| Catch | *MSY* | `r format_estimate("msy", " n")`  | | |
+| Fishing mortality | $F_{MSY}$ | `r format_estimate("Fmsy", decimals = 2)` | | | 
+| | | | | |
+| **Estimates** | **Metric** | **Median [2.5%-97.5% CI]** | **Likelihood** | **Recent trend / projection** |
+| Depletion | $D_{latest}$ | `r format_estimate("latest_depletion", decimals = 2)` | | Increasing |
+| Depletion | $D_{recent}$ | `r format_estimate("recent_D", decimals = 2)` | | Increasing |
+| Abundance | $P_{latest}$ | `r format_estimate("latest_population", units=" n")` | | Increasing |
+| Abundance | $P_{recent}$ | `r format_estimate("recent_P", units=" n")` | | Increasing |
+| Catch | $C_{latest}$ | `r format_estimate("latest_removals", units=" n")` | | Stable, decreasing |
+| Catch | $C_{recent}$ | `r format_estimate("recent_removals", units=" n")` | | Stable, decreasing |
+| Fishing mortality | $F_{latest}$ | `r format_estimate("latest_F", decimals = 2)` | | Decreasing |
+| Fishing mortality | $F_{recent}$ | `r format_estimate("recent_F", decimals = 2)` | | Decreasing |
+| | | | | |
+| **Status** | **Metric** | **Median [2.5%-97.5% CI]** | **Likelihood** | **Recent trend / projection** |
+| Depletion | $D_{latest}/D_{MSY}$ | `r format_estimate("latest_D_Dmsy", decimal=2)` | `r get_ipcc_likelihood(get_prob("latest_D_Dmsy"))` to be below $D_{MSY}$| |
+| Depletion | $D_{recent}/D_{MSY}$ | `r format_estimate("recent_D_Dmsy", decimal=2)` | `r get_ipcc_likelihood(get_prob("recent_D_Dmsy"))` to be below $D_{MSY}$| |
+| Fishing mortality | $F_{latest}/F_{MSY}$ | `r format_estimate("latest_F_Fmsy", decimal=2)` | `r get_ipcc_likelihood(get_prob("latest_F_Fmsy"))` to be above $F_{MSY}$| |
+| Fishing mortality | $F_{recent}/F_{MSY}$ | `r format_estimate("recent_F_Fmsy", decimal=2)` | `r get_ipcc_likelihood(get_prob("recent_F_Fmsy"))` to be above $F_{MSY}$| |
+| | | | | |
+| **Projections** | **Metric** | **Median [2.5%-97.5% CI]** | **Likelihood** | **Recent trend / projection** |
+| Depletion | $D^{2027}_{proj}/D_{MSY}$ | `r format_estimate("D_Dmsy", decimal=2,dt = ens_forecast_summary[year==2027])` | `r get_ipcc_likelihood(get_prob("D_Dmsy",dt=ens_forecast_probs[year==2027]))` to be below $D_{MSY}$| $D_{proj}$ increasing |
+| Fishing mortality | $F^{2027}_{proj}/F_{MSY}$ | `r format_estimate("F_Fmsy", decimal=2,dt = ens_forecast_summary[year==2027])` | `r get_ipcc_likelihood(get_prob("F_Fmsy",dt=ens_forecast_probs[year==2027]))` to be above $F_{MSY}$| $F_{proj}$ decreasing |
+
+**Notes:** IPCC likelihood categories: >99% = Virtually Certain, >90% = Very Likely, >66% = Likely, 33-66% = About as Likely as Not, <33% = Unlikely, <10% = Very Unlikely, <1% = Exceptionally Unlikely. In the absence of formal reference points, overfished and overfishing designations are based on MSY reference points. For depletion ratios, $D_{recent}$ refers to the average over 2019-2022 and $D_{latest}$ refers to 2022. For fishing mortality ratios, $F_{recent}$ refers to the average over 2018-2021 and $F_{latest}$ refers to 2021. Projections are based on recent average catch over the last 5 years: 2018-2022.
+
+:::
+
+\newpage
+
+```{=html}
+<br>
+```
+
 # Figures {#sec-figures}
 
 ```{r}
@@ -1136,37 +1385,8 @@ knitr::kable(final_table, format = "markdown")
 #| message: false
 #| fig-cap: "Annual catch (numbers; individuals) of striped marlin and nominal longline effort (hooks fished; thousands) in the Southwest Pacific Ocean (1952-2022)."
 
-# Read catch data
-catch_dt = fread(file.path(proj_dir, "data", "input", "catch.csv"))
-
-# Load effort data 
-effort_dt = fread(file.path(proj_dir, "data", "input", "WCPFC_L_PUBLIC_BY_FLAG_YR.CSV")) %>%
-                .[, lat_short_d := ifelse(grepl("S$", lat_short), 
-                                        -as.numeric(gsub("[NS]", "", lat_short)), 
-                                        as.numeric(gsub("[NS]", "", lat_short))) + 2.5] %>%
-                .[, lon_short_d := ifelse(grepl("W$", lon_short), 
-                                        360 - as.numeric(gsub("[EW]", "", lon_short)), 
-                                            as.numeric(gsub("[EW]", "", lon_short))) + 2.5] %>%
-                .[lat_short_d > -60 & lat_short_d < 0 & lon_short_d < 230] %>%
-                .[!(lat_short_d > -5 & lon_short_d > 210)] %>%
-                .[,.(effort_scaled = sum(hhooks)/1e6),by=yy] %>%
-                .[yy %in% 1952:2022] %>%
-                setnames(., "yy", "time")
-    
-catch_annual = catch_dt[,.(total_catch = sum(Obs * 1000)), by = .(year = floor(Time))]
-setorder(catch_annual, year)
-    
-# Merge with effort data
-catch_effort_annual = merge(catch_annual, effort_dt, by.x = "year", by.y = "time", all.x = TRUE)
-    
-# Fill missing effort with mean (if any)
-if(any(is.na(catch_effort_annual$effort_scaled))) {
-    catch_effort_annual[is.na(effort_scaled), effort_scaled := mean(effort_scaled, na.rm = TRUE)]
-}
-
 # Create histogram of annual catch
-catch_effort_annual %>%
-  .[,effort_scaled:=(effort_scaled*1e6*100)/1e3] %>% 
+catch_effort_annual[,.(year,total_catch,effort_scaled)] %>%
   melt(.,id.vars=c("year")) %>%
   .[,variable:=factor(variable,levels=c("total_catch","effort_scaled"),labels=c("Catch","Effort"))] %>%
 ggplot() +
@@ -2035,6 +2255,54 @@ knitr::include_graphics(file.path(proj_dir, "plots","ensemble.hcxval_analysis.pn
 #| fig-pos: "H"
 
 knitr::include_graphics(file.path(proj_dir, "plots","ensemble.ppts.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-kb
+#| echo: false
+#| fig-cap: '**Model ensemble**. Kobe plot showing the median posterior estimate of *latest* stock depletion relative to depletion at MSY ($D_{latest}/D_{MSY}$) and fishing mortality relative to MSY ($F_{latest}/F_{MSY}$). Points represent model estimates colored by year (blue $\sim 2020$, green $\sim 1985$, orange $\sim 1950$), with connecting line showing the trajectory over time. The gray shaded contour is the bi-variate 95% credible distribution around the terminal year estimate $D_{2022}/D_{MSY}$ and $F_{2021}/F_{MSY}$.'
+#| out-height: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","ensemble.kb.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-mj
+#| echo: false  
+#| fig-cap: '**Model ensemble**. Majuro plot showing the median posterior estimate of *latest* stock depletion ($D_{latest}=P_{latest}/P_0$) and fishing mortality relative to MSY ($F_{latest}/F_{MSY}$). Points represent model estimates colored by year (blue $\sim 2020$, green $\sim 1985$, orange $\sim 1950$), with connecting line showing the trajectory over time. The gray shaded contour is the bi-variate 95% credible distribution around the terminal year estimate $D_{2022}$ and $F_{2021}/F_{MSY}$.'
+#| out-height: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","ensemble.mj.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: fig-ens-timeseries-forecast
+#| echo: false
+#| fig-cap: "**Model ensemble**. Posterior time series distributions for key derived quantities over time during the forecast period 2023-2032 (line = median, shading = 90% credible interval): depletion (D), absolute population size in numbers (P), fishing mortality (F), stock status relative to MSY reference points ($D/D_{MSY}$, $F/F_{MSY}$), total removals in numbers, process error, nominal CPUE (numbers caught per 1000 hooks), and catchability deviates. The model ensemble is shown in orange. A 90% credible interval is shown to restrict the y-axis of the fishing mortality $F$ panel which shows high values of F in the projection period as a very small percentage of populations are estimated to go to zero under recent average catch levels."
+#| out-height: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","ensemble.forecast_5yr_meancatch.png"))
 ```
 
 \newpage

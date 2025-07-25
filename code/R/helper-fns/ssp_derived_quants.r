@@ -15,7 +15,9 @@ ssp_derived_quants = function(hmc_samples,stan_data,output="percentiles",percent
               .[,Pmsy:=dmsy * exp(logK)] %>%
               .[,Umsy:=m/dmsy] %>%
               .[,Fmsy:=-log(-Umsy+1)] %>%
-              .[,.(run_id,iter,msy,Dmsy,Pmsy,Umsy,Fmsy)] 
+              .[,Plrp:=0.2 * exp(logK)] %>%
+              .[,Dlrp:=0.2] %>%
+              .[,.(run_id,iter,msy,Dmsy,Pmsy,Umsy,Fmsy,Plrp,Dlrp)] 
         
         if(!("removals" %in% unique(hmc_samples$name))){
             # Scenario 1: Neither removals nor F estimated - use observed catch
@@ -128,14 +130,18 @@ ssp_derived_quants = function(hmc_samples,stan_data,output="percentiles",percent
                .[,latest_D_Dmsy := latest_depletion/Dmsy] %>%
                .[,latest_U_Umsy := latest_U/Umsy] %>%
                .[,latest_F_Fmsy := latest_F/Fmsy] %>%
-              .[,.(run_id,iter,latest_P_Pmsy,latest_D_Dmsy,latest_U_Umsy,latest_F_Fmsy)]
+               .[,latest_P_Plrp := latest_population/Plrp] %>%
+               .[,latest_D_Dlrp := latest_depletion/Dlrp] %>%
+              .[,.(run_id,iter,latest_P_Pmsy,latest_D_Dmsy,latest_U_Umsy,latest_F_Fmsy,latest_P_Plrp,latest_D_Dlrp)]
         
         tmp5 = merge(tmp1,recent_dt,by=c("run_id","iter")) %>%
                .[,recent_P_Pmsy := recent_P/Pmsy] %>%
                .[,recent_D_Dmsy := recent_D/Dmsy] %>%
                .[,recent_U_Umsy := recent_U/Umsy] %>%
                .[,recent_F_Fmsy := recent_F/Fmsy] %>%
-              .[,.(run_id,iter,recent_P_Pmsy,recent_D_Dmsy,recent_U_Umsy,recent_F_Fmsy)]
+               .[,recent_P_Plrp := recent_P/Plrp] %>%
+               .[,recent_D_Dlrp := recent_D/Dlrp] %>%
+              .[,.(run_id,iter,recent_U,recent_F,recent_P,recent_D,recent_P_Pmsy,recent_D_Dmsy,recent_U_Umsy,recent_F_Fmsy,recent_P_Plrp,recent_D_Dlrp)]
 
         # merge...
         tmp = merge(tmp1,tmp2,by=c("run_id","iter")) %>%

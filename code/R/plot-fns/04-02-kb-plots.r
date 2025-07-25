@@ -35,7 +35,7 @@ generate_kb <- function(model_dirs, params = NULL) {
     c("D", "P", "U", "F", "D_Dmsy", "P_Pmsy", "U_Umsy", "F_Fmsy", "removals", "dev", "raw_epsp", "surplus_production")
   )
   colnames(parameter_map) <- c("input", "grab")
-  target_par <- c("P_Pmsy", "F_Fmsy")
+  target_par <- c("D_Dmsy", "F_Fmsy")
   
   # Generate posterior and prior data
   posterior_dt_list <- list()
@@ -143,9 +143,9 @@ generate_kb <- function(model_dirs, params = NULL) {
       
       if (nrow(tmp_contour) > 10) {  # Need enough points for contours
         tryCatch({
-          mv.kde <- MASS::kde2d(tmp_contour$P_Pmsy, tmp_contour$F_Fmsy, 
+          mv.kde <- MASS::kde2d(tmp_contour$D_Dmsy, tmp_contour$F_Fmsy, 
                                n = as.numeric(params$resolution),
-                               lims = c(range(tmp_contour$P_Pmsy) * c(0.75, 1.25), 
+                               lims = c(range(tmp_contour$D_Dmsy) * c(0.75, 1.25), 
                                        range(tmp_contour$F_Fmsy) * c(0.75, 1.25)))
           
           dx <- diff(mv.kde$x[1:2])
@@ -159,7 +159,7 @@ generate_kb <- function(model_dirs, params = NULL) {
           dc <- as.data.table(dc[, c("Var1", "Var2", "prob")]) %>%
             dcast(., Var1 ~ Var2)
           
-          kd <- MASS::kde2d(tmp_contour$P_Pmsy, tmp_contour$F_Fmsy, n = as.numeric(params$resolution))
+          kd <- MASS::kde2d(tmp_contour$D_Dmsy, tmp_contour$F_Fmsy, n = as.numeric(params$resolution))
           kd$x <- dc$Var1
           kd$y <- as.numeric(colnames(dc)[-1])
           kd$z <- as.matrix(dc)[, -1]
@@ -219,30 +219,30 @@ generate_kb <- function(model_dirs, params = NULL) {
 
   p <- plot_dt %>%
     ggplot() +
-    xlab(expression(P/P["MSY"])) +
+    xlab(expression(D/D["MSY"])) +
     ylab(expression(F/F["MSY"])) +
     coord_fixed(ylim = c(0, 2.25), xlim = c(0, 2.25)) +
     scale_x_continuous(expand = expansion(mult = c(0, 0.05))) +
     scale_y_continuous(expand = expansion(mult = c(0, 0.05))) +
     # Kobe plot quadrants
-    geom_polygon(data = data.table(P_Pmsy = c(0, 1, 1, 0, 0), F_Fmsy = c(0, 0, 1, 1, 0)), 
-                aes(x = P_Pmsy, y = F_Fmsy), fill = "yellow", alpha = 0.2) +
-    geom_polygon(data = data.table(P_Pmsy = c(0, 1, 1, 0, 0), F_Fmsy = c(1, 1, 5, 5, 1)), 
-                aes(x = P_Pmsy, y = F_Fmsy), fill = "red", alpha = 0.2) +
-    geom_polygon(data = data.table(P_Pmsy = c(1, 5, 5, 1, 1), F_Fmsy = c(1, 1, 5, 5, 1)), 
-                aes(x = P_Pmsy, y = F_Fmsy), fill = "orange", alpha = 0.2) +
-    geom_polygon(data = data.table(P_Pmsy = c(1, 5, 5, 1, 1), F_Fmsy = c(0, 0, 1, 1, 0)), 
-                aes(x = P_Pmsy, y = F_Fmsy), fill = "green", alpha = 0.2) +
+    geom_polygon(data = data.table(D_Dmsy = c(0, 1, 1, 0, 0), F_Fmsy = c(0, 0, 1, 1, 0)), 
+                aes(x = D_Dmsy, y = F_Fmsy), fill = "yellow", alpha = 0.2) +
+    geom_polygon(data = data.table(D_Dmsy = c(0, 1, 1, 0, 0), F_Fmsy = c(1, 1, 5, 5, 1)), 
+                aes(x = D_Dmsy, y = F_Fmsy), fill = "red", alpha = 0.2) +
+    geom_polygon(data = data.table(D_Dmsy = c(1, 5, 5, 1, 1), F_Fmsy = c(1, 1, 5, 5, 1)), 
+                aes(x = D_Dmsy, y = F_Fmsy), fill = "orange", alpha = 0.2) +
+    geom_polygon(data = data.table(D_Dmsy = c(1, 5, 5, 1, 1), F_Fmsy = c(0, 0, 1, 1, 0)), 
+                aes(x = D_Dmsy, y = F_Fmsy), fill = "green", alpha = 0.2) +
     geom_hline(yintercept = 0, color = "black") +
     geom_vline(xintercept = 0, color = "black") +
     geom_hline(yintercept = 1, linewidth = 1.15, color = "black") +
     geom_vline(xintercept = 1, linewidth = 1.15, color = "black")
     
   if(uniqueN(plot_dt$run_label)>1){  
-    p = p + geom_path(aes(x = P_Pmsy, y = F_Fmsy, linetype = type, color = run_label), linewidth = 1.25)
+    p = p + geom_path(aes(x = D_Dmsy, y = F_Fmsy, linetype = type, color = run_label), linewidth = 1.25)
   } else {
-    p = p + geom_path(aes(x = P_Pmsy, y = F_Fmsy, linetype = type),color = "gray60", linewidth = 1)
-    p = p + geom_point(aes(x = P_Pmsy, y = F_Fmsy, fill = year),color = "black", shape=21,size=2)
+    p = p + geom_path(aes(x = D_Dmsy, y = F_Fmsy, linetype = type),color = "gray60", linewidth = 1)
+    p = p + geom_point(aes(x = D_Dmsy, y = F_Fmsy, fill = year),color = "black", shape=21,size=2)
   }
   
   # Add uncertainty contours if available
@@ -252,20 +252,20 @@ generate_kb <- function(model_dirs, params = NULL) {
     }
     if(uniqueN(plot_dt$run_label)>1){  
       p <- p + geom_polygon(data = contour_dt, 
-                          aes(x = P_Pmsy, y = F_Fmsy, fill = run_label, group = plot_id), 
+                          aes(x = D_Dmsy, y = F_Fmsy, fill = run_label, group = plot_id), 
                           alpha = 0.1, show.legend = FALSE)
     } else {
       p <- p + geom_polygon(data = contour_dt, 
-                          aes(x = P_Pmsy, y = F_Fmsy, group = plot_id), fill="gray60", 
+                          aes(x = D_Dmsy, y = F_Fmsy, group = plot_id), fill="gray60", 
                           alpha = 0.2, show.legend = FALSE)
     }
   }
   
   if(uniqueN(plot_dt$run_label)>1){  
     p <- p +
-    geom_point(data = plot_dt[row == 1], aes(x = P_Pmsy, y = F_Fmsy, color = run_label), 
+    geom_point(data = plot_dt[row == 1], aes(x = D_Dmsy, y = F_Fmsy, color = run_label), 
               shape = 21, fill = "white", size = 3) +
-    geom_point(data = plot_dt[row == max(plot_dt$row)], aes(x = P_Pmsy, y = F_Fmsy, fill = run_label), 
+    geom_point(data = plot_dt[row == max(plot_dt$row)], aes(x = D_Dmsy, y = F_Fmsy, fill = run_label), 
               color = "black", shape = 21, size = 3) +
     scale_linetype_manual("Distribution type", values = c("dotted", "solid"), drop = FALSE) +
     viridis::scale_color_viridis("Model run", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE, drop = FALSE) +
@@ -273,9 +273,9 @@ generate_kb <- function(model_dirs, params = NULL) {
     get_ssp_theme()
   } else {
     p <- p +
-    geom_point(data = plot_dt[year == min(plot_dt$year)], aes(x = P_Pmsy, y = F_Fmsy, color = run_label), 
+    geom_point(data = plot_dt[year == min(plot_dt$year)], aes(x = D_Dmsy, y = F_Fmsy, color = run_label), 
               shape = 21, fill = "white", size = 3) +
-    geom_point(data = plot_dt[year == max(plot_dt$year)], aes(x = P_Pmsy, y = F_Fmsy), 
+    geom_point(data = plot_dt[year == max(plot_dt$year)], aes(x = D_Dmsy, y = F_Fmsy), 
               fill="black",color = "black", shape = 21, size = 3) +
     scale_linetype_manual("Distribution type", values = c("dotted", "solid"), drop = FALSE) +
     viridis::scale_color_viridis("Model run", begin = 0.1, end = 0.8, direction = -1, option = "H", discrete = TRUE, drop = FALSE) +

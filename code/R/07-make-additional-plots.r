@@ -601,7 +601,7 @@
     # extract specific forecast data
         all_data = lapply(target_model_dirs, load_model_data)
         # Generate forecasts for each model
-        posterior_dt_list = forecast_posterior_dt_list = forecast_dt_list = list()
+        derived_dt_list = posterior_dt_list = forecast_posterior_dt_list = forecast_dt_list = list()
         for (i in seq_along(all_data)) {
             # Run forecasts
             forecast_dt_list[[i]] = ssp_forecast(
@@ -631,6 +631,13 @@
             stan_data = all_data[[i]]$stan_data,
             settings = all_data[[i]]$settings,
             sub_sample_prop = 1
+            )
+
+            derived_dt_list[[i]] = ssp_derived_quants(
+            hmc_samples = all_data[[i]]$samples,
+            stan_data = all_data[[i]]$stan_data,
+            output="raw",
+            percentile=0.5
             )
         }
 
@@ -685,6 +692,36 @@
                         count_meeting_condition = .N,
                         prop_meeting_condition = .N / forecast_posterior_dt[name == first(name) & year == first(year), .N]
                         ), by = .(name, year)] %>% .[order(year, name)] %>% .[year>2022]
+
+        # calculate that D and F continue to increase/decrease
+                D_gt_2022 = forecast_posterior_dt[name == "D" & year %in% c(2022, 2023:2052),
+                        .(ref_val = value[year == 2022], 
+                        curr_val = value[year > 2022],
+                        curr_year = year[year > 2022]),
+                        by = .(iter, chain, run_label)
+                    ][, .(name = "D_gt_2022",
+                        count_meeting_condition = sum(curr_val > ref_val, na.rm = TRUE),
+                        prop_meeting_condition = mean(curr_val > ref_val, na.rm = TRUE)),
+                    by = curr_year
+                    ][order(curr_year)] %>%
+                    setnames(.,"curr_year","year") %>%
+                    .[,.(name,year,count_meeting_condition,prop_meeting_condition)]
+
+                F_lt_2021 = forecast_posterior_dt[name == "F" & year %in% c(2021, 2021:2052),
+                        .(ref_val = value[year == 2021], 
+                        curr_val = value[year > 2021],
+                        curr_year = year[year > 2021]),
+                        by = .(iter, chain, run_label)
+                    ][, .(name = "F_lt_2021",
+                        count_meeting_condition = sum(curr_val < ref_val, na.rm = TRUE),
+                        prop_meeting_condition = mean(curr_val < ref_val, na.rm = TRUE)),
+                    by = curr_year
+                    ][order(curr_year)] %>%
+                    setnames(.,"curr_year","year") %>%
+                    .[,.(name,year,count_meeting_condition,prop_meeting_condition)]
+            
+            forecast_probs = rbind(forecast_probs,D_gt_2022,F_lt_2021)
+
         mgmt_probs = posterior_dt[
                         (name == "D_Dmsy" & value < 1) |
                         (name == "F_Fmsy" & value > 1) |
@@ -694,9 +731,86 @@
                         prop_meeting_condition = .N / forecast_posterior_dt[name == first(name) & year == first(year), .N]
                         ), by = .(name, year)] %>% .[order(year, name)] %>% .[year>2022]
 
+        # calc recent and latest removals
+        latest_removals = posterior_dt[name %in% c("removals") & year %in% max(year), .(
+                    mean = mean(value,na.rm=TRUE),
+                    median = median(value,na.rm=TRUE),
+                    q025 = quantile(value, 0.025,na.rm=TRUE),
+                    q975 = quantile(value, 0.975,na.rm=TRUE),
+                    sd = sd(value,na.rm=TRUE),
+                    n = .N
+                    ),by=.(name)] %>%
+                    .[order(name)] %>%
+                    .[,name:="latest_removals"]
+        recent_removals = posterior_dt[name %in% c("removals") & year %in% seq(from=max(year),by=-1,length.out=4), .(
+                    mean = mean(value,na.rm=TRUE),
+                    median = median(value,na.rm=TRUE),
+                    q025 = quantile(value, 0.025,na.rm=TRUE),
+                    q975 = quantile(value, 0.975,na.rm=TRUE),
+                    sd = sd(value,na.rm=TRUE),
+                    n = .N
+                    ),by=.(name)] %>%
+                    .[order(name)] %>%
+                    .[,name:="recent_removals"]
+
+        derived_dt = rbindlist(derived_dt_list) %>% melt(.,id.vars=c("run_id","iter")) %>%
+                     setnames(.,"variable","name")
+
+        derived_summary = derived_dt[name %in% c("msy","Dmsy","Fmsy","Pmsy","Plrp","latest_F","latest_depletion","latest_population",
+                                                "latest_F_Fmsy","latest_D_Dmsy","recent_F_Fmsy","recent_D_Dmsy",
+                                                "latest_D_Dlrp","recent_D_Dlrp","recent_F","recent_D","recent_P"), .(
+                    mean = mean(value,na.rm=TRUE),
+                    median = median(value,na.rm=TRUE),
+                    q025 = quantile(value, 0.025,na.rm=TRUE),
+                    q975 = quantile(value, 0.975,na.rm=TRUE),
+                    sd = sd(value,na.rm=TRUE),
+                    n = .N
+                    ),by=.(name)] %>%
+                    .[order(name)]
+        
+        derived_summary = rbind(derived_summary,latest_removals,recent_removals)
+        
+        derived_probs = derived_dt[
+                        (name == "latest_D_Dmsy" & value < 1) |
+                        (name == "recent_D_Dmsy" & value < 1) |
+                        (name == "latest_F_Fmsy" & value > 1) |
+                        (name == "recent_F_Fmsy" & value > 1) |
+                        (name == "latest_D_Dlrp" & value < 1) |
+                        (name == "recent_D_Dlrp" & value < 1)
+                        ][, .(
+                        count_meeting_condition = .N,
+                        prop_meeting_condition = .N / derived_dt[name == first(name), .N]
+                        ), by = .(name)] %>% .[order(name)]
+        
+        joint_probs = derived_dt[name %in% c("latest_D_Dmsy", "latest_F_Fmsy", "recent_D_Dmsy", "recent_F_Fmsy","latest_D_Dlrp","recent_D_Dlrp"),
+                                .(latest_joint_kb = (value[name == "latest_D_Dmsy"] < 1) & (value[name == "latest_F_Fmsy"] > 1),
+                                    recent_joint_kb = (value[name == "recent_D_Dmsy"] < 1) & (value[name == "recent_F_Fmsy"] > 1),
+                                    latest_joint_mj = (value[name == "latest_D_Dlrp"] < 1) & (value[name == "latest_F_Fmsy"] > 1),
+                                    recent_joint_mj = (value[name == "recent_D_Dlrp"] < 1) & (value[name == "recent_F_Fmsy"] > 1)),
+                                by = .(iter, run_id)
+                                ][, .(
+                                rbind(
+                                    .(name = "latest_joint_kb",
+                                        count_meeting_condition = sum(latest_joint_kb),
+                                        prop_meeting_condition = mean(latest_joint_kb)),
+                                    .(name = "recent_joint_kb",
+                                        count_meeting_condition = sum(recent_joint_kb),
+                                        prop_meeting_condition = mean(recent_joint_kb)),
+                                    .(name = "latest_joint_mj",
+                                        count_meeting_condition = sum(latest_joint_mj),
+                                        prop_meeting_condition = mean(latest_joint_mj)),
+                                    .(name = "recent_joint_mj",
+                                        count_meeting_condition = sum(recent_joint_mj),
+                                        prop_meeting_condition = mean(recent_joint_mj))   
+                                )
+                                )]
+
         fwrite(forecast_summary,file=file.path(proj_dir,"data","output","ens_forecast_summary.csv"))
         fwrite(mgmt_summary,file=file.path(proj_dir,"data","output","ens_mgmt_summary.csv"))
         fwrite(forecast_probs,file=file.path(proj_dir,"data","output","ens_forecast_probs.csv"))
         fwrite(mgmt_probs,file=file.path(proj_dir,"data","output","ens_mgmt_probs.csv"))
-
+        fwrite(derived_dt,file=file.path(proj_dir,"data","output","ens_derived_dt.csv"))
+        fwrite(derived_summary,file=file.path(proj_dir,"data","output","ens_derived_summary.csv"))
+        fwrite(derived_probs,file=file.path(proj_dir,"data","output","ens_derived_probs.csv"))
+        fwrite(joint_probs,file=file.path(proj_dir,"data","output","ens_joint_probs.csv"))
 
