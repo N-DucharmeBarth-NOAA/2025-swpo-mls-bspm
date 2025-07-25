@@ -751,10 +751,12 @@
                     n = .N
                     ),by=.(name)] %>%
                     .[order(name)] %>%
-                    .[,name:="recent_removals"]
+                    .[,name:="recent_removals"]        
 
         derived_dt = rbindlist(derived_dt_list) %>% melt(.,id.vars=c("run_id","iter")) %>%
-                     setnames(.,"variable","name")
+                     setnames(.,"variable","name") %>%
+                     rbind(., posterior_dt[name %in% c("removals") & year %in% max(year),.(name="latest_removals",value=mean(value)),by=.(run_id,iter)]) %>%
+                     rbind(.,posterior_dt[name %in% c("removals") & year %in% seq(from=max(year),by=-1,length.out=4),.(name="recent_removals",value=mean(value)),by=.(run_id,iter)])
 
         derived_summary = derived_dt[name %in% c("msy","Dmsy","Fmsy","Pmsy","Plrp","latest_F","latest_depletion","latest_population",
                                                 "latest_F_Fmsy","latest_D_Dmsy","recent_F_Fmsy","recent_D_Dmsy",

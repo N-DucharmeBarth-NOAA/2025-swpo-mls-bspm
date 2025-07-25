@@ -154,6 +154,25 @@
       "Maintainer": "Barret Schloerke <schloerke@gmail.com>",
       "Repository": "CRAN"
     },
+    "HDInterval": {
+      "Package": "HDInterval",
+      "Version": "0.2.4",
+      "Source": "Repository",
+      "Type": "Package",
+      "Title": "Highest (Posterior) Density Intervals",
+      "Date": "2022-11-16",
+      "Suggests": [
+        "coda"
+      ],
+      "Authors@R": "c(person(\"Ngumbang\", \"Juat\", role=\"cre\", email=\"ngumbangjuat@hotmail.com\"), person(\"Mike\", \"Meredith\", role=\"aut\"), person(\"John\", \"Kruschke\", role=\"aut\"))",
+      "Description": "A generic function and a set of methods to calculate highest density intervals for a variety of classes of objects which can specify a probability density distribution, including MCMC output, fitted density objects, and functions.",
+      "License": "GPL-3",
+      "NeedsCompilation": "no",
+      "Author": "Ngumbang Juat [cre], Mike Meredith [aut], John Kruschke [aut]",
+      "Maintainer": "Ngumbang Juat <ngumbangjuat@hotmail.com>",
+      "Repository": "CRAN",
+      "Encoding": "UTF-8"
+    },
     "MASS": {
       "Package": "MASS",
       "Version": "7.3-65",

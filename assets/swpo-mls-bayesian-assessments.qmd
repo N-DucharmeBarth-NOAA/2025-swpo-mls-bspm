@@ -999,7 +999,7 @@ The catchability deviations show declining trends from elevated levels in the mi
 
 ### Stock status {#sec-ensemble-stock-status}
 
-The SWPO striped marlin stock lacks formal, agreed upon reference points. Accordingly, stock status is summarized in terms of the following MSY and depletion based reference points (TABLE): total depletion relative to total depletion at MSY ($D/D_{MSY}$), fishing mortality relative to fishing mortality at MSY ($F/F_{MSY}$), and total depletion relative to generalized limit reference point of 20% depletion from the unfished state ($D/D_{0.2F=0}$). All ratios are calculated with respect to two periods: *recent* and *latest*. For depletion ratios, $D_{recent}$ refers to the average over 2019-2022 and $D_{latest}$ refers to 2022. For fishing mortality ratios, $F_{recent}$ refers to the average over 2018-2021 and $F_{latest}$ refers to 2021.
+The SWPO striped marlin stock lacks formal, agreed upon reference points. Accordingly, stock status is summarized in terms of the following MSY and depletion based reference points (TABLE): total depletion relative to total depletion at MSY ($D/D_{MSY}$), fishing mortality relative to fishing mortality at MSY ($F/F_{MSY}$), and total depletion relative to generalized limit reference point of 20% depletion from the unfished state ($D/D_{0.2F=0}$). All ratios are calculated with respect to two periods: *recent* and *latest*. For depletion ratios, $D_{recent}$ refers to the average over 2019-2022 and $D_{latest}$ refers to 2022. For fishing mortality ratios, $F_{recent}$ refers to the average over 2018-2021 and $F_{latest}$ refers to 2021. Uncertainty in stock status and management reference points is presented in the paper using conventional, equal tailed 95% posterior credible intervals (ETIs). An appendix (@sec-appendix-hdi) is included which provides the corresponding highest density intervals (HDIs), as these may more appropriately capture uncertainty in skewed distributions [@edwards_using_2025].  
 
 On average, the stock is estimated to be in an overfished state according to both $D_{recent}/D_{MSY}$ (`r round(ens_summary[name == "recent_D_Dmsy", median], 2)` median; `r round(ens_summary[name == "recent_D_Dmsy", q025], 2)` – `r round(ens_summary[name == "recent_D_Dmsy", q975], 2)` 95% credible interval) and $D_{latest}/D_{MSY}$ (`r round(ens_summary[name == "latest_D_Dmsy", median], 2)` median; `r round(ens_summary[name == "latest_D_Dmsy", q025], 2)` – `r round(ens_summary[name == "latest_D_Dmsy", q975], 2)` 95% credible interval), but is not currently estimated to be undergoing overfishing according to $F_{recent}/F_{MSY}$ (`r round(ens_summary[name == "recent_F_Fmsy", median], 2)` median; `r round(ens_summary[name == "recent_F_Fmsy", q025], 2)` – `r round(ens_summary[name == "recent_F_Fmsy", q975], 2)` 95% credible interval) or $F_{latest}/F_{MSY}$ (`r round(ens_summary[name == "latest_F_Fmsy", median], 2)` median; `r round(ens_summary[name == "latest_F_Fmsy", q025], 2)` – `r round(ens_summary[name == "latest_F_Fmsy", q975], 2)` 95% credible interval).
 
@@ -2361,3 +2361,110 @@ $$\phi_0 = \sum_{a=1}^{A_{Max}} l_a f_a$$
 This $\alpha$ parameter links the intrinsic rate of increase to recruitment compensation, ensuring that $R_{Max}$ estimates reflect realistic population productivity under the assumed stock-recruitment dynamics.
 
 Successful simulations (those yielding $R_{Max} > 0$ and $R_{Max} < 1.5$) were filtered to create a plausible prior distribution. The resulting distribution was fitted to a lognormal prior for use in the BSPM.
+
+\newpage
+
+```{=html}
+<br>
+```
+
+# Appendix {#sec-appendix}
+
+##  Highest Density Intervals vs. Equal-Tailed Intervals {#sec-appendix-hdi}
+
+Highest density intervals (HDIs) provide an alternative to conventional equal-tailed intervals (ETIs) for characterizing uncertainty in Bayesian stock assessments. While both represent credible intervals containing a specified probability mass (e.g., 95%), they differ fundamentally in how this probability is distributed.
+
+Equal-Tailed Intervals (ETIs) place equal probability (2.5%) in each tail of the distribution, resulting in the familiar percentile-based intervals (2.5th to 97.5th percentiles for 95% intervals). In contrast, Highest Density Intervals (HDIs) contain the 95% most probable values, defined as the shortest possible interval containing the specified probability mass. Critically, all values within an HDI are more credible (have higher probability density) than any values outside it, whereas ETIs can exclude highly probable values while including less probable ones. This is more clearly demonstrated in the following figure (@fig-hdi-v-eti), where the ETI and HDI are presented for $D_{recent}/D_{MSY}$. As seen in panel A of @fig-hdi-v-eti, the lower tail of the ETI inappropriately excludes high probability observations. In panel B of @fig-hdi-v-eti, we see that all low probability observations are appropriately excluded. This shrinks the range of the credible interval, and shifts it left to exclude lower probability values in the right tail.
+
+HDIs offer several advantages over ETIs: they are always the shortest possible credible interval (reducing perceived uncertainty), provide more intuitive interpretation by including only the most probable values, and are better suited for the right-skewed distributions common in stock assessments. However, HDIs may require explanation to stakeholders familiar with conventional intervals, and unlike ETIs, change under nonlinear transformations of the parameter.
+
+As applied to stock assessments, HDIs typically result in narrower uncertainty intervals and can shift interval bounds toward lower values in right-skewed distributions [@edwards_using_2025]. This can affect perceptions of stock status, particularly when intervals approach management reference points. The following table (@tbl-appendix-hdi) presents the median, ETI and HDI of all key stock status and management reference points for consideration by the WCPFC Scientific Committee.
+
+\newpage
+
+```{=html}
+<br>
+```
+
+```{r}
+#| label: make-tbl-appendix-hdi
+#| echo: false
+# Helper function to format intervals
+format_hdi_estimate <- function(param_name, units = "", decimals = 0, dt = ens_hdi_dt, interval_type = "eti") {
+  row <- dt[metric == param_name & type == interval_type & mass == 0.95]
+  if(nrow(row) == 0) return("NA")
+  
+  if(decimals == 0) {
+    paste0("[", format(round(row$lower), big.mark = ","), 
+           " – ", format(round(row$upper), big.mark = ","), "]")
+  } else {
+    paste0("[", round(row$lower, decimals),
+           " – ", round(row$upper, decimals), "]")
+  }
+}
+
+# Helper function to get median
+get_median <- function(param_name, units = "", decimals = 0, dt = ens_hdi_dt) {
+  row <- dt[metric == param_name & mass == 0.95][1]  # Both types have same median
+  if(nrow(row) == 0) return("NA")
+  
+  if(decimals == 0) {
+    paste0(format(round(row$median), big.mark = ","), units)
+  } else {
+    paste0(round(row$median, decimals), units)
+  }
+}
+
+ens_hdi_dt = fread(file.path(proj_dir,"data","output","ens_hdi_dt.csv"))
+```
+
+Table: Comparison of equal-tailed intervals (ETI) and highest density intervals (HDI) for the posterior distributions of key stock status and management reference points. {#tbl-appendix-hdi}
+
+| **Category** | **Metric** | **Median** | **95% ETI** | **95% HDI** |
+|:-------------|:-----------|:-----------|:------------|:------------|
+| **Reference points** | | | | |
+| Depletion | LRP ($D_{MSY}$) | `r get_median("Dmsy", decimals = 2)` | `r format_hdi_estimate("Dmsy", decimals = 2, interval_type = "eti")` | `r format_hdi_estimate("Dmsy", decimals = 2, interval_type = "hdi")` |
+| Abundance | LRP ($P_{MSY}$) | `r get_median("Pmsy", " n")` | `r format_hdi_estimate("Pmsy", interval_type = "eti")` | `r format_hdi_estimate("Pmsy", interval_type = "hdi")` |
+| Abundance | LRP ($0.2\times\log(K)$) | `r get_median("Plrp", " n")` | `r format_hdi_estimate("Plrp", interval_type = "eti")` | `r format_hdi_estimate("Plrp", interval_type = "hdi")` |
+| Catch | *MSY* | `r get_median("msy", " n")` | `r format_hdi_estimate("msy", interval_type = "eti")` | `r format_hdi_estimate("msy", interval_type = "hdi")` |
+| Fishing mortality | $F_{MSY}$ | `r get_median("Fmsy", decimals = 2)` | `r format_hdi_estimate("Fmsy", decimals = 2, interval_type = "eti")` | `r format_hdi_estimate("Fmsy", decimals = 2, interval_type = "hdi")` |
+| | | | | |
+| **Estimates** | | | | |
+| Depletion | $D_{latest}$ | `r get_median("latest_depletion", decimals = 2)` | `r format_hdi_estimate("latest_depletion", decimals = 2, interval_type = "eti")` | `r format_hdi_estimate("latest_depletion", decimals = 2, interval_type = "hdi")` |
+| Depletion | $D_{recent}$ | `r get_median("recent_D", decimals = 2)` | `r format_hdi_estimate("recent_D", decimals = 2, interval_type = "eti")` | `r format_hdi_estimate("recent_D", decimals = 2, interval_type = "hdi")` |
+| Abundance | $P_{latest}$ | `r get_median("latest_population", " n")` | `r format_hdi_estimate("latest_population", interval_type = "eti")` | `r format_hdi_estimate("latest_population", interval_type = "hdi")` |
+| Abundance | $P_{recent}$ | `r get_median("recent_P", " n")` | `r format_hdi_estimate("recent_P", interval_type = "eti")` | `r format_hdi_estimate("recent_P", interval_type = "hdi")` |
+| Catch | $C_{latest}$ | `r get_median("latest_removals", " n")` | `r format_hdi_estimate("latest_removals", interval_type = "eti")` | `r format_hdi_estimate("latest_removals", interval_type = "hdi")` |
+| Catch | $C_{recent}$ | `r get_median("recent_removals", " n")` | `r format_hdi_estimate("recent_removals", interval_type = "eti")` | `r format_hdi_estimate("recent_removals", interval_type = "hdi")` |
+| Fishing mortality | $F_{latest}$ | `r get_median("latest_F", decimals = 2)` | `r format_hdi_estimate("latest_F", decimals = 2, interval_type = "eti")` | `r format_hdi_estimate("latest_F", decimals = 2, interval_type = "hdi")` |
+| Fishing mortality | $F_{recent}$ | `r get_median("recent_F", decimals = 2)` | `r format_hdi_estimate("recent_F", decimals = 2, interval_type = "eti")` | `r format_hdi_estimate("recent_F", decimals = 2, interval_type = "hdi")` |
+| | | | | |
+| **Status** | | | | |
+| Depletion | $D_{latest}/D_{MSY}$ | `r get_median("latest_D_Dmsy", decimals = 2)` | `r format_hdi_estimate("latest_D_Dmsy", decimals = 2, interval_type = "eti")` | `r format_hdi_estimate("latest_D_Dmsy", decimals = 2, interval_type = "hdi")` |
+| Depletion | $D_{recent}/D_{MSY}$ | `r get_median("recent_D_Dmsy", decimals = 2)` | `r format_hdi_estimate("recent_D_Dmsy", decimals = 2, interval_type = "eti")` | `r format_hdi_estimate("recent_D_Dmsy", decimals = 2, interval_type = "hdi")` |
+| Fishing mortality | $F_{latest}/F_{MSY}$ | `r get_median("latest_F_Fmsy", decimals = 2)` | `r format_hdi_estimate("latest_F_Fmsy", decimals = 2, interval_type = "eti")` | `r format_hdi_estimate("latest_F_Fmsy", decimals = 2, interval_type = "hdi")` |
+| Fishing mortality | $F_{recent}/F_{MSY}$ | `r get_median("recent_F_Fmsy", decimals = 2)` | `r format_hdi_estimate("recent_F_Fmsy", decimals = 2, interval_type = "eti")` | `r format_hdi_estimate("recent_F_Fmsy", decimals = 2, interval_type = "hdi")` |
+
+
+\newpage
+
+```{=html}
+<br>
+```
+
+
+```{r}
+#| label: fig-hdi-v-eti
+#| echo: false
+#| fig-cap: "Comparison of equal-tailed intervals (ETI) and highest density intervals (HDI) for the posterior distribution of recent depletion relative to MSY ($D_{recent}/D_{MSY}$). Panel A shows the 95% ETI with equal probability (2.5%) in each tail. Panel B shows the 95% HDI, which contains the most probable values and is bounded by the horizontal threshold line (gray) where all values above have higher probability density than values below."
+#| out-height: "90%"
+#| fig-pos: "H"
+
+knitr::include_graphics(file.path(proj_dir, "plots","hdi_v_eti.d_dmsy.png"))
+```
+
+\newpage
+
+```{=html}
+<br>
+```
