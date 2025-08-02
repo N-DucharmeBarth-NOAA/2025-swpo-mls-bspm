@@ -21,7 +21,7 @@ meetingtype: "SCIENTIFIC COMMITTEE"
 meetingnumber: "TWENTY-FIRST REGULAR SESSION"
 meetinglocation: "Nuku'alofa, Tonga"
 meetingdates: "13-21 August 2025"
-repnumber: WCPFC-SC21-2025/SA-WP-07
+repnumber: WCPFC-SC21-2025/SA-WP-07 rev1
 format:
   pdf:
     pdf-engine: pdflatex
@@ -109,7 +109,6 @@ catch_effort_annual[,effort_scaled:=(effort_scaled*1e6*100)/1e3]
 catch_effort_annual[,nominal_cpue:=total_catch/effort_scaled]
 
 ```
-
 \newpage
 
 # Executive summary
@@ -125,6 +124,8 @@ ens_joint_probs = fread(file.path(proj_dir,"data","output","ens_joint_probs.csv"
 ens_forecast_summary = fread(file.path(proj_dir,"data","output","ens_forecast_summary.csv"))
 ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_probs.csv"))
 ```
+
+**Rev 1:** In the initial version, the *median* values listed in @tbl-stock-status actually reported the *mean* from the posterior distribution. In the current revision this has been fixed, and the median values are reported.
 
 This working paper presents part II of the 2025 stock assessment of Southwest Pacific Ocean (SWPO) striped marlin (*Kajikia audax*) and describes a data-moderate Bayesian surplus production model (BSPM) approach. This assessment represents a strategic shift from the integrated age-structured models used previously, given challenges with data conflicts, poor fits to size composition data, and difficulties in estimating model initial conditions in the integrated age-structured model. The complexity of integrated age-structured models becomes problematic when fundamental data conflicts exist or when key biological parameters are uncertain, making the simplified yet robust BSPM framework a reasonable alternative. In combination with information from the integrated stock assessment, the BSPM can provide a holistic view on likely stock status and population trajectory.
 
@@ -1314,11 +1315,11 @@ get_ipcc_likelihood <- function(prob,print_prob=TRUE) {
 format_estimate <- function(param_name, units = "", decimals = 0, dt = ens_summary) {
   row <- dt[name == param_name]
   if(decimals == 0) {
-    paste0(format(round(row$mean), big.mark = ","), units, 
+    paste0(format(round(row$median), big.mark = ","), units, 
            " [", format(round(row$q025), big.mark = ","), 
            " – ", format(round(row$q975), big.mark = ","), "]")
   } else {
-    paste0(round(row$mean, decimals), units,
+    paste0(round(row$median, decimals), units,
            " [", round(row$q025, decimals),
            " – ", round(row$q975, decimals), "]")
   }
