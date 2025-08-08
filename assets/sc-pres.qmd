@@ -1,0 +1,165 @@
+---
+# Define logo paths as Quarto variables
+logo1: "static/spc-logo.png"
+logo2: "static/noaa-fisheries-logo.png"
+
+format:
+  revealjs:
+    theme: [default, customizations/presentation-custom.scss]
+    slide-number: true
+    footer: "WCPFC-SC21-2025/SA-WP-07"
+    include-in-header:
+      - text: |
+          <script>
+          // Access Quarto variables in JavaScript
+          window.quartoLogos = {
+            logo1: '{{< meta logo1 >}}',
+            logo2: '{{< meta logo2 >}}'
+          };
+          </script>
+          <script src="customizations/add-logos.js"></script>
+          <script src="customizations/slide-background.js"></script>
+    css: customizations/logos.css
+    self-contained: true
+resources:
+  - "static/**"  # Include all files in the static directory
+---
+
+```{r}
+#| label: set-paths
+#| echo: false
+#| warning: false
+#| message: false
+library(data.table)
+library(ggplot2)
+library(magrittr)
+
+proj_dir = this.path::this.proj()
+dir_model_runs = file.path(proj_dir,"data","output","model_runs")
+diag_model = "0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0"
+
+# Define model description configuration (without run_number - will be matched from data)
+model_desc_config = fread(file.path(proj_dir,"data","output","model_desc_config.csv"))
+model_desc_config[,short_name:=sprintf("%04d", short_name)]
+model_desc_config[,short_name:=factor(short_name,levels=short_name)]
+
+# Read catch data
+catch_dt = fread(file.path(proj_dir, "data", "input", "catch.csv"))
+
+# Load effort data 
+effort_dt = fread(file.path(proj_dir, "data", "input", "WCPFC_L_PUBLIC_BY_FLAG_YR.CSV")) %>%
+                .[, lat_short_d := ifelse(grepl("S$", lat_short), 
+                                        -as.numeric(gsub("[NS]", "", lat_short)), 
+                                        as.numeric(gsub("[NS]", "", lat_short))) + 2.5] %>%
+                .[, lon_short_d := ifelse(grepl("W$", lon_short), 
+                                        360 - as.numeric(gsub("[EW]", "", lon_short)), 
+                                            as.numeric(gsub("[EW]", "", lon_short))) + 2.5] %>%
+                .[lat_short_d > -60 & lat_short_d < 0 & lon_short_d < 230] %>%
+                .[!(lat_short_d > -5 & lon_short_d > 210)] %>%
+                .[,.(effort_scaled = sum(hhooks)/1e6),by=yy] %>%
+                .[yy %in% 1952:2022] %>%
+                setnames(., "yy", "time")
+    
+catch_annual = catch_dt[,.(total_catch = sum(Obs * 1000)), by = .(year = floor(Time))]
+setorder(catch_annual, year)
+    
+# Merge with effort data
+catch_effort_annual = merge(catch_annual, effort_dt, by.x = "year", by.y = "time", all.x = TRUE)
+    
+# Fill missing effort with mean (if any)
+if(any(is.na(catch_effort_annual$effort_scaled))) {
+    catch_effort_annual[is.na(effort_scaled), effort_scaled := mean(effort_scaled, na.rm = TRUE)]
+}
+
+catch_effort_annual[,effort_scaled:=(effort_scaled*1e6*100)/1e3]
+catch_effort_annual[,nominal_cpue:=total_catch/effort_scaled]
+
+# Read summary data
+ens_summary = fread(file.path(proj_dir,"data","output","ens_derived_summary.csv"))
+ens_probs = fread(file.path(proj_dir,"data","output","ens_derived_probs.csv"))
+ens_joint_probs = fread(file.path(proj_dir,"data","output","ens_joint_probs.csv"))
+ens_forecast_summary = fread(file.path(proj_dir,"data","output","ens_forecast_summary.csv"))
+ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_probs.csv"))
+```
+
+## {.left-bg-image}
+
+<!-- Content area -->
+
+::: {.absolute top=20%}
+
+[2025 Stock Assessment of Striped Marlin in the Southwest Pacific Ocean]{.blue-title}
+
+[*Part II: Data-moderate Bayesian Surplus Production Model Approach*]{style="font-size:0.85em;"}
+
+[N. Ducharme-Barth, C. Castillo-Jordán, F. Carvalho, and P. Hamer]{style="font-size:0.5em;"}  
+
+[WCPFC-SC21 • Nuku'alofa, Tonga • 13–21 August 2025]{.blue style="font-size:0.5em;"}
+
+:::
+
+## Assessment context {.narrow-left-bg-image .smaller}
+
+::: {.incremental}
+- Strategic shift from integrated age-structured model to a Bayesian data-moderate approach
+- Previous challenges with:
+  - Data conflicts and poor fits to size composition 
+  - Challenges estimating population scale
+- [Bayesian Surplus Production Model (BSPM) offers simplified yet robust alternative when data limitations exist]{.blue}
+- Complements integrated assessment (Part I) for holistic stock status view
+:::
+
+## Why BSPM? {.narrow-left-bg-image .smaller}
+
+::: {.absolute width=50% left=0%}
+
+::: {.fragment .fade-in fragment-index=1}
+**Advantages:**
+
+- Focuses on estimating [productivity]{.blue} and [scale]{.blue} given catch and index data 
+- Efficient exploration of parameter space
+- Explicitly incorporates biological uncertainty through priors
+- Proven robust and effective for pelagic fish assessments
+:::
+:::
+
+::: {.absolute width=50% left=50%}
+::: {.fragment .fade-in fragment-index=2}
+**Trade-offs:**
+
+- Simplifies complex age-structured dynamics
+- Assumes single well-mixed population
+- Knife-edged selectivity assumption
+:::
+
+:::
+
+## Model framework {.narrow-left-bg-image .smaller}
+
+::: {.absolute width=100% left=0% style="font-size:0.75em;"}
+
+::: {.fragment .fade-in fragment-index=1}
+**Fletcher-Schaefer production model**
+:::
+
+::: {.fragment .fade-in fragment-index=2}
+**Population dynamics:**
+$$N_t = \left(N_{t-1} + \text{Surplus production}_{t-1}\right) \times \text{Process error}_{t} \times \text{Fishing survival}_{t-1}$$
+:::
+
+::: {.fragment .fade-in fragment-index=3}
+**Fishing impact linked to effort:**
+$$\text{Fishing survival}_{t} \propto 1 / \text{Fishing mortality}_t$$
+$$\text{Fishing mortality}_{t} = \text{Catchability}_{t} \times \text{Fishing effort}_t$$
+:::
+
+::: {.fragment .fade-in fragment-index=4}
+**Key features:**
+
+- True population (numbers) is treated as an unobserved random variable
+- Model only fits to observations of relative abundance and catch
+- Catchability is allowed to vary temporally so fishing mortality can match catch
+:::
+
+:::
+

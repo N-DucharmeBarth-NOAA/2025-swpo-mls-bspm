@@ -13,3 +13,4 @@ data/output/pushforward/bspm_estqsimple_softdep_mvprior_x0/hmc_samples.csv
 data/output/pushforward/bspm_estqsimple_softdep_mvprior_x0_newlogK/hmc_samples.csv
 shiny/*
 .vscode/*
+assets/init-pres.qmd
