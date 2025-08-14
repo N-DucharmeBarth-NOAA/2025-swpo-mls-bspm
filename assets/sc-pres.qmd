@@ -98,6 +98,18 @@ ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_prob
 
 :::
 
+## Openscience {.narrow-left-bg-image}
+
+::: {.absolute width=80% left=10% top=20% style="font-size:0.85em; text-align: center;"}
+
+All data inputs, model code, key model outputs, figures, report and presentation files are publicly available on GitHub:
+
+<https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm>
+
+:::
+
+![](..\assets\static\qr.png){.absolute left=40% top=57% width=22% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+
 ## Assessment context {.narrow-left-bg-image .smaller}
 
 ::: {.incremental}
@@ -408,7 +420,7 @@ ggplot(plot_dt, aes(x = year, y = obs)) +
 
 ::: {.fragment .fade-out fragment-index=2}
 ::: {.fragment .fade-in fragment-index=1}
-![](../plots/pushforward/bspm_estqsimple_softdep_mvprior_x0_newlogK/pairs.leading.updated_prior.png){.absolute left=55% top=25% height=50% width=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/rmax_subsampling_biological_parameters.png){.absolute left=55% top=25% height=50% width=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 :::
 :::
 
@@ -593,7 +605,7 @@ The diagnostic case model is model `0100`.
 
 ::: {.fragment .fade-out fragment-index=2}
 ::: {.fragment .fade-in fragment-index=1}
-::: {.absolute top=40% left=50% width=25%}
+::: {.absolute top=30% left=50% width=25%}
 ::: {.callout-note}
 ## Retrospectives
 • Models refit excluding terminal years of index
@@ -608,7 +620,7 @@ The diagnostic case model is model `0100`.
 
 ::: {.fragment .fade-out fragment-index=4}
 ::: {.fragment .fade-in fragment-index=3}
-::: {.absolute top=40% left=70% width=25%}
+::: {.absolute top=30% left=70% width=25%}
 ::: {.callout-note}
 ## Hindcast
 • Models refit excluding terminal years of index
@@ -616,13 +628,15 @@ The diagnostic case model is model `0100`.
 • Colors indicate terminal year of index data
 
 • Hindcast *future* index data based on model fit through last index year
+
+• Predicted *future* index data should match observations
 :::
 :::
 :::
 :::
 
 ::: {.fragment .fade-in fragment-index=5}
-::: {.absolute top=40% left=70% width=25%}
+::: {.absolute top=30% left=70% width=25%}
 ::: {.callout-note}
 ## Hindcast
 • Model predictions of the index holding out up to 20 years of data
@@ -641,10 +655,10 @@ The diagnostic case model is model `0100`.
 ![](..\plots\model-0100\comparisons\comparison_prior_posterior_params.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 
 ::: {.fragment .fade-in fragment-index=1}
-::: {.absolute top=40% left=70% width=25%}
+::: {.absolute top=30% left=70% width=25%}
 ::: {.callout-note}
 ## Posterior update
-• If posterior (solid line) differs from prior (dotted line) distribution, data inform estimates
+• If posterior (solid line) differs from realized prior (dotted line) distribution, data inform estimates
 
 • Both key population dynamics parameters for scale (*logK*) and $R_{Max}$ (*r*) indicate strong influence of data on estimates
 :::
@@ -706,7 +720,7 @@ The diagnostic case model is model `0100`.
 ## Catch reporting
 • Systematic under-reporting scenarios tested (constant and time-varying)
 
-• Population scale sensitive to catch magnitude but relative status metrics remain consistent
+• Population scale and relative status sensitive to catch magnitude
 :::
 :::
 :::
@@ -737,6 +751,8 @@ Key sensitivities: indices (`0071`-`0075` & `0129`-`0132`), early data (`0079`-`
 ::: {.absolute top=20% left=80% width=20%}
 ::: {.callout-note}
 ## Axes
+• Four model ensemble across two axes
+
 • Two indices (DWFN & New Zealand recreational)
 
 • Two shape parameter priors (life history based & conservative Schaefer)
@@ -748,11 +764,11 @@ Key sensitivities: indices (`0071`-`0075` & `0129`-`0132`), early data (`0079`-`
 ::: {.absolute top=20% left=80% width=20%}
 ::: {.callout-note}
 ## Trends
-• Depletion: Declined through 1970s, stable 1970s-2000s, recovering since 2015.
+• [Depletion]{.blue}: Declined through 1970s, stable 1970s-2000s, recovering since 2015.
 
-• Fishing mortality: Increasing through 2000s, with more recent declines.
+• [Fishing mortality]{.blue}: Increasing through 2000s, with more recent declines.
 
-• Population scale: Large, asymmetric uncertainty
+• [Population scale]{.blue}: Large, asymmetric uncertainty
 :::
 :::
 :::
@@ -790,13 +806,25 @@ ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_prob
 :::
 
 ::: {.fragment .fade-out fragment-index=1}
-::: {.absolute top=60% left=50% width=50%}
+::: {.absolute top=50% left=50% width=50%}
 ::: {.callout-note}
 ## Kobe plot
 • Time-trend of median stock status shown by line and points
 
 • Uncertainty in latest estimates shown with gray polygon
 :::
+:::
+:::
+
+::: {.absolute bottom=0 left=0 style="font-size:0.60em; color: gray;"}
+::: {.fragment .fade-out fragment-index=1}
+$D_{recent}$ refers to the average over 2019-2022
+
+$D_{latest}$ refers to 2022
+
+$F_{recent}$ refers to the average over 2018-2021
+
+$F_{latest}$ refers to 2021.
 :::
 :::
 
@@ -827,8 +855,8 @@ ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_prob
 :::
 :::
 
-::: {.absolute bottom=0 left=0 style="font-size:0.65em; color: gray;"}
-**Conclusion:** Continued recovery expected under recent catch levels with very low risk of overfishing.
+::: {.absolute bottom=0 left=0}
+**Conclusion:** Continued recovery expected under recent catch levels with decreasing risk of overfishing.
 :::
 
 ## Limitations {.narrow-left-bg-image .smaller}
@@ -848,6 +876,7 @@ ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_prob
 
 - Single well-mixed population assumption
 - Knife-edged selectivity
+- No age structured dynamics
 - Stationary productivity and carrying capacity over 70 years
 :::
 
@@ -860,14 +889,14 @@ ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_prob
 
 - Substantial uncertainty in absolute population scale
 - Shape parameter $n$ not estimable from data
-- High uncertainty in key biological processes
+- High uncertainty in key biological processes translates to uncertainty in $R_{Max}$
 :::
 
 ::: {.fragment .fade-in fragment-index=4}
 **Environmental factors:**
 
-- Climate variability not explicitly modeled
-- Process error spikes suggests unmodeled drivers
+- Future variability in environmental and oceanographic conditions are not explicitly modeled
+- Process error spikes suggests unmodeled dynamics
 :::
 
 :::
@@ -899,7 +928,7 @@ ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_prob
 **Future modeling approach:**
 
 - Progressive development within Bayesian framework
-- Move toward fully integrated age-structured models
+- Move toward Bayesian fully integrated age-structured models similar to WCPO oceanic whitetip shark
 :::
 
 :::
@@ -909,27 +938,17 @@ ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_prob
 ::: {.absolute width=80% left=10% top=20% style="font-size:0.85em; text-align: center;"}
 
 ::: {.fragment .fade-in fragment-index=1}
-**Collaborative Assessment Process**
+[Collaborative Assessment Process]{.blue}
 
-This assessment greatly benefited from collaboration with a broad group of interested parties and stock assessment experts where feedback was provided in an iterative manner throughout the model development process. Leveraging their diverse expertise helped produce a stronger scientific product
+This assessment greatly benefited from collaboration with a broad group of interested parties and stock assessment experts where feedback was provided in an iterative manner throughout the model development process. Leveraging their diverse expertise helped produce a stronger scientific product.
 :::
 
 ::: {.fragment .fade-in fragment-index=2}
-**Special thanks to:**
+[Special thanks to:]{.blue}
 
 K. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), and M. Nadon (PIFSC)
 
-*for their insights and thoughtful discussion which improved the assessment*
+for their insights and thoughtful discussion which improved the assessment!
 :::
-
-:::
-
-## Openscience {.narrow-left-bg-image}
-
-::: {.absolute width=80% left=10% top=20% style="font-size:0.85em; text-align: center;"}
-
-All data inputs, model code, key model outputs, figures and report files are publicly available on GitHub:
-
-<https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm>
 
 :::

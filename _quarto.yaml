@@ -1,0 +1,46 @@
+project:
+  type: website
+  resources:
+   - assets/*
+
+website:
+  title: "2025 SWPO striped marlin BSPM"
+  reader-mode: false
+  site-url: "https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm" 
+  repo-url: "https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm"
+  repo-actions: [source, issue]
+  search: true
+  back-to-top-navigation: true
+  bread-crumbs: false
+  sidebar:
+    collapse-level: 1
+    style: "floating"
+    search: true
+    tools:
+      - icon: github
+        href: https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm
+    contents: 
+      - text: "Home"
+        file: index.qmd
+      - section: "WCPFC-SC report"
+        contents:
+        - text: "HTML"
+          file: assets/swpo-mls-bayesian-assessments.qmd
+        - text: "PDF"
+          file: assets/swpo-mls-bayesian-assessments.pdf
+      - section: "Support"
+        contents:
+        - text: "Submit an issue"
+          href: https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/issues/new/choose
+  page-footer:
+    center: 
+      - text: "NOAA Fisheries | SPC | 2025"
+    background: primary
+
+format: 
+  html:
+    toc: true
+    toc-expand: false
+    theme:
+      - default
+      - assets/customizations/website-custom.scss

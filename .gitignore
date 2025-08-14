@@ -14,3 +14,6 @@ data/output/pushforward/bspm_estqsimple_softdep_mvprior_x0_newlogK/hmc_samples.c
 shiny/*
 .vscode/*
 assets/init-pres.qmd
+/.quarto/
+_site/*
+site_libs/*
