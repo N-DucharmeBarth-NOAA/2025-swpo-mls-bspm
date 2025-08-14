@@ -1,0 +1,2 @@
+run_id,run_number,run_name,run_retro,run_label,exec_name,n_cores,seed,chains,n_thin,iter_keep,burnin.prop,iter_total,adapt_delta,max_treedepth,silent,stan_code_dir
+0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0-bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT,0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b,0,0,0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0,bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT,5,321,5,10,200,0.5,3000,0.99,12,FALSE,./code/Stan

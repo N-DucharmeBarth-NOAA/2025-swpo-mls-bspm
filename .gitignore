@@ -5,6 +5,8 @@ data/output/bspm_parameter_priors_filtered.rds
 data/output/bspm_parameter_priors_filtered.csv
 data/output/depletion_results*
 data/output/model_runs/*
+!data/output/model_runs/0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0/settings.csv
+!data/output/model_runs/0100-dwfn-exeoFSTTGF-cf0.2-nb-qnewK-s1-o52b-o54b_0/stan_data.csv
 data/output/mean_wt_residuals_filtered.csv
 data/output/mean_wt_residuals_filtered.rds
 data/output/sim_dt.csv
