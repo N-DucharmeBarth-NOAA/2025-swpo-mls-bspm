@@ -108,7 +108,7 @@ All data inputs, model code, key model outputs, figures, report and presentation
 
 :::
 
-![](..\assets\static\qr.png){.absolute left=40% top=57% width=22% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../assets/static/qr.png){.absolute left=40% top=57% width=22% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 
 ## Assessment context {.narrow-left-bg-image .smaller}
 
@@ -560,7 +560,7 @@ The diagnostic case model is model `0100`.
 ## Diagnostic model: Fits {.narrow-left-bg-image .smaller}
 
 ::: {.fragment .fade-out fragment-index=2}
-![](..\plots\model-0100\comparisons\comparison_catch_fit_ppd.png){.absolute left=5% top=20% height=70% width=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/model-0100/comparisons/comparison_catch_fit_ppd.png){.absolute left=5% top=20% height=70% width=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 :::
 
 ::: {.fragment .fade-out fragment-index=2}
@@ -579,7 +579,7 @@ The diagnostic case model is model `0100`.
 :::
 
 ::: {.fragment .fade-in fragment-index=2}
-![](..\plots\model-0100\comparisons\comparison_index_fit_ppd.png){.absolute left=5% top=20% height=70% width=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/model-0100/comparisons/comparison_index_fit_ppd.png){.absolute left=5% top=20% height=70% width=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 :::
 
 
@@ -590,17 +590,17 @@ The diagnostic case model is model `0100`.
 ## Diagnostic model: Validation {.narrow-left-bg-image .smaller}
 
 ::: {.fragment .fade-out fragment-index=2}
-![](..\plots\retro_analysis.png){.absolute left=5% top=15% height=75% width=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/retro_analysis.png){.absolute left=5% top=15% height=75% width=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 :::
 
 ::: {.fragment .fade-out fragment-index=4}
 ::: {.fragment .fade-in fragment-index=2}
-![](..\plots\hcxval_analysis.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/hcxval_analysis.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 :::
 :::
 
 ::: {.fragment .fade-in fragment-index=4}
-![](..\plots\model-free-hindcast.idx.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/model-free-hindcast.idx.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 :::
 
 ::: {.fragment .fade-out fragment-index=2}
@@ -652,7 +652,7 @@ The diagnostic case model is model `0100`.
 
 ## Diagnostic model: Inference {.narrow-left-bg-image .smaller}
 
-![](..\plots\model-0100\comparisons\comparison_prior_posterior_params.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/model-0100/comparisons/comparison_prior_posterior_params.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 
 ::: {.fragment .fade-in fragment-index=1}
 ::: {.absolute top=30% left=70% width=25%}
@@ -668,23 +668,23 @@ The diagnostic case model is model `0100`.
 ## Key sensitivities {.narrow-left-bg-image .smaller}
 
 ::: {.fragment .fade-out fragment-index=2}
-![](..\plots\one-off\One-off__Index\prior_posterior_params.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/one-off/One-off__Index/prior_posterior_params.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 :::
 
 ::: {.fragment .fade-out fragment-index=4}
 ::: {.fragment .fade-in fragment-index=2}
-![](..\plots\one-off\One-off__Early_data\prior_posterior_timeseries.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/one-off/One-off__Early_data/prior_posterior_timeseries.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 :::
 :::
 
 ::: {.fragment .fade-out fragment-index=6}
 ::: {.fragment .fade-in fragment-index=4}
-![](..\plots\one-off\One-off__Catch_reporting\prior_posterior_timeseries.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/one-off/One-off__Catch_reporting/prior_posterior_timeseries.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 :::
 :::
 
 ::: {.fragment .fade-in fragment-index=6}
-![](..\plots\one-off\One-off__Rmax_prior\prior_posterior_timeseries.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/one-off/One-off__Rmax_prior/prior_posterior_timeseries.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 :::
 
 ::: {.fragment .fade-out fragment-index=2}
@@ -745,7 +745,7 @@ Key sensitivities: indices (`0071`-`0075` & `0129`-`0132`), early data (`0079`-`
 
 ## Model ensemble {.narrow-left-bg-image .smaller}
 
-![](..\plots\ensemble.ppts.png){.absolute left=5% top=15% width=70% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/ensemble.ppts.png){.absolute left=5% top=15% width=70% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 
 ::: {.fragment .fade-out fragment-index=1}
 ::: {.absolute top=20% left=80% width=20%}
@@ -792,7 +792,7 @@ ens_forecast_summary = fread(file.path(proj_dir,"data","output","ens_forecast_su
 ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_probs.csv"))
 ```
 
-![](..\plots\ensemble.kb.png){.absolute top=15% left=0% width=40% style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/ensemble.kb.png){.absolute top=15% left=0% width=40% style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 
 ::: {.absolute width=50% left=50% top=15% style="font-size:0.6em;"}
 | **Metric** | **Median [95% CI]** | **Probability** |
@@ -836,7 +836,7 @@ $F_{latest}$ refers to 2021.
 
 ## Projections {.narrow-left-bg-image .smaller}
 
-![](..\plots\ensemble.forecast_5yr_meancatch.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+![](../plots/ensemble.forecast_5yr_meancatch.png){.absolute left=5% top=15% width=60% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 
 ::: {.absolute top=15% left=70% width=25%}
 ::: {.callout-note}
