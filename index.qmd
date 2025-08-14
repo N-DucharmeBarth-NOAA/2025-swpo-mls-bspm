@@ -5,7 +5,7 @@ format:
     toc: true
 ---
 
-This repository contains model developments for 2025 Southwest Pacific Ocean Bayesian Surplus Production Model (BSPM) striped marlin stock assessment conducted in collaboration by the Pacific Community ([SPC](https://fame.spc.int/key-work-areas/stock-assessment)) and [NOAA Fisheries](https://www.fisheries.noaa.gov/about/pacific-islands-fisheries-science-center).
+This [repository](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm) contains model developments for 2025 Southwest Pacific Ocean Bayesian Surplus Production Model (BSPM) striped marlin stock assessment conducted in collaboration by the Pacific Community ([SPC](https://fame.spc.int/key-work-areas/stock-assessment)) and [NOAA Fisheries](https://www.fisheries.noaa.gov/about/pacific-islands-fisheries-science-center).
 
 The assessment report presented and submitted to WCPFC SC21 is available on [GitHub](https://n-ducharmebarth-noaa.github.io/2025-swpo-mls-bspm/assets/swpo-mls-bayesian-assessments.html) and the [WCPFC SC21](https://meetings.wcpfc.int/node/26683) meeting page. Additionally, the assessment presentation to WCPFC SC21 is available below.
 

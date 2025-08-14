@@ -104,7 +104,7 @@ ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_prob
 
 All data inputs, model code, key model outputs, figures, report and presentation files are publicly available on GitHub:
 
-<https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm>
+<https://n-ducharmebarth-noaa.github.io/2025-swpo-mls-bspm/>
 
 :::
 
