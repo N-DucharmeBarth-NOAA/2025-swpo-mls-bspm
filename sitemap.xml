@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/sens-0005/SSP_Model_Analysis_Report.html</loc>
-    <lastmod>2025-08-14T22:35:31.541Z</lastmod>
-  </url>
-  <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/model_comparison/SSP_Model_Analysis_Report.html</loc>
-    <lastmod>2025-08-14T22:35:30.570Z</lastmod>
-  </url>
-  <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/code/R/shiny-app/introduction.html</loc>
-    <lastmod>2025-08-14T22:35:30.098Z</lastmod>
-  </url>
-  <url>
     <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/assets/sc-pres.html</loc>
-    <lastmod>2025-08-14T22:35:30.025Z</lastmod>
-  </url>
-  <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/assets/swpo-mls-bayesian-assessments.html</loc>
-    <lastmod>2025-08-14T22:35:30.035Z</lastmod>
+    <lastmod>2025-08-14T23:14:21.741Z</lastmod>
   </url>
   <url>
     <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/index.html</loc>
-    <lastmod>2025-08-14T22:35:30.254Z</lastmod>
+    <lastmod>2025-08-14T23:14:21.805Z</lastmod>
   </url>
   <url>
     <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/sens-0004/model_comparison/SSP_Model_Analysis_Report.html</loc>
-    <lastmod>2025-08-14T22:35:31.380Z</lastmod>
+    <lastmod>2025-08-14T23:14:22.177Z</lastmod>
+  </url>
+  <url>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/model_comparison/SSP_Model_Analysis_Report.html</loc>
+    <lastmod>2025-08-14T23:14:21.896Z</lastmod>
+  </url>
+  <url>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/sens-0005/SSP_Model_Analysis_Report.html</loc>
+    <lastmod>2025-08-14T23:14:22.236Z</lastmod>
+  </url>
+  <url>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/code/R/shiny-app/introduction.html</loc>
+    <lastmod>2025-08-14T23:14:21.749Z</lastmod>
+  </url>
+  <url>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/assets/swpo-mls-bayesian-assessments.html</loc>
+    <lastmod>2025-08-14T23:14:21.744Z</lastmod>
   </url>
 </urlset>
