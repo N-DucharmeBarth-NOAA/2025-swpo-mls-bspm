@@ -1,0 +1,48 @@
+.multiple-logos {
+    position: fixed;
+    top: 2%;
+    right: 2%;
+    z-index: 1000;
+    display: flex;
+    gap: 3%;
+    pointer-events: none; /* Allow clicking through the logos */
+}
+
+/* Default logo size for regular slides */
+.multiple-logos img {
+    height: 10vh; /* Default size for regular slides */
+    width: auto; /* maintain aspect ratio */
+    max-height: 100px; /* prevent from getting too large */
+    transition: height 0.3s ease-in-out, max-height 0.3s ease-in-out; /* Smooth size changes */
+    pointer-events: auto; /* Make the logos themselves clickable */
+}
+
+/* Larger logos for full-width sidebar title slides */
+body.wide-sidebar-active .multiple-logos img {
+    height: 15vh; /* Larger size for title slide */
+    max-height: 150px; /* Higher max height for title slide */
+}
+
+/* Medium logos for narrow sidebar slides */
+body.narrow-sidebar-active .multiple-logos img {
+    height: 11vh; /* Medium size for narrow sidebar slides */
+    max-height: 110px; /* Medium max height */
+}
+
+/* Responsive adjustments for small screens */
+@media (max-width: 800px) {
+    .multiple-logos img {
+        height: 8vh; /* Smaller on small screens */
+        max-height: 80px;
+    }
+    
+    body.wide-sidebar-active .multiple-logos img {
+        height: 10vh;
+        max-height: 100px;
+    }
+    
+    body.narrow-sidebar-active .multiple-logos img {
+        height: 9vh;
+        max-height: 90px;
+    }
+}

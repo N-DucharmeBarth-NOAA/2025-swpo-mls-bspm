@@ -1,0 +1,203 @@
+// Website theme harmonized with presentation style
+// Based on your presentation-custom.scss
+
+/*-- scss:defaults --*/
+// NOAA colors from 2023 Fisheries Palette
+$theme-background: #fafcfc;
+$theme-whale-gray: #323C46;
+$theme-midnight-sky: #001743;
+$theme-twilight-sky: #002364;
+$theme-noaa-sky: #003087;
+$theme-noaa-sea: #0085CA;
+$theme-pale-sea: #C6E6F0;
+$theme-dove-gray: #A5AAAF;
+$theme-posit-orange: #ED5E2B;
+$theme-moby-blue: #1D63ED;
+$theme-black: #000000;
+
+// Import the same fonts used in presentations
+@import url('https://fonts.googleapis.com/css2?family=Roboto+Serif:opsz@8..144&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,300;1,300&display=swap');
+
+// Set base colors for website
+$body-bg: $theme-background;
+$body-color: $theme-whale-gray;
+$link-color: $theme-noaa-sea;
+$navbar-bg: $theme-noaa-sky;
+$navbar-fg: white;
+$navbar-hl: $theme-pale-sea;
+$sidebar-bg: lighten($theme-pale-sea, 5%);
+$sidebar-fg: $theme-whale-gray;
+$sidebar-hl: $theme-noaa-sea;
+$footer-bg: $theme-noaa-sky;
+$footer-fg: white;
+
+// Set fonts
+$font-family-sans-serif: 'Montserrat', sans-serif;
+$headings-font-family: 'Roboto Serif', serif;
+
+/*-- Left sidebar styling with background image --*/
+.sidebar.sidebar-navigation {
+    background-image: url("https://raw.githubusercontent.com/N-DucharmeBarth-NOAA/2025-swpo-mls-meeting/refs/heads/main/assets/static/spc-title-sidebar.png");
+    background-size: cover;
+    background-position: center;
+    font-family: $font-family-sans-serif;
+    
+    /* Optional: add an overlay to improve text readability with NOAA colors */
+    &::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 48, 135, 0.4); /* NOAA sky with transparency */
+      z-index: -1;
+    }
+    
+    /* Ensure text is readable against the background */
+    .sidebar-title {
+      color: white;
+      font-family: $headings-font-family;
+      font-weight: 600;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
+    }
+    
+    .sidebar-item-text, nav a {
+      color: white;
+      font-weight: 400;
+    }
+    
+    /* Style for active links */
+    .sidebar-item-container .active {
+      font-weight: bold;
+      background-color: rgba(198, 230, 240, 0.3); /* Pale sea with transparency */
+      border-left: 3px solid $theme-pale-sea;
+      border-radius: 0;
+    }
+    
+    /* Style for hover state */
+    .sidebar-item-container .sidebar-item:hover {
+      background-color: rgba(0, 133, 202, 0.3); /* NOAA sea with transparency */
+    }
+    
+    /* Section headers in sidebar - making them match regular links */
+    .sidebar-item-section .sidebar-item-text {
+      font-weight: 400;
+      color: white;
+    }
+  }
+  
+  /* Right sidebar (TOC) styling */
+  .sidebar.sidebar-toc {
+    background-color: $theme-background;
+    font-family: $font-family-sans-serif;
+    color: $theme-whale-gray;
+    
+    /* Remove any existing background image */
+    background-image: none;
+    
+    /* Style for TOC links */
+    .sidebar-item-text, nav a {
+      color: $theme-whale-gray;
+    }
+    
+    /* Style for active TOC links */
+    .sidebar-item-container .active {
+      font-weight: bold;
+      background-color: rgba(198, 230, 240, 0.5); /* Pale sea with transparency */
+      border-left: 3px solid $theme-noaa-sea;
+      color: $theme-noaa-sky;
+    }
+    
+    /* Style for hover state */
+    .sidebar-item-container .sidebar-item:hover {
+      background-color: rgba(0, 133, 202, 0.1); /* Very light NOAA sea */
+    }
+    
+    /* TOC title */
+    .sidebar-title {
+      color: $theme-noaa-sky;
+      font-family: $headings-font-family;
+      font-weight: 600;
+    }
+  }
+  
+  /* Additional styles specifically for floating sidebar */
+  .sidebar-toggle {
+    color: $theme-whale-gray;
+    background-color: rgba(198, 230, 240, 0.9); /* Pale sea with high transparency */
+    border-radius: 50%;
+    padding: 0.5rem;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    
+    &:hover {
+      background-color: $theme-noaa-sea;
+      color: white;
+    }
+  }
+  
+  /* Floating sidebar styles - specific to navigation sidebar */
+  body[data-sidebar-style="floating"] .sidebar.sidebar-navigation {
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    margin: 10px;
+    max-height: calc(100vh - 20px);
+    
+    /* More prominent border with NOAA sea color */
+    border: 1px solid $theme-noaa-sea;
+  }
+  
+  /* Additional styles for search box in sidebar */
+  .sidebar .quarto-search-input {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid $theme-pale-sea;
+    
+    &:focus {
+      border-color: $theme-noaa-sea;
+      box-shadow: 0 0 0 0.25rem rgba(0, 133, 202, 0.25);
+    }
+  }
+
+  /* Make section toggle arrows paler */
+    .sidebar-navigation .sidebar-item-toggle {
+        color: rgba(255, 255, 255, 0.7); /* Pale white to match other elements */
+        
+        &:hover {
+        color: white;
+        }
+    }
+
+/*-- scss:rules --*/
+
+// Add custom header styling
+h1, h2, h3, h4, h5, h6 {
+  color: $theme-midnight-sky;
+  font-weight: 400;
+}
+
+// Style links
+a {
+  text-decoration: none;
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+// Add a custom class for NOAA blue text
+.blue {
+  color: $theme-noaa-sky;
+  font-weight: bold;
+}
+
+// Add a custom container for callout boxes
+.titlebox {
+  padding: 1em 1.5em;
+  margin: 1em 0;
+  background-color: rgba(255, 255, 255, .80);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 0 1rem 0 rgba(0, 0, 0, .1);
+  border-left: 4px solid $theme-noaa-sea;
+  border-radius: 4px;
+}
+
