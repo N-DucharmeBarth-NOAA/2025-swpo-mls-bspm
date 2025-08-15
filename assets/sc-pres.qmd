@@ -161,7 +161,7 @@ $$N_t = \left(N_{t-1} + \text{Production}_{t-1}\right) \times \text{Process erro
 
 ::: {.fragment .fade-in fragment-index=3}
 **Fishing impact linked to effort:**
-$$\text{Fishing survival}_{t} \text{inversely proportional to} \text{Fishing mortality}_t$$
+$$\text{Fishing survival}_{t} \text{ inversely proportional to } \text{Fishing mortality}_t$$
 $$\text{Fishing mortality}_{t} = \text{Catchability}_{t} \times \text{Fishing effort}_t$$
 :::
 
