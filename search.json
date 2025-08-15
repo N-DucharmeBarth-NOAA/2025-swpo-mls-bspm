@@ -32,7 +32,7 @@
     "href": "assets/sc-pres.html#model-framework",
     "title": "2025 SWPO striped marlin BSPM",
     "section": "Model framework",
-    "text": "Model framework\n\n\nFletcher-Schaefer production model\n\n\nPopulation dynamics: \\[N_t = \\left(N_{t-1} + \\text{Production}_{t-1}\\right) \\times \\text{Process error}_{t} \\times \\text{Fishing survival}_{t-1}\\]\n\n\nFishing impact linked to effort: \\[\\text{Fishing survival}_{t} \\text{inversely proportional to} \\text{Fishing mortality}_t\\] \\[\\text{Fishing mortality}_{t} = \\text{Catchability}_{t} \\times \\text{Fishing effort}_t\\]\n\n\nKey features:\n\nTrue population (numbers) is treated as an unobserved random variable\nModel only fits to observations of relative abundance and catch\nCatchability is allowed to vary temporally so fishing mortality can match catch\nBiology captured in Production as max rate of population growth \\(R_{Max}\\)"
+    "text": "Model framework\n\n\nFletcher-Schaefer production model\n\n\nPopulation dynamics: \\[N_t = \\left(N_{t-1} + \\text{Production}_{t-1}\\right) \\times \\text{Process error}_{t} \\times \\text{Fishing survival}_{t-1}\\]\n\n\nFishing impact linked to effort: \\[\\text{Fishing survival}_{t} \\text{ inversely proportional to } \\text{Fishing mortality}_t\\] \\[\\text{Fishing mortality}_{t} = \\text{Catchability}_{t} \\times \\text{Fishing effort}_t\\]\n\n\nKey features:\n\nTrue population (numbers) is treated as an unobserved random variable\nModel only fits to observations of relative abundance and catch\nCatchability is allowed to vary temporally so fishing mortality can match catch\nBiology captured in Production as max rate of population growth \\(R_{Max}\\)"
   },
   {
     "objectID": "assets/sc-pres.html#input-data",
