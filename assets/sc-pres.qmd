@@ -745,7 +745,13 @@ Key sensitivities: indices (`0071`-`0075` & `0129`-`0132`), early data (`0079`-`
 
 ## Model ensemble {.narrow-left-bg-image .smaller}
 
+::: {.fragment .fade-out fragment-index=2}
 ![](../plots/ensemble.ppts.png){.absolute left=5% top=15% width=70% height=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+:::
+
+::: {.fragment .fade-in fragment-index=2}
+![](../plots/density_plots_fisheries_params.png){.absolute left=5% top=15% height=70% width=auto style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
+:::
 
 ::: {.fragment .fade-out fragment-index=1}
 ::: {.absolute top=20% left=80% width=20%}
@@ -760,6 +766,7 @@ Key sensitivities: indices (`0071`-`0075` & `0129`-`0132`), early data (`0079`-`
 :::
 :::
 
+::: {.fragment .fade-out fragment-index=2}
 ::: {.fragment .fade-in fragment-index=1}
 ::: {.absolute top=20% left=80% width=20%}
 ::: {.callout-note}
@@ -772,25 +779,43 @@ Key sensitivities: indices (`0071`-`0075` & `0129`-`0132`), early data (`0079`-`
 :::
 :::
 :::
+:::
+
+::: {.fragment .fade-in fragment-index=2}
+::: {.absolute top=35% left=40% width=60%}
+::: {.callout-note}
+## Marginal posterior distributions
+• [$D/D_{MSY}$]{.blue}: Majority of distribution (`r round(ens_probs[name == "recent_D_Dmsy", prop_meeting_condition] * 100, 0)`%) below $D/D_{MSY}$
+
+• [$F/F_{MSY}$]{.blue}: Minority of distribution (`r round(ens_probs[name == "recent_F_Fmsy", prop_meeting_condition] * 100, 0)`%) above $F/F_{MSY}$
+
+• [Population scale]{.blue}: Data supports a small recent population with large, asymmetric uncertainty to the high side
+:::
+
+::: {style="font-size:0.65em;"}
+$D_{recent}$ refers to the average over 2019-2022
+
+$F_{recent}$ refers to the average over 2018-2021
+:::
+
+:::
+:::
+
+::: {.fragment .fade-out fragment-index=2}
+::: {.absolute bottom=50 left=0 style="font-size:0.65em;"}
+Solid line is posterior median, shading is 95% credible interval.
+
+Depletion (D) is depletion in total numbers relative to initial total numbers.
+
+Population (P) is total numbers of individuals.
+:::
+:::
 
 ::: {.absolute bottom=0 left=0 style="font-size:0.65em; color: gray;"}
 Ensemble models: `0100`, `0102`, `0105`, `0107`.
 :::
 
 ## Stock status {.narrow-left-bg-image .smaller}
-
-```{r}
-#| echo: false
-#| warning: false
-#| message: false
-
-# Read ensemble summary data
-ens_summary = fread(file.path(proj_dir,"data","output","ens_derived_summary.csv"))
-ens_probs = fread(file.path(proj_dir,"data","output","ens_derived_probs.csv"))
-ens_joint_probs = fread(file.path(proj_dir,"data","output","ens_joint_probs.csv"))
-ens_forecast_summary = fread(file.path(proj_dir,"data","output","ens_forecast_summary.csv"))
-ens_forecast_probs = fread(file.path(proj_dir,"data","output","ens_forecast_probs.csv"))
-```
 
 ![](../plots/ensemble.kb.png){.absolute top=15% left=0% width=40% style="box-shadow: 0 0 2rem 0 rgba(0, 0, 0, .5); border-radius: 5px;"}
 
@@ -931,6 +956,17 @@ $F_{latest}$ refers to 2021.
 - Move toward Bayesian fully integrated age-structured models similar to WCPO oceanic whitetip shark
 :::
 
+:::
+
+## Conclusions {.narrow-left-bg-image .smaller}
+
+::: {.incremental}
+- In the end, the BSPM shows similar results to the SS3 model
+- Existing data do not support a large population, but a small highly productive stock
+- Maximum catches are $\sim 70\text{k}$ but average between $20\text{k}-30\text{k}$
+- Since indices show declines given those catches, the population must be small
+- However, as seen in the sensitivities, different productivity assumptions, larger catches or a flatter CPUE index would all support a larger population
+- Relative to the SS3 model, the BSPM identifies a production function giving greater confidence in model estimates, and more appropriately integrates over possible uncertainty in population scale and productivity
 :::
 
 ## Acknowledgements {.narrow-left-bg-image .smaller}
