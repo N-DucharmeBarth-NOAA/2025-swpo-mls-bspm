@@ -816,3 +816,41 @@
         fwrite(derived_probs,file=file.path(proj_dir,"data","output","ens_derived_probs.csv"))
         fwrite(joint_probs,file=file.path(proj_dir,"data","output","ens_joint_probs.csv"))
 
+#________________________________________________________________________________________________________________________________________________________________________________________________________
+# density plots
+
+    derived_dt = fread(file=file.path(proj_dir,"data","output","ens_derived_dt.csv"))
+
+    facet_labels = c(
+                "recent_P" = "Recent~population~'(millions)'",
+                "recent_D_Dmsy" = "Recent~D/D[MSY]", 
+                "recent_F_Fmsy" = "Recent~F/F[MSY]"
+                )
+
+    plot_data = derived_dt %>%
+                .[name %in% c("recent_P", "recent_D_Dmsy", "recent_F_Fmsy")] %>%
+                .[,run_id:="Combined posterior"] %>%
+                .[name=="recent_P",value:=value/1000000] %>%
+                .[name=="recent_P"&value<1.5|name%in%c("recent_D_Dmsy", "recent_F_Fmsy")]
+
+    # Create the density plot
+    p = plot_data %>% ggplot() +
+    ylab("Density") +
+    xlab("Value") +
+    facet_wrap(~name, scales = "free",nrow=3, 
+             labeller = labeller(name = as_labeller(facet_labels, label_parsed))) + 
+    geom_density(aes(x=value,fill=run_id,color=run_id), alpha = 0.7) +
+    viridis::scale_color_viridis("Model run",begin = 0.1,end = 0.8,direction = -1,option = "H",discrete=TRUE,drop=FALSE) +
+    viridis::scale_fill_viridis("Model run",begin = 0.1,end = 0.8,direction = -1,option = "H",discrete=TRUE,drop=FALSE) +
+
+        theme(text = element_text(size = 20),
+            panel.background = element_rect(fill = "white", color = "black", linetype = "solid"),
+            panel.grid.major = element_line(color = 'gray70', linetype = "dotted"), 
+            panel.grid.minor = element_line(color = 'gray70', linetype = "dotted"),
+            strip.background = element_rect(fill = "white"),
+            legend.key = element_rect(fill = "white"))
+
+    ggsave(filename = "density_plots_fisheries_params.png", plot = p, device = "png", 
+        path = file.path(proj_dir, "plots"),
+        scale = 1.25, width = 6, height = 9, units = c("in"),
+        dpi = 300, limitsize = TRUE)
