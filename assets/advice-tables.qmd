@@ -1,0 +1,173 @@
+---
+title: "SWPO Striped Marlin Assessment - Key Tables"
+date: last-modified
+date-format: "DD MMMM YYYY"
+author:
+  - name: "N. Ducharme-Barth"
+  - name: "C. Castillo-Jordán" 
+  - name: "F. Carvalho"
+  - name: "P. Hamer"
+format:
+  docx:
+    toc: false
+    number-sections: false
+---
+
+```{r}
+#| label: setup
+#| echo: false
+#| warning: false
+#| message: false
+
+# Load required libraries
+library(data.table)
+library(ggplot2)
+library(magrittr)
+library(knitr)
+
+# Set project directory - adjust this path as needed
+proj_dir = this.path::this.proj()
+
+# Load ensemble summary data
+ens_summary = fread(file.path(proj_dir, "data", "output", "ens_derived_summary.csv"))
+ens_probs = fread(file.path(proj_dir, "data", "output", "ens_derived_probs.csv"))
+ens_forecast_summary = fread(file.path(proj_dir, "data", "output", "ens_forecast_summary.csv"))
+ens_forecast_probs = fread(file.path(proj_dir, "data", "output", "ens_forecast_probs.csv"))
+
+# Helper functions
+get_ipcc_likelihood <- function(prob, print_prob = TRUE) {
+  if(print_prob) {
+    if (prob > 0.99) {
+      return("Virtually Certain (>99%)")
+    } else if (prob > 0.90) {
+      return("Very Likely (> 90%)")
+    } else if (prob > 0.66) {
+      return("Likely (>66%)")
+    } else if (prob >= 0.33) {
+      return("About as Likely as Not (33-66%)")
+    } else if (prob > 0.10) {
+      return("Unlikely (<33%)")
+    } else if (prob > 0.01) {
+      return("Very Unlikely (<10%)")
+    } else {
+      return("Exceptionally Unlikely (<1%)")
+    }
+  } else {
+    if (prob > 0.99) {
+      return("Virtually Certain")
+    } else if (prob > 0.90) {
+      return("Very Likely")
+    } else if (prob > 0.66) {
+      return("Likely")
+    } else if (prob >= 0.33) {
+      return("About as Likely as Not")
+    } else if (prob > 0.10) {
+      return("Unlikely")
+    } else if (prob > 0.01) {
+      return("Very Unlikely")
+    } else {
+      return("Exceptionally Unlikely")
+    }
+  }
+}
+
+format_estimate <- function(param_name, units = "", decimals = 0, dt = ens_summary) {
+  row <- dt[name == param_name]
+  if(decimals == 0) {
+    paste0(format(round(row$median), big.mark = ","), units, 
+           " [", format(round(row$q025), big.mark = ","), 
+           " – ", format(round(row$q975), big.mark = ","), "]")
+  } else {
+    paste0(round(row$median, decimals), units,
+           " [", round(row$q025, decimals),
+           " – ", round(row$q975, decimals), "]")
+  }
+}
+
+get_prob <- function(param_name, dt = ens_probs) {
+  dt[name == param_name]$prop_meeting_condition
+}
+
+# Stock status determination
+biomass_status <- ifelse(get_prob("recent_D_Dmsy") > 0.5, "Stock is overfished", "Stock is not overfished")
+fishing_status <- ifelse(get_prob("recent_F_Fmsy") < 0.5, "Overfishing is not occurring", "Overfishing is occurring")
+```
+
+::: {.landscape}
+
+Table: Key sources of uncertainty {#tbl-uncertainty-desc}
+
+| Type | Rationale | Uncertainty | Impact | Confidence |
+|------|-----------|-------------|--------|------------|
+| **Data** | | | | |
+| CPUE | Best available long-term indices (DWFN & New Zealand recreational) | DWFN index is a composite, multi-flag index with limited gear covariates. New Zealand index is spatially restricted  | Changes in the fleet composition and or fishing location in the DWFN index can be interpreted by the model as population level changes. For the New Zealand index, if the stock distribution has shifted this may impact representativeness | Medium |
+| Catch | Best available information | Situationally targeted species so catch reporting may be inconsistent | Reported catches are highly influential to estimated population scale | High |
+| **Model** | | | | |
+| Bayesian surplus production model | Parsimonious and robust model | Over simplifies population and spatial dynamics | Unknown | Medium |
+| **Spatial assumptions** | | | | |
+| No spatial structure | Little tagging data to understand structure | Unclear | Potentially important not quantified impact unknown | Low |
+| **Key parameter uncertainty** | | | | |
+| Productivity ($R_{MAX}$) | Estimated from informative prior | Uncertainty in key biological processes | Wide prior contributes to high uncertainty within model runs | High |
+| Population scale ($\log(K)$ & $q_{eff}$) | Estimated from informative prior | Scale prior dependent on maximum observed catch being representative of MSY | Broad prior contributes to high uncertainty within model runs | High |
+| Shape $n$ | Estimated from informative prior | Alternative priors used to capture shape of the production function | Uncertainty in where MSY occurs as a fraction of the unfished condition | Medium |
+| **Structural uncertainties** | | | | |
+| Catch observation error | Fixed $\sigma_C = 0.2$ | Choice of $\sigma_C$ and observation model impacts estimated removals | Removal estimates may not exactly match observations | Medium |
+| **Estimation uncertainty** | | | | |
+| MCMC | Full Bayesian estimation integrating uncertainty over key parameters | Estimated | Basis for model ensemble | High |
+| **Other sources of uncertainty** | | | | |
+| Stock structure | Genetic sampling of catch in the north Pacific indicates presence of SWPO fish | Not considered | Actual population removals may be under-counted impacting scale and stock status | Low |
+
+:::
+
+\newpage
+
+::: {.landscape}
+
+Table: SWPO Striped Marlin stock status summary {#tbl-stock-status}
+
+```{r}
+#| echo: false
+
+# Stock status determination
+biomass_status <- ifelse(get_prob("recent_D_Dmsy") > 0.5, "Stock is overfished", "Stock is not overfished")
+fishing_status <- ifelse(get_prob("recent_F_Fmsy") < 0.5, "Overfishing is not occurring", "Overfishing is occurring")
+```
+
+| **Summary** | | | | |
+|--|--|--|--|--|
+| | | | | |
+| **Year of assessment:** 2025 | **Depletion ($D_{recent}$)** | `r get_ipcc_likelihood(get_prob("recent_D_Dmsy"),print_prob=FALSE)` (`r round(get_prob("recent_D_Dmsy")*100)`%) to be below $D_{MSY}$ | | `r biomass_status` |
+| **Last year of data:** 2022  | **Fishing mortality ($F_{recent}$)** | `r get_ipcc_likelihood(get_prob("recent_F_Fmsy"),print_prob=FALSE)` (`r round(get_prob("recent_F_Fmsy")*100)`%) to be above $F_{MSY}$ | | `r fishing_status` |
+| | **Projection** | $F$ `r tolower(get_ipcc_likelihood(get_prob("F_lt_2021",ens_forecast_probs[year==2027])))` to decline further by 2027 | | The stock is `r tolower(get_ipcc_likelihood(get_prob("F_Fmsy",ens_forecast_probs[year==2027])))` to be undergoing overfishing in the near term under recent average catch levels. |
+| |  | $D$ `r tolower(get_ipcc_likelihood(get_prob("D_gt_2022",ens_forecast_probs[year==2027])))` to increase further by 2027 | | The stock is `r tolower(get_ipcc_likelihood(get_prob("D_Dmsy",ens_forecast_probs[year==2027])))` to be overfished in the near term under recent average catch levels. |
+| | | | | |
+| **Reference points** | **Metric** | **Median [2.5%-97.5% CI]** | **Likelihood** | **Recent trend / projection** |
+| Depletion | LRP ($D_{MSY}$) | `r format_estimate("Dmsy", decimals = 2)` | | |
+| Abundance | LRP ($P_{MSY}$) | `r format_estimate("Pmsy", " n")` | | |
+| Abundance | LRP ($0.2\times\log(K)$) | `r format_estimate("Plrp", " n")` | | |
+| Catch | *MSY* | `r format_estimate("msy", " n")`  | | |
+| Fishing mortality | $F_{MSY}$ | `r format_estimate("Fmsy", decimals = 2)` | | | 
+| | | | | |
+| **Estimates** | **Metric** | **Median [2.5%-97.5% CI]** | **Likelihood** | **Recent trend / projection** |
+| Depletion | $D_{latest}$ | `r format_estimate("latest_depletion", decimals = 2)` | | Increasing |
+| Depletion | $D_{recent}$ | `r format_estimate("recent_D", decimals = 2)` | | Increasing |
+| Abundance | $P_{latest}$ | `r format_estimate("latest_population", units=" n")` | | Increasing |
+| Abundance | $P_{recent}$ | `r format_estimate("recent_P", units=" n")` | | Increasing |
+| Catch | $C_{latest}$ | `r format_estimate("latest_removals", units=" n")` | | Stable, decreasing |
+| Catch | $C_{recent}$ | `r format_estimate("recent_removals", units=" n")` | | Stable, decreasing |
+| Fishing mortality | $F_{latest}$ | `r format_estimate("latest_F", decimals = 2)` | | Decreasing |
+| Fishing mortality | $F_{recent}$ | `r format_estimate("recent_F", decimals = 2)` | | Decreasing |
+| | | | | |
+| **Status** | **Metric** | **Median [2.5%-97.5% CI]** | **Likelihood** | **Recent trend / projection** |
+| Depletion | $D_{latest}/D_{MSY}$ | `r format_estimate("latest_D_Dmsy", decimal=2)` | `r get_ipcc_likelihood(get_prob("latest_D_Dmsy"))` to be below $D_{MSY}$| |
+| Depletion | $D_{recent}/D_{MSY}$ | `r format_estimate("recent_D_Dmsy", decimal=2)` | `r get_ipcc_likelihood(get_prob("recent_D_Dmsy"))` to be below $D_{MSY}$| |
+| Fishing mortality | $F_{latest}/F_{MSY}$ | `r format_estimate("latest_F_Fmsy", decimal=2)` | `r get_ipcc_likelihood(get_prob("latest_F_Fmsy"))` to be above $F_{MSY}$| |
+| Fishing mortality | $F_{recent}/F_{MSY}$ | `r format_estimate("recent_F_Fmsy", decimal=2)` | `r get_ipcc_likelihood(get_prob("recent_F_Fmsy"))` to be above $F_{MSY}$| |
+| | | | | |
+| **Projections** | **Metric** | **Median [2.5%-97.5% CI]** | **Likelihood** | **Recent trend / projection** |
+| Depletion | $D^{2027}_{proj}/D_{MSY}$ | `r format_estimate("D_Dmsy", decimal=2,dt = ens_forecast_summary[year==2027])` | `r get_ipcc_likelihood(get_prob("D_Dmsy",dt=ens_forecast_probs[year==2027]))` to be below $D_{MSY}$| $D_{proj}$ increasing |
+| Fishing mortality | $F^{2027}_{proj}/F_{MSY}$ | `r format_estimate("F_Fmsy", decimal=2,dt = ens_forecast_summary[year==2027])` | `r get_ipcc_likelihood(get_prob("F_Fmsy",dt=ens_forecast_probs[year==2027]))` to be above $F_{MSY}$| $F_{proj}$ decreasing |
+
+:::
+
+**Notes:** IPCC likelihood categories: >99% = Virtually Certain, >90% = Very Likely, >66% = Likely, 33-66% = About as Likely as Not, <33% = Unlikely, <10% = Very Unlikely, <1% = Exceptionally Unlikely. In the absence of formal reference points, overfished and overfishing designations are based on MSY reference points. For depletion ratios, D_recent refers to the average over 2019-2022 and D_latest refers to 2022. For fishing mortality ratios, F_recent refers to the average over 2018-2021 and F_latest refers to 2021. Projections are based on recent average catch over the last 5 years: 2018-2022.
