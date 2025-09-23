@@ -1,136 +1,57 @@
 [
   {
-    "objectID": "assets/sc-pres.html#section",
-    "href": "assets/sc-pres.html#section",
-    "title": "2025 SWPO striped marlin BSPM",
+    "objectID": "index.html",
+    "href": "index.html",
+    "title": "Home",
     "section": "",
-    "text": "2025 Stock Assessment of Striped Marlin in the Southwest Pacific Ocean\nPart II: Data-moderate Bayesian Surplus Production Model Approach\nN. Ducharme-Barth, C. Castillo-Jordán, F. Carvalho, and P. Hamer\nWCPFC-SC21 • Nuku’alofa, Tonga • 13–21 August 2025"
+    "text": "This repository contains model developments for 2025 Southwest Pacific Ocean Bayesian Surplus Production Model (BSPM) striped marlin stock assessment conducted in collaboration by the Pacific Community (SPC) and NOAA Fisheries.\nThe assessment report presented and submitted to WCPFC SC21 is available on GitHub and the WCPFC SC21 meeting page. Additionally, the assessment presentation to WCPFC SC21 is available below.",
+    "crumbs": [
+      "Home"
+    ]
   },
   {
-    "objectID": "assets/sc-pres.html#openscience",
-    "href": "assets/sc-pres.html#openscience",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Openscience",
-    "text": "Openscience\n\nAll data inputs, model code, key model outputs, figures, report and presentation files are publicly available on GitHub:\nhttps://n-ducharmebarth-noaa.github.io/2025-swpo-mls-bspm/"
+    "objectID": "index.html#presentation",
+    "href": "index.html#presentation",
+    "title": "Home",
+    "section": "Presentation",
+    "text": "Presentation\n    View slides in full screen",
+    "crumbs": [
+      "Home"
+    ]
   },
   {
-    "objectID": "assets/sc-pres.html#assessment-context",
-    "href": "assets/sc-pres.html#assessment-context",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Assessment context",
-    "text": "Assessment context\n\n\nStrategic shift from integrated age-structured model to a Bayesian data-moderate approach\nPrevious challenges with:\n\nData conflicts and poor fits to size composition\nChallenges estimating population scale\n\nBayesian Surplus Production Model (BSPM) offers simplified yet robust alternative when data limitations exist\nComplements integrated assessment (Part I) for holistic stock status view"
-  },
-  {
-    "objectID": "assets/sc-pres.html#why-bspm",
-    "href": "assets/sc-pres.html#why-bspm",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Why BSPM?",
-    "text": "Why BSPM?\n\n\nAdvantages:\n\nFocuses on estimating productivity and scale given catch and index data\nEfficient exploration of parameter space\nExplicitly incorporates biological uncertainty through priors\nProven robust and effective for pelagic fish assessments\n\n\n\n\n\nTrade-offs:\n\nSimplifies complex age-structured dynamics\nAssumes single well-mixed population\nKnife-edged selectivity assumption"
-  },
-  {
-    "objectID": "assets/sc-pres.html#model-framework",
-    "href": "assets/sc-pres.html#model-framework",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Model framework",
-    "text": "Model framework\n\n\nFletcher-Schaefer production model\n\n\nPopulation dynamics: \\[N_t = \\left(N_{t-1} + \\text{Production}_{t-1}\\right) \\times \\text{Process error}_{t} \\times \\text{Fishing survival}_{t-1}\\]\n\n\nFishing impact linked to effort: \\[\\text{Fishing survival}_{t} \\text{ inversely proportional to } \\text{Fishing mortality}_t\\] \\[\\text{Fishing mortality}_{t} = \\text{Catchability}_{t} \\times \\text{Fishing effort}_t\\]\n\n\nKey features:\n\nTrue population (numbers) is treated as an unobserved random variable\nModel only fits to observations of relative abundance and catch\nCatchability is allowed to vary temporally so fishing mortality can match catch\nBiology captured in Production as max rate of population growth \\(R_{Max}\\)"
-  },
-  {
-    "objectID": "assets/sc-pres.html#input-data",
-    "href": "assets/sc-pres.html#input-data",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Input data",
-    "text": "Input data\n\n\n\nCatch data:\n\nAggregated annual removals in numbers of individuals\n\n\n\nEffort data:\n\nAnnual longline effort (hooks fished)\n\n\n\n\n\n\nStandardized CPUE indices:\n\nDWFN longline index (1979-2022) & New Zealand recreational sportfish indices (1975-2022)\nSeveral observer-based indices explored as sensitivities\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\nBlue line is a moving average and not a model fit!"
-  },
-  {
-    "objectID": "assets/sc-pres.html#model-development-approach",
-    "href": "assets/sc-pres.html#model-development-approach",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Model development approach",
-    "text": "Model development approach\n\n\n1. Develop priors:\n\nUse biological simulation framework to develop initial prior for \\(R_{Max}\\) and production function shape parameter \\(n\\)\nDevelop priors for population scale and catchability based on maximum observed catch and early period CPUE\n\n\n\n2. Prior pushforward:\n\nPass random parameter combinations through the population dynamics model\nFilter parameter combinations for biological and fishery realism\nDevelop a multivariate prior based on emergent parameter correlations\n\n\n\n\n\n3. Fit models to data 🤩\n\nEvaluate model performance (fits & diagnostics)\nDraw inference from posterior updates\nConsider sensitivities to data inputs"
-  },
-  {
-    "objectID": "assets/sc-pres.html#diagnostic-model",
-    "href": "assets/sc-pres.html#diagnostic-model",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Diagnostic model",
-    "text": "Diagnostic model\n\n\n\nFits to the DWFN index\n\n\n\n\nUses a robust likelihood for fitting to catch data\n\n\n\n\nEstimates scale, \\(R_{Max}\\), production shape, annual catchability deviates, process error, and index observation error\n\n\n\n\nPosterior distributions of estimated quantities were derived from sample chains starting from 5 different starting points\n\n\n\n\nStandard Bayesian diagnostics indicated that all sample chains satisfactorily converged to a stable distribution without issue\n\n\n\n\n\n\n\n\n\n\nDiagnostic\nValue\nCriteria\nStatus\n\n\n\n\nMax \\(\\hat{R}\\)\n1.008\n&lt; 1.01\n✓\n\n\nMin ESS\n788.000\n&gt; 500\n✓\n\n\nDivergent\n0.000\n= 0\n✓\n\n\nTree Depth\n0.000\n= 0\n✓\n\n\n\n\n\n\n\n\nThe diagnostic case model is model 0100."
-  },
-  {
-    "objectID": "assets/sc-pres.html#diagnostic-model-fits",
-    "href": "assets/sc-pres.html#diagnostic-model-fits",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Diagnostic model: Fits",
-    "text": "Diagnostic model: Fits\n\n\n\n\n\n\n\n\n\n\n\n\nPosterior-predictive distribution (PPD)\n\n\n• Distribution of expected values given estimation uncertainty & observation error\n• Shaded polygon is the 95% interval\n• Observations should fall within the PPD\n\n\n\n\n\n\n\n\n\n\nThe diagnostic case model is model 0100."
-  },
-  {
-    "objectID": "assets/sc-pres.html#diagnostic-model-validation",
-    "href": "assets/sc-pres.html#diagnostic-model-validation",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Diagnostic model: Validation",
-    "text": "Diagnostic model: Validation\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nRetrospectives\n\n\n• Models refit excluding terminal years of index\n• Colors indicate terminal year of index data\n• Refit models should remain close to full model\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nHindcast\n\n\n• Models refit excluding terminal years of index\n• Colors indicate terminal year of index data\n• Hindcast future index data based on model fit through last index year\n• Predicted future index data should match observations\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nHindcast\n\n\n• Model predictions of the index holding out up to 20 years of data\n• Good hindcast index fit indicates production and catch drive model estimates\n\n\n\n\n\n\nThe diagnostic case model is model 0100."
-  },
-  {
-    "objectID": "assets/sc-pres.html#diagnostic-model-inference",
-    "href": "assets/sc-pres.html#diagnostic-model-inference",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Diagnostic model: Inference",
-    "text": "Diagnostic model: Inference\n\n\n\n\n\n\n\n\n\nPosterior update\n\n\n• If posterior (solid line) differs from realized prior (dotted line) distribution, data inform estimates\n• Both key population dynamics parameters for scale (logK) and \\(R_{Max}\\) (r) indicate strong influence of data on estimates"
-  },
-  {
-    "objectID": "assets/sc-pres.html#key-sensitivities",
-    "href": "assets/sc-pres.html#key-sensitivities",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Key sensitivities",
-    "text": "Key sensitivities\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAlternative indices\n\n\n• DWFN and New Zealand recreational indices are only indices with sufficient contrast to inform population scale\n• Other indices show limited posterior updates from prior\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nEarly data\n\n\n• 1952 and 1954 catch observations identified as potentially problematic\n• Model results robust to treatment of these early observations\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCatch reporting\n\n\n• Systematic under-reporting scenarios tested (constant and time-varying)\n• Population scale and relative status sensitive to catch magnitude\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAlternative \\(R_{Max}\\) prior\n\n\n• Lower productivity assumption based on Atlantic white marlin\n• Results in larger population scale but similar relative stock status metrics\n• Choice of shape n prior impacts scale estimate and MSY based reference points\n\n\n\n\n\n\nKey sensitivities: indices (0071-0075 & 0129-0132), early data (0079-0083), catch reporting (0115-0117), and \\(R_{Max}\\) prior (0133-0134)."
-  },
-  {
-    "objectID": "assets/sc-pres.html#model-ensemble",
-    "href": "assets/sc-pres.html#model-ensemble",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Model ensemble",
-    "text": "Model ensemble\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAxes\n\n\n• Four model ensemble across two axes\n• Two indices (DWFN & New Zealand recreational)\n• Two shape parameter priors (life history based & conservative Schaefer)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nTrends\n\n\n• Depletion: Declined through 1970s, stable 1970s-2000s, recovering since 2015.\n• Fishing mortality: Increasing through 2000s, with more recent declines.\n• Population scale: Large, asymmetric uncertainty\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMarginal posterior distributions\n\n\n• \\(D/D_{MSY}\\): Majority of distribution (74%) below \\(D/D_{MSY}\\)\n• \\(F/F_{MSY}\\): Minority of distribution (23%) above \\(F/F_{MSY}\\)\n• Population scale: Data supports a small recent population with large, asymmetric uncertainty to the high side\n\n\n\n\n\\(D_{recent}\\) refers to the average over 2019-2022\n\\(F_{recent}\\) refers to the average over 2018-2021\n\n\n\n\n\nSolid line is posterior median, shading is 95% credible interval.\nDepletion (D) is depletion in total numbers relative to initial total numbers.\nPopulation (P) is total numbers of individuals.\n\n\n\nEnsemble models: 0100, 0102, 0105, 0107."
-  },
-  {
-    "objectID": "assets/sc-pres.html#stock-status",
-    "href": "assets/sc-pres.html#stock-status",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Stock status",
-    "text": "Stock status\n\n\n\n\n\nMetric\nMedian [95% CI]\nProbability\n\n\n\n\nRecent Status\n\n\n\n\n\\(D_{recent}/D_{MSY}\\)\n0.77 [0.33–2.3]\n74% below \\(D_{MSY}\\)\n\n\n\\(F_{recent}/F_{MSY}\\)\n0.77 [0.05–1.51]\n22.9% above \\(F_{MSY}\\)\n\n\nLatest Status\n\n\n\n\n\\(D_{latest}/D_{MSY}\\)\n0.81 [0.32–2.36]\n70% below \\(D_{MSY}\\)\n\n\n\\(F_{latest}/F_{MSY}\\)\n0.69 [0.05–1.51]\n18.4% above \\(F_{MSY}\\)\n\n\n\n\n\n\n\n\n\n\n\n\nKobe plot\n\n\n• Time-trend of median stock status shown by line and points\n• Uncertainty in latest estimates shown with gray polygon\n\n\n\n\n\n\n\n\\(D_{recent}\\) refers to the average over 2019-2022\n\\(D_{latest}\\) refers to 2022\n\\(F_{recent}\\) refers to the average over 2018-2021\n\\(F_{latest}\\) refers to 2021.\n\n\n\n\nConclusion: Stock is overfished but not undergoing overfishing. Only 22.9% joint probability of being simultaneously overfished and undergoing overfishing."
-  },
-  {
-    "objectID": "assets/sc-pres.html#projections",
-    "href": "assets/sc-pres.html#projections",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Projections",
-    "text": "Projections\n\n\n\n\n\n\n\n\nProjection assumptions\n\n\n• Recent average catch (2018-2022)\n• Stationary productivity & environment\n• Process error resampled from model period\nFuture overfished probabilities:\n• 2027: 40.9%\n• 2032: 26%\n\n\n\n\n\nConclusion: Continued recovery expected under recent catch levels with decreasing risk of overfishing."
-  },
-  {
-    "objectID": "assets/sc-pres.html#limitations",
-    "href": "assets/sc-pres.html#limitations",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Limitations",
-    "text": "Limitations\n\n\nData representativeness:\n\nCPUE indices may not represent true stock trends\nPotential under-reporting of catches for bycatch stock\nStock structure uncertainty (genetic evidence of SWPO fish in North Pacific catches)\n\n\n\nModel simplifications:\n\nSingle well-mixed population assumption\nKnife-edged selectivity\nNo age structured dynamics\nStationary productivity and carrying capacity over 70 years\n\n\n\n\n\nParameter uncertainty:\n\nSubstantial uncertainty in absolute population scale\nShape parameter \\(n\\) not estimable from data\nHigh uncertainty in key biological processes translates to uncertainty in \\(R_{Max}\\)\n\n\n\nEnvironmental factors:\n\nFuture variability in environmental and oceanographic conditions are not explicitly modeled\nProcess error spikes suggests unmodeled dynamics"
-  },
-  {
-    "objectID": "assets/sc-pres.html#recommendations",
-    "href": "assets/sc-pres.html#recommendations",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Recommendations",
-    "text": "Recommendations\n\n\nStock structure research:\n\nDevelop conceptual model for SWPO striped marlin\nCollaborate with ISC Billfish Working Group\n\n\n\nData and biological research:\n\nReduce uncertainty in key biological processes where possible\nInvestigate representativeness of abundance indices\nAddress stock connectivity questions with genetic research\n\n\n\n\n\nFuture modeling approach:\n\nProgressive development within Bayesian framework\nMove toward Bayesian fully integrated age-structured models similar to WCPO oceanic whitetip shark"
-  },
-  {
-    "objectID": "assets/sc-pres.html#conclusions",
-    "href": "assets/sc-pres.html#conclusions",
-    "title": "2025 SWPO striped marlin BSPM",
-    "section": "Conclusions",
-    "text": "Conclusions\n\n\nIn the end, the BSPM shows similar results to the SS3 model\nExisting data do not support a large population, but a small highly productive stock\nMaximum catches are \\(\\sim 70\\text{k}\\) but average between \\(20\\text{k}-30\\text{k}\\)\nSince indices show declines given those catches, the population must be small\nHowever, as seen in the sensitivities, different productivity assumptions, larger catches or a flatter CPUE index would all support a larger population\nRelative to the SS3 model, the BSPM identifies a production function giving greater confidence in model estimates, and more appropriately integrates over possible uncertainty in population scale and productivity"
-  },
-  {
-    "objectID": "assets/sc-pres.html#acknowledgements",
-    "href": "assets/sc-pres.html#acknowledgements",
-    "title": "2025 SWPO striped marlin BSPM",
+    "objectID": "index.html#acknowledgements",
+    "href": "index.html#acknowledgements",
+    "title": "Home",
     "section": "Acknowledgements",
-    "text": "Acknowledgements\n\n\nCollaborative Assessment Process\nThis assessment greatly benefited from collaboration with a broad group of interested parties and stock assessment experts where feedback was provided in an iterative manner throughout the model development process. Leveraging their diverse expertise helped produce a stronger scientific product.\n\n\nSpecial thanks to:\nK. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), and M. Nadon (PIFSC)\nfor their insights and thoughtful discussion which improved the assessment!"
+    "text": "Acknowledgements\nCollaborative Assessment Process\nThis assessment greatly benefited from collaboration with a broad group of interested parties and stock assessment experts where feedback was provided in an iterative manner throughout the model development process. Leveraging their diverse expertise helped produce a stronger scientific product.\nSpecial thanks to:\nK. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), and M. Nadon (PIFSC)\nfor their insights and thoughtful discussion which improved the assessment!",
+    "crumbs": [
+      "Home"
+    ]
+  },
+  {
+    "objectID": "index.html#disclaimer",
+    "href": "index.html#disclaimer",
+    "title": "Home",
+    "section": "Disclaimer",
+    "text": "Disclaimer\nMany runs contained within this repository represent preliminary model explorations and should not be used ‘as is’ for the consideration of management advice. Only models that have been presented and accepted to the WCPFC Scientific Committee should be used as the basis for management advice.",
+    "crumbs": [
+      "Home"
+    ]
+  },
+  {
+    "objectID": "plots/sens-0005/SSP_Model_Analysis_Report.html",
+    "href": "plots/sens-0005/SSP_Model_Analysis_Report.html",
+    "title": "SSP Model Analysis Plot Summary Report",
+    "section": "",
+    "text": "Generated on: 2025-06-17 11:37:06.456807 Number of models analyzed: 3 ## Models Analyzed - 0003-2024cpueFPrior_0 - 0004-2024cpueShapePrior_0 - 0005-2024cpueMVPrior_0 ## Generated Plots ### Single Model Diagnostics For each model, the following diagnostic plots were generated: #### HMC Diagnostics - Parallel Coordinates: Parameter relationships across iterations - Pairs Plot: Pairwise parameter correlations - Trace Plot: Parameter evolution across chains - R-hat Plot: Convergence diagnostic - Effective Sample Size: Sampling efficiency - Autocorrelation: Parameter autocorrelation across lags #### Posterior Predictive Checks - Density Overlay: Observed vs predicted distributions - ECDF Overlay: Empirical cumulative distribution comparisons - PIT ECDF: Probability integral transform diagnostics - Test Statistics: Summary statistic comparisons - LOO-PIT: Leave-one-out cross-validation diagnostics - LOO QQ: Leave-one-out quantile-quantile plots - LOO Intervals: Leave-one-out posterior intervals ### Multi-Model Comparisons #### Model Fits - Index Fit: Model predictions vs observed indices - Index Fit PPD: Posterior predictive distributions - Index Fit Residuals: Model residual analysis #### Prior-Posterior Comparisons - Parameter Distributions: Prior vs posterior parameter densities - Time Series: Prior vs posterior derived quantities over time #### Management Plots - Kobe Plot: Stock status (P/P_MSY vs F/F_MSY) - Majuro Plot: Alternative stock status (Depletion vs F/F_MSY) #### Projections - Forecasts: Future projections under different scenarios ## File Organization\nD:/HOME/SAP/Code/2025-swpo-mls-bspm/plots/sens-0005/\n├── 0003-2024cpueFPrior_0/          # Individual model plots\n│   ├── 0003-2024cpueFPrior_0_hmc_*.png\n│   └── 0003-2024cpueFPrior_0_ppc_*.png\n├── 0004-2024cpueShapePrior_0/          # Individual model plots\n│   ├── 0004-2024cpueShapePrior_0_hmc_*.png\n│   └── 0004-2024cpueShapePrior_0_ppc_*.png\n└── comparisons/       # Multi-model comparisons\n    ├── comparison_index_fit.png\n    ├── comparison_kobe.png\n    ├── comparison_majuro.png\n    └── comparison_forecasts.png\n\n\n\nAll plots use consistent color schemes and themes for easy comparison\nSingle model plots focus on model diagnostics and validation\nMulti-model plots enable direct comparison between different model runs\nPlots are saved in high resolution suitable for publication\n\n\nReport generated by SSP Model Analysis Plot Functions"
+  },
+  {
+    "objectID": "plots/sens-0005/SSP_Model_Analysis_Report.html#usage-notes",
+    "href": "plots/sens-0005/SSP_Model_Analysis_Report.html#usage-notes",
+    "title": "SSP Model Analysis Plot Summary Report",
+    "section": "",
+    "text": "All plots use consistent color schemes and themes for easy comparison\nSingle model plots focus on model diagnostics and validation\nMulti-model plots enable direct comparison between different model runs\nPlots are saved in high resolution suitable for publication\n\n\nReport generated by SSP Model Analysis Plot Functions"
   },
   {
     "objectID": "assets/swpo-mls-bayesian-assessments.html",
@@ -342,6 +263,139 @@
     ]
   },
   {
+    "objectID": "assets/sc-pres.html#section",
+    "href": "assets/sc-pres.html#section",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "",
+    "text": "2025 Stock Assessment of Striped Marlin in the Southwest Pacific Ocean\nPart II: Data-moderate Bayesian Surplus Production Model Approach\nN. Ducharme-Barth, C. Castillo-Jordán, F. Carvalho, and P. Hamer\nWCPFC-SC21 • Nuku’alofa, Tonga • 13–21 August 2025"
+  },
+  {
+    "objectID": "assets/sc-pres.html#openscience",
+    "href": "assets/sc-pres.html#openscience",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Openscience",
+    "text": "Openscience\n\nAll data inputs, model code, key model outputs, figures, report and presentation files are publicly available on GitHub:\nhttps://n-ducharmebarth-noaa.github.io/2025-swpo-mls-bspm/"
+  },
+  {
+    "objectID": "assets/sc-pres.html#assessment-context",
+    "href": "assets/sc-pres.html#assessment-context",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Assessment context",
+    "text": "Assessment context\n\n\nStrategic shift from integrated age-structured model to a Bayesian data-moderate approach\nPrevious challenges with:\n\nData conflicts and poor fits to size composition\nChallenges estimating population scale\n\nBayesian Surplus Production Model (BSPM) offers simplified yet robust alternative when data limitations exist\nComplements integrated assessment (Part I) for holistic stock status view"
+  },
+  {
+    "objectID": "assets/sc-pres.html#why-bspm",
+    "href": "assets/sc-pres.html#why-bspm",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Why BSPM?",
+    "text": "Why BSPM?\n\n\nAdvantages:\n\nFocuses on estimating productivity and scale given catch and index data\nEfficient exploration of parameter space\nExplicitly incorporates biological uncertainty through priors\nProven robust and effective for pelagic fish assessments\n\n\n\n\n\nTrade-offs:\n\nSimplifies complex age-structured dynamics\nAssumes single well-mixed population\nKnife-edged selectivity assumption"
+  },
+  {
+    "objectID": "assets/sc-pres.html#model-framework",
+    "href": "assets/sc-pres.html#model-framework",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Model framework",
+    "text": "Model framework\n\n\nFletcher-Schaefer production model\n\n\nPopulation dynamics: \\[N_t = \\left(N_{t-1} + \\text{Production}_{t-1}\\right) \\times \\text{Process error}_{t} \\times \\text{Fishing survival}_{t-1}\\]\n\n\nFishing impact linked to effort: \\[\\text{Fishing survival}_{t} \\text{ inversely proportional to } \\text{Fishing mortality}_t\\] \\[\\text{Fishing mortality}_{t} = \\text{Catchability}_{t} \\times \\text{Fishing effort}_t\\]\n\n\nKey features:\n\nTrue population (numbers) is treated as an unobserved random variable\nModel only fits to observations of relative abundance and catch\nCatchability is allowed to vary temporally so fishing mortality can match catch\nBiology captured in Production as max rate of population growth \\(R_{Max}\\)"
+  },
+  {
+    "objectID": "assets/sc-pres.html#input-data",
+    "href": "assets/sc-pres.html#input-data",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Input data",
+    "text": "Input data\n\n\n\nCatch data:\n\nAggregated annual removals in numbers of individuals\n\n\n\nEffort data:\n\nAnnual longline effort (hooks fished)\n\n\n\n\n\n\nStandardized CPUE indices:\n\nDWFN longline index (1979-2022) & New Zealand recreational sportfish indices (1975-2022)\nSeveral observer-based indices explored as sensitivities\n\n\n\n\n\n\n\n\n\n\n\nNote\n\n\nBlue line is a moving average and not a model fit!"
+  },
+  {
+    "objectID": "assets/sc-pres.html#model-development-approach",
+    "href": "assets/sc-pres.html#model-development-approach",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Model development approach",
+    "text": "Model development approach\n\n\n1. Develop priors:\n\nUse biological simulation framework to develop initial prior for \\(R_{Max}\\) and production function shape parameter \\(n\\)\nDevelop priors for population scale and catchability based on maximum observed catch and early period CPUE\n\n\n\n2. Prior pushforward:\n\nPass random parameter combinations through the population dynamics model\nFilter parameter combinations for biological and fishery realism\nDevelop a multivariate prior based on emergent parameter correlations\n\n\n\n\n\n3. Fit models to data 🤩\n\nEvaluate model performance (fits & diagnostics)\nDraw inference from posterior updates\nConsider sensitivities to data inputs"
+  },
+  {
+    "objectID": "assets/sc-pres.html#diagnostic-model",
+    "href": "assets/sc-pres.html#diagnostic-model",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Diagnostic model",
+    "text": "Diagnostic model\n\n\n\nFits to the DWFN index\n\n\n\n\nUses a robust likelihood for fitting to catch data\n\n\n\n\nEstimates scale, \\(R_{Max}\\), production shape, annual catchability deviates, process error, and index observation error\n\n\n\n\nPosterior distributions of estimated quantities were derived from sample chains starting from 5 different starting points\n\n\n\n\nStandard Bayesian diagnostics indicated that all sample chains satisfactorily converged to a stable distribution without issue\n\n\n\n\n\n\n\n\n\n\nDiagnostic\nValue\nCriteria\nStatus\n\n\n\n\nMax \\(\\hat{R}\\)\n1.008\n&lt; 1.01\n✓\n\n\nMin ESS\n788.000\n&gt; 500\n✓\n\n\nDivergent\n0.000\n= 0\n✓\n\n\nTree Depth\n0.000\n= 0\n✓\n\n\n\n\n\n\n\n\nThe diagnostic case model is model 0100."
+  },
+  {
+    "objectID": "assets/sc-pres.html#diagnostic-model-fits",
+    "href": "assets/sc-pres.html#diagnostic-model-fits",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Diagnostic model: Fits",
+    "text": "Diagnostic model: Fits\n\n\n\n\n\n\n\n\n\n\n\n\nPosterior-predictive distribution (PPD)\n\n\n• Distribution of expected values given estimation uncertainty & observation error\n• Shaded polygon is the 95% interval\n• Observations should fall within the PPD\n\n\n\n\n\n\n\n\n\n\nThe diagnostic case model is model 0100."
+  },
+  {
+    "objectID": "assets/sc-pres.html#diagnostic-model-validation",
+    "href": "assets/sc-pres.html#diagnostic-model-validation",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Diagnostic model: Validation",
+    "text": "Diagnostic model: Validation\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nRetrospectives\n\n\n• Models refit excluding terminal years of index\n• Colors indicate terminal year of index data\n• Refit models should remain close to full model\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nHindcast\n\n\n• Models refit excluding terminal years of index\n• Colors indicate terminal year of index data\n• Hindcast future index data based on model fit through last index year\n• Predicted future index data should match observations\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nHindcast\n\n\n• Model predictions of the index holding out up to 20 years of data\n• Good hindcast index fit indicates production and catch drive model estimates\n\n\n\n\n\n\nThe diagnostic case model is model 0100."
+  },
+  {
+    "objectID": "assets/sc-pres.html#diagnostic-model-inference",
+    "href": "assets/sc-pres.html#diagnostic-model-inference",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Diagnostic model: Inference",
+    "text": "Diagnostic model: Inference\n\n\n\n\n\n\n\n\n\nPosterior update\n\n\n• If posterior (solid line) differs from realized prior (dotted line) distribution, data inform estimates\n• Both key population dynamics parameters for scale (logK) and \\(R_{Max}\\) (r) indicate strong influence of data on estimates"
+  },
+  {
+    "objectID": "assets/sc-pres.html#key-sensitivities",
+    "href": "assets/sc-pres.html#key-sensitivities",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Key sensitivities",
+    "text": "Key sensitivities\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAlternative indices\n\n\n• DWFN and New Zealand recreational indices are only indices with sufficient contrast to inform population scale\n• Other indices show limited posterior updates from prior\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nEarly data\n\n\n• 1952 and 1954 catch observations identified as potentially problematic\n• Model results robust to treatment of these early observations\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nCatch reporting\n\n\n• Systematic under-reporting scenarios tested (constant and time-varying)\n• Population scale and relative status sensitive to catch magnitude\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAlternative \\(R_{Max}\\) prior\n\n\n• Lower productivity assumption based on Atlantic white marlin\n• Results in larger population scale but similar relative stock status metrics\n• Choice of shape n prior impacts scale estimate and MSY based reference points\n\n\n\n\n\n\nKey sensitivities: indices (0071-0075 & 0129-0132), early data (0079-0083), catch reporting (0115-0117), and \\(R_{Max}\\) prior (0133-0134)."
+  },
+  {
+    "objectID": "assets/sc-pres.html#model-ensemble",
+    "href": "assets/sc-pres.html#model-ensemble",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Model ensemble",
+    "text": "Model ensemble\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nAxes\n\n\n• Four model ensemble across two axes\n• Two indices (DWFN & New Zealand recreational)\n• Two shape parameter priors (life history based & conservative Schaefer)\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nTrends\n\n\n• Depletion: Declined through 1970s, stable 1970s-2000s, recovering since 2015.\n• Fishing mortality: Increasing through 2000s, with more recent declines.\n• Population scale: Large, asymmetric uncertainty\n\n\n\n\n\n\n\n\n\n\n\n\n\n\nMarginal posterior distributions\n\n\n• \\(D/D_{MSY}\\): Majority of distribution (74%) below \\(D/D_{MSY}\\)\n• \\(F/F_{MSY}\\): Minority of distribution (23%) above \\(F/F_{MSY}\\)\n• Population scale: Data supports a small recent population with large, asymmetric uncertainty to the high side\n\n\n\n\n\\(D_{recent}\\) refers to the average over 2019-2022\n\\(F_{recent}\\) refers to the average over 2018-2021\n\n\n\n\n\nSolid line is posterior median, shading is 95% credible interval.\nDepletion (D) is depletion in total numbers relative to initial total numbers.\nPopulation (P) is total numbers of individuals.\n\n\n\nEnsemble models: 0100, 0102, 0105, 0107."
+  },
+  {
+    "objectID": "assets/sc-pres.html#stock-status",
+    "href": "assets/sc-pres.html#stock-status",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Stock status",
+    "text": "Stock status\n\n\n\n\n\nMetric\nMedian [95% CI]\nProbability\n\n\n\n\nRecent Status\n\n\n\n\n\\(D_{recent}/D_{MSY}\\)\n0.77 [0.33–2.3]\n74% below \\(D_{MSY}\\)\n\n\n\\(F_{recent}/F_{MSY}\\)\n0.77 [0.05–1.51]\n22.9% above \\(F_{MSY}\\)\n\n\nLatest Status\n\n\n\n\n\\(D_{latest}/D_{MSY}\\)\n0.81 [0.32–2.36]\n70% below \\(D_{MSY}\\)\n\n\n\\(F_{latest}/F_{MSY}\\)\n0.69 [0.05–1.51]\n18.4% above \\(F_{MSY}\\)\n\n\n\n\n\n\n\n\n\n\n\n\nKobe plot\n\n\n• Time-trend of median stock status shown by line and points\n• Uncertainty in latest estimates shown with gray polygon\n\n\n\n\n\n\n\n\\(D_{recent}\\) refers to the average over 2019-2022\n\\(D_{latest}\\) refers to 2022\n\\(F_{recent}\\) refers to the average over 2018-2021\n\\(F_{latest}\\) refers to 2021.\n\n\n\n\nConclusion: Stock is overfished but not undergoing overfishing. Only 22.9% joint probability of being simultaneously overfished and undergoing overfishing."
+  },
+  {
+    "objectID": "assets/sc-pres.html#projections",
+    "href": "assets/sc-pres.html#projections",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Projections",
+    "text": "Projections\n\n\n\n\n\n\n\n\nProjection assumptions\n\n\n• Recent average catch (2018-2022)\n• Stationary productivity & environment\n• Process error resampled from model period\nFuture overfished probabilities:\n• 2027: 40.9%\n• 2032: 26%\n\n\n\n\n\nConclusion: Continued recovery expected under recent catch levels with decreasing risk of overfishing."
+  },
+  {
+    "objectID": "assets/sc-pres.html#limitations",
+    "href": "assets/sc-pres.html#limitations",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Limitations",
+    "text": "Limitations\n\n\nData representativeness:\n\nCPUE indices may not represent true stock trends\nPotential under-reporting of catches for bycatch stock\nStock structure uncertainty (genetic evidence of SWPO fish in North Pacific catches)\n\n\n\nModel simplifications:\n\nSingle well-mixed population assumption\nKnife-edged selectivity\nNo age structured dynamics\nStationary productivity and carrying capacity over 70 years\n\n\n\n\n\nParameter uncertainty:\n\nSubstantial uncertainty in absolute population scale\nShape parameter \\(n\\) not estimable from data\nHigh uncertainty in key biological processes translates to uncertainty in \\(R_{Max}\\)\n\n\n\nEnvironmental factors:\n\nFuture variability in environmental and oceanographic conditions are not explicitly modeled\nProcess error spikes suggests unmodeled dynamics"
+  },
+  {
+    "objectID": "assets/sc-pres.html#recommendations",
+    "href": "assets/sc-pres.html#recommendations",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Recommendations",
+    "text": "Recommendations\n\n\nStock structure research:\n\nDevelop conceptual model for SWPO striped marlin\nCollaborate with ISC Billfish Working Group\n\n\n\nData and biological research:\n\nReduce uncertainty in key biological processes where possible\nInvestigate representativeness of abundance indices\nAddress stock connectivity questions with genetic research\n\n\n\n\n\nFuture modeling approach:\n\nProgressive development within Bayesian framework\nMove toward Bayesian fully integrated age-structured models similar to WCPO oceanic whitetip shark"
+  },
+  {
+    "objectID": "assets/sc-pres.html#conclusions",
+    "href": "assets/sc-pres.html#conclusions",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Conclusions",
+    "text": "Conclusions\n\n\nIn the end, the BSPM shows similar results to the SS3 model\nExisting data do not support a large population, but a small highly productive stock\nMaximum catches are \\(\\sim 70\\text{k}\\) but average between \\(20\\text{k}-30\\text{k}\\)\nSince indices show declines given those catches, the population must be small\nHowever, as seen in the sensitivities, different productivity assumptions, larger catches or a flatter CPUE index would all support a larger population\nRelative to the SS3 model, the BSPM identifies a production function giving greater confidence in model estimates, and more appropriately integrates over possible uncertainty in population scale and productivity"
+  },
+  {
+    "objectID": "assets/sc-pres.html#acknowledgements",
+    "href": "assets/sc-pres.html#acknowledgements",
+    "title": "2025 SWPO striped marlin BSPM",
+    "section": "Acknowledgements",
+    "text": "Acknowledgements\n\n\nCollaborative Assessment Process\nThis assessment greatly benefited from collaboration with a broad group of interested parties and stock assessment experts where feedback was provided in an iterative manner throughout the model development process. Leveraging their diverse expertise helped produce a stronger scientific product.\n\n\nSpecial thanks to:\nK. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), and M. Nadon (PIFSC)\nfor their insights and thoughtful discussion which improved the assessment!"
+  },
+  {
     "objectID": "code/R/shiny-app/introduction.html",
     "href": "code/R/shiny-app/introduction.html",
     "title": "BSPM Model Analysis - Interactive Explorer",
@@ -361,20 +415,6 @@
     "title": "BSPM Model Analysis - Interactive Explorer",
     "section": "",
     "text": "Single vs Multiple Models: Some diagnostic plots (HMC diagnostics, LOO analyses) are only available when a single model is selected"
-  },
-  {
-    "objectID": "plots/sens-0005/SSP_Model_Analysis_Report.html",
-    "href": "plots/sens-0005/SSP_Model_Analysis_Report.html",
-    "title": "SSP Model Analysis Plot Summary Report",
-    "section": "",
-    "text": "Generated on: 2025-06-17 11:37:06.456807 Number of models analyzed: 3 ## Models Analyzed - 0003-2024cpueFPrior_0 - 0004-2024cpueShapePrior_0 - 0005-2024cpueMVPrior_0 ## Generated Plots ### Single Model Diagnostics For each model, the following diagnostic plots were generated: #### HMC Diagnostics - Parallel Coordinates: Parameter relationships across iterations - Pairs Plot: Pairwise parameter correlations - Trace Plot: Parameter evolution across chains - R-hat Plot: Convergence diagnostic - Effective Sample Size: Sampling efficiency - Autocorrelation: Parameter autocorrelation across lags #### Posterior Predictive Checks - Density Overlay: Observed vs predicted distributions - ECDF Overlay: Empirical cumulative distribution comparisons - PIT ECDF: Probability integral transform diagnostics - Test Statistics: Summary statistic comparisons - LOO-PIT: Leave-one-out cross-validation diagnostics - LOO QQ: Leave-one-out quantile-quantile plots - LOO Intervals: Leave-one-out posterior intervals ### Multi-Model Comparisons #### Model Fits - Index Fit: Model predictions vs observed indices - Index Fit PPD: Posterior predictive distributions - Index Fit Residuals: Model residual analysis #### Prior-Posterior Comparisons - Parameter Distributions: Prior vs posterior parameter densities - Time Series: Prior vs posterior derived quantities over time #### Management Plots - Kobe Plot: Stock status (P/P_MSY vs F/F_MSY) - Majuro Plot: Alternative stock status (Depletion vs F/F_MSY) #### Projections - Forecasts: Future projections under different scenarios ## File Organization\nD:/HOME/SAP/Code/2025-swpo-mls-bspm/plots/sens-0005/\n├── 0003-2024cpueFPrior_0/          # Individual model plots\n│   ├── 0003-2024cpueFPrior_0_hmc_*.png\n│   └── 0003-2024cpueFPrior_0_ppc_*.png\n├── 0004-2024cpueShapePrior_0/          # Individual model plots\n│   ├── 0004-2024cpueShapePrior_0_hmc_*.png\n│   └── 0004-2024cpueShapePrior_0_ppc_*.png\n└── comparisons/       # Multi-model comparisons\n    ├── comparison_index_fit.png\n    ├── comparison_kobe.png\n    ├── comparison_majuro.png\n    └── comparison_forecasts.png\n\n\n\nAll plots use consistent color schemes and themes for easy comparison\nSingle model plots focus on model diagnostics and validation\nMulti-model plots enable direct comparison between different model runs\nPlots are saved in high resolution suitable for publication\n\n\nReport generated by SSP Model Analysis Plot Functions"
-  },
-  {
-    "objectID": "plots/sens-0005/SSP_Model_Analysis_Report.html#usage-notes",
-    "href": "plots/sens-0005/SSP_Model_Analysis_Report.html#usage-notes",
-    "title": "SSP Model Analysis Plot Summary Report",
-    "section": "",
-    "text": "All plots use consistent color schemes and themes for easy comparison\nSingle model plots focus on model diagnostics and validation\nMulti-model plots enable direct comparison between different model runs\nPlots are saved in high resolution suitable for publication\n\n\nReport generated by SSP Model Analysis Plot Functions"
   },
   {
     "objectID": "plots/model_comparison/SSP_Model_Analysis_Report.html",
@@ -403,45 +443,5 @@
     "title": "SSP Model Analysis Plot Summary Report",
     "section": "",
     "text": "All plots use consistent color schemes and themes for easy comparison\nSingle model plots focus on model diagnostics and validation\nMulti-model plots enable direct comparison between different model runs\nPlots are saved in high resolution suitable for publication\n\n\nReport generated by SSP Model Analysis Plot Functions"
-  },
-  {
-    "objectID": "index.html",
-    "href": "index.html",
-    "title": "Home",
-    "section": "",
-    "text": "This repository contains model developments for 2025 Southwest Pacific Ocean Bayesian Surplus Production Model (BSPM) striped marlin stock assessment conducted in collaboration by the Pacific Community (SPC) and NOAA Fisheries.\nThe assessment report presented and submitted to WCPFC SC21 is available on GitHub and the WCPFC SC21 meeting page. Additionally, the assessment presentation to WCPFC SC21 is available below.",
-    "crumbs": [
-      "Home"
-    ]
-  },
-  {
-    "objectID": "index.html#presentation",
-    "href": "index.html#presentation",
-    "title": "Home",
-    "section": "Presentation",
-    "text": "Presentation\n    View slides in full screen",
-    "crumbs": [
-      "Home"
-    ]
-  },
-  {
-    "objectID": "index.html#acknowledgements",
-    "href": "index.html#acknowledgements",
-    "title": "Home",
-    "section": "Acknowledgements",
-    "text": "Acknowledgements\nCollaborative Assessment Process\nThis assessment greatly benefited from collaboration with a broad group of interested parties and stock assessment experts where feedback was provided in an iterative manner throughout the model development process. Leveraging their diverse expertise helped produce a stronger scientific product.\nSpecial thanks to:\nK. Kim (SPC), N. Davies (Te Takina Ltd.), S. Hoyle (Hoyle Consulting), R. Ahrens (PIFSC), and M. Nadon (PIFSC)\nfor their insights and thoughtful discussion which improved the assessment!",
-    "crumbs": [
-      "Home"
-    ]
-  },
-  {
-    "objectID": "index.html#disclaimer",
-    "href": "index.html#disclaimer",
-    "title": "Home",
-    "section": "Disclaimer",
-    "text": "Disclaimer\nMany runs contained within this repository represent preliminary model explorations and should not be used ‘as is’ for the consideration of management advice. Only models that have been presented and accepted to the WCPFC Scientific Committee should be used as the basis for management advice.",
-    "crumbs": [
-      "Home"
-    ]
   }
 ]

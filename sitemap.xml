@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/assets/sc-pres.html</loc>
-    <lastmod>2025-08-17T19:36:16.393Z</lastmod>
-  </url>
-  <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/assets/swpo-mls-bayesian-assessments.html</loc>
-    <lastmod>2025-08-17T19:36:16.395Z</lastmod>
-  </url>
-  <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/code/R/shiny-app/introduction.html</loc>
-    <lastmod>2025-08-17T19:36:16.400Z</lastmod>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/index.html</loc>
+    <lastmod>2025-09-23T20:45:37.081Z</lastmod>
   </url>
   <url>
     <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/sens-0005/SSP_Model_Analysis_Report.html</loc>
-    <lastmod>2025-08-17T19:36:17.040Z</lastmod>
+    <lastmod>2025-09-23T20:45:37.510Z</lastmod>
+  </url>
+  <url>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/assets/swpo-mls-bayesian-assessments.html</loc>
+    <lastmod>2025-09-23T20:45:37.019Z</lastmod>
+  </url>
+  <url>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/assets/sc-pres.html</loc>
+    <lastmod>2025-09-23T20:45:37.019Z</lastmod>
+  </url>
+  <url>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/code/R/shiny-app/introduction.html</loc>
+    <lastmod>2025-09-23T20:45:37.024Z</lastmod>
   </url>
   <url>
     <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/model_comparison/SSP_Model_Analysis_Report.html</loc>
-    <lastmod>2025-08-17T19:36:16.549Z</lastmod>
+    <lastmod>2025-09-23T20:45:37.173Z</lastmod>
   </url>
   <url>
     <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/sens-0004/model_comparison/SSP_Model_Analysis_Report.html</loc>
-    <lastmod>2025-08-17T19:36:16.981Z</lastmod>
-  </url>
-  <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/index.html</loc>
-    <lastmod>2025-08-17T19:36:16.457Z</lastmod>
+    <lastmod>2025-09-23T20:45:37.451Z</lastmod>
   </url>
 </urlset>
