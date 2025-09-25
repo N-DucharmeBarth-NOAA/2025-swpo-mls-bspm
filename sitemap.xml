@@ -1,31 +1,31 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/index.html</loc>
-    <lastmod>2025-09-23T20:45:37.081Z</lastmod>
-  </url>
-  <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/sens-0005/SSP_Model_Analysis_Report.html</loc>
-    <lastmod>2025-09-23T20:45:37.510Z</lastmod>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/code/R/shiny-app/introduction.html</loc>
+    <lastmod>2025-09-25T21:41:51.449Z</lastmod>
   </url>
   <url>
     <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/assets/swpo-mls-bayesian-assessments.html</loc>
-    <lastmod>2025-09-23T20:45:37.019Z</lastmod>
-  </url>
-  <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/assets/sc-pres.html</loc>
-    <lastmod>2025-09-23T20:45:37.019Z</lastmod>
-  </url>
-  <url>
-    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/code/R/shiny-app/introduction.html</loc>
-    <lastmod>2025-09-23T20:45:37.024Z</lastmod>
+    <lastmod>2025-09-25T21:41:51.444Z</lastmod>
   </url>
   <url>
     <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/model_comparison/SSP_Model_Analysis_Report.html</loc>
-    <lastmod>2025-09-23T20:45:37.173Z</lastmod>
+    <lastmod>2025-09-25T21:41:51.597Z</lastmod>
+  </url>
+  <url>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/sens-0005/SSP_Model_Analysis_Report.html</loc>
+    <lastmod>2025-09-25T21:41:51.933Z</lastmod>
+  </url>
+  <url>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/index.html</loc>
+    <lastmod>2025-09-25T21:41:51.506Z</lastmod>
   </url>
   <url>
     <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/plots/sens-0004/model_comparison/SSP_Model_Analysis_Report.html</loc>
-    <lastmod>2025-09-23T20:45:37.451Z</lastmod>
+    <lastmod>2025-09-25T21:41:51.874Z</lastmod>
+  </url>
+  <url>
+    <loc>https://N-DucharmeBarth-NOAA.github.io/2025-swpo-mls-bspm/assets/sc-pres.html</loc>
+    <lastmod>2025-09-25T21:41:51.442Z</lastmod>
   </url>
 </urlset>

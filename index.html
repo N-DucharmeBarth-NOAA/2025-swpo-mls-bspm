@@ -38,7 +38,7 @@ ul.task-list li input[type="checkbox"] {
 <link href="site_libs/quarto-html/quarto-syntax-highlighting-48ffa3e5b9d089919c6712c39e5b00f2.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-84e7d57e79a8870d0e27342f80486c2a.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-fe563f686dbeb0a6071cf25a6ff92c82.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script id="quarto-search-options" type="application/json">{
   "location": "sidebar",
   "copy-button": false,
@@ -172,6 +172,7 @@ ul.task-list li input[type="checkbox"] {
    
   <ul>
   <li><a href="#presentation" id="toc-presentation" class="nav-link active" data-scroll-target="#presentation">Presentation</a></li>
+  <li><a href="#reproducible-analysis-with-taf" id="toc-reproducible-analysis-with-taf" class="nav-link" data-scroll-target="#reproducible-analysis-with-taf">Reproducible Analysis with TAF</a></li>
   <li><a href="#acknowledgements" id="toc-acknowledgements" class="nav-link" data-scroll-target="#acknowledgements">Acknowledgements</a></li>
   <li><a href="#disclaimer" id="toc-disclaimer" class="nav-link" data-scroll-target="#disclaimer">Disclaimer</a></li>
   </ul>
@@ -209,6 +210,29 @@ ul.task-list li input[type="checkbox"] {
       <iframe class="slide-deck" src="assets/sc-pres.html" height="500px"></iframe>
     </div>
   
+<p><br></p>
+</section>
+<section id="reproducible-analysis-with-taf" class="level2">
+<h2 class="anchored" data-anchor-id="reproducible-analysis-with-taf">Reproducible Analysis with TAF</h2>
+<p>This repository implements the <a href="https://cran.r-project.org/package=TAF">TAF</a> (Transparent Assessment Framework) standard for reproducible stock assessments. The TAF framework extracts model data and results into standardized CSV formats that can be easily examined using Excel, R, or other statistical software.</p>
+<p><strong>Getting Started:</strong> - Users can reproduce the diagnostic model by running <a href="https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/taf/r_code/00a_start_here.R"><code>00a_start_here.R</code></a> (~30 minutes) - Users can reproduce the full model ensemble by running <a href="https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/taf/r_code/00b_start_here.R"><code>00b_start_here.R</code></a> (~120 minutes)</p>
+<p>The project uses <a href="https://rstudio.github.io/renv/articles/renv.html"><code>renv</code></a> for package management to ensure reproducibility across different computing environments. See the repository <a href="https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/README.md">README</a> for detailed setup instructions.</p>
+<div class="callout callout-style-default callout-note callout-titled">
+<div class="callout-header d-flex align-content-center" data-bs-toggle="collapse" data-bs-target=".callout-1-contents" aria-controls="callout-1" aria-expanded="true" aria-label="Toggle callout">
+<div class="callout-icon-container">
+<i class="callout-icon"></i>
+</div>
+<div class="callout-title-container flex-fill">
+Note
+</div>
+<div class="callout-btn-toggle d-inline-block border-0 py-1 ps-1 pe-0 float-end"><i class="callout-toggle"></i></div>
+</div>
+<div id="callout-1" class="callout-1-contents callout-collapse collapse show">
+<div class="callout-body-container callout-body">
+<p>Running the assessment model through the TAF framework will result in minor differences (affecting the 2nd or 3rd decimal place) of <a href="https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/taf/output/ens_mgmt_summary.csv">key management quantities</a> despite all data, model settings and initial conditions being identical. This is due to differences in the random number generator used to set-up the parallel sampling of the posterior distribution. If the exact quantities are desired, as matching the report, please refer to the <a href="https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/data/output/ens_mgmt_summary.csv">main development version of the file</a>.</p>
+</div>
+</div>
+</div>
 <p><br></p>
 </section>
 <section id="acknowledgements" class="level2 narrow-left-bg-image smaller">
