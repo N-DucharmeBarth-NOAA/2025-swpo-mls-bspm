@@ -22,6 +22,7 @@ The assessment report presented and submitted to WCPFC SC21 is available on [Git
 This repository implements the [TAF](https://cran.r-project.org/package=TAF) (Transparent Assessment Framework) standard for reproducible stock assessments. The TAF framework extracts model data and results into standardized CSV formats that can be easily examined using Excel, R, or other statistical software.
 
 **Getting Started:**
+
 - Users can reproduce the diagnostic model by running [`00a_start_here.R`](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/taf/r_code/00a_start_here.R) (~30 minutes)
 - Users can reproduce the full model ensemble by running [`00b_start_here.R`](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/taf/r_code/00b_start_here.R) (~120 minutes)
 
