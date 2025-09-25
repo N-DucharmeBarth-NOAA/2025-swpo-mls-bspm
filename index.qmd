@@ -17,6 +17,24 @@ The assessment report presented and submitted to WCPFC SC21 is available on [Git
 
 <br>
 
+## Reproducible Analysis with TAF
+
+This repository implements the [TAF](https://cran.r-project.org/package=TAF) (Transparent Assessment Framework) standard for reproducible stock assessments. The TAF framework extracts model data and results into standardized CSV formats that can be easily examined using Excel, R, or other statistical software.
+
+**Getting Started:**
+- Users can reproduce the diagnostic model by running [`00a_start_here.R`](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/taf/r_code/00a_start_here.R) (~30 minutes)
+- Users can reproduce the full model ensemble by running [`00b_start_here.R`](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/taf/r_code/00b_start_here.R) (~120 minutes)
+
+The project uses [`renv`](https://rstudio.github.io/renv/articles/renv.html) for package management to ensure reproducibility across different computing environments. See the repository [README](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/README.md) for detailed setup instructions.
+
+::: {.callout-note collapse="false"}
+## Note
+
+Running the assessment model through the TAF framework will result in minor differences (affecting the 2nd or 3rd decimal place) of [key management quantities](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/taf/output/ens_mgmt_summary.csv) despite all data, model settings and initial conditions being identical. This is due to differences in the random number generator used to set-up the parallel sampling of the posterior distribution. If the exact quantities are desired, as matching the report, please refer to the [main development version of the file](https://github.com/N-DucharmeBarth-NOAA/2025-swpo-mls-bspm/blob/main/data/output/ens_mgmt_summary.csv).
+:::
+
+<br>
+
 ## Acknowledgements {.narrow-left-bg-image .smaller}
 
 [Collaborative Assessment Process]{.blue}

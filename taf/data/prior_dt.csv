@@ -1,0 +1,18 @@
+parameter,distribution,mean,sd,description,scenario
+logK,Multivariate Normal,13.9203502872535,0.593057465918114,Log carrying capacity,baseline
+log_r,Multivariate Normal,-0.477087496356418,0.576973470798277,Log maximum intrinsic rate of increase,baseline
+log_shape,Multivariate Normal,0.148497416946253,0.537542215412777,Log shape parameter,baseline
+log_x0,Multivariate Normal,0.00171691690658116,0.0240477840136711,Log initial depletion,baseline
+log_qeff,Multivariate Normal,-0.689388412866147,0.947698241059337,Log catchability,baseline
+atanh_rho,Multivariate Normal,2.33157877738149,0.617081725879609,Arctanh catchability autocorrelation,baseline
+log_sigma_qdev,Multivariate Normal,0.481607658661174,0.300166484419554,Log catchability variability,baseline
+logK,Multivariate Normal,13.9203502872535,0.593057465918114,Log carrying capacity,alternative_shape
+log_r,Multivariate Normal,-0.477087496356418,0.576973470798277,Log maximum intrinsic rate of increase,alternative_shape
+log_shape,Multivariate Normal,0.693147180559945,0.537542215412777,Log shape parameter,alternative_shape
+log_x0,Multivariate Normal,0.00171691690658116,0.0240477840136711,Log initial depletion,alternative_shape
+log_qeff,Multivariate Normal,-0.689388412866147,0.947698241059337,Log catchability,alternative_shape
+atanh_rho,Multivariate Normal,2.33157877738149,0.617081725879609,Arctanh catchability autocorrelation,alternative_shape
+log_sigma_qdev,Multivariate Normal,0.481607658661174,0.300166484419554,Log catchability variability,alternative_shape
+sigma_P,Lognormal,-2.9311037,0.2661089,Process error,both
+sigma_O_add,Half-Normal,0,0.2,Additional observation error,both
+nu_catch,Gamma,2,0.1,Catch likelihood degrees of freedom,both

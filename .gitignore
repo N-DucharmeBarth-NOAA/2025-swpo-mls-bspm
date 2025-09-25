@@ -19,3 +19,9 @@ assets/init-pres.qmd
 /.quarto/
 _site/*
 site_libs/*
+
+# TAF directories
+TAF/boot/data
+TAF/boot/library
+TAF/boot/software
+TAF/model

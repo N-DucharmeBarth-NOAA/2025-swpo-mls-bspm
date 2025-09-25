@@ -62,6 +62,9 @@
     obs_cpue_PF_only_dt[, se_from_quantiles := (Q97.5 - Q2.5) / (2 * 1.96)]
     mean_se[6] = mean(obs_cpue_PF_only_dt$se_from_quantiles,na.rm=TRUE)
 
+    fwrite(data.table(fleet=c("dwfn","au","nz","obs","obsNoPF","obsPFonly"),mean_se=mean_se),
+        file.path(proj_dir,"data","input","mean_se.csv"))
+
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # compile executable
     exec_name_vec = c("bspm_estqsimple_softdep_fullmvprior_x0_sttgamma_flexsigmaC_OPT")

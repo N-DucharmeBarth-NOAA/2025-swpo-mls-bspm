@@ -1,0 +1,2 @@
+run_label,index,shape_prior,divergent,max_rhat,min_neff,index_rmse,index_loglik
+0100-dwfn-b_0,dwfn,b,0,1.00797272412246,736.332725748725,0.25663211137074,1.57282165857323
