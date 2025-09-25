@@ -30,6 +30,6 @@
 #________________________________________________________________________________________________________________________________________________________________________________________________________
 # run the TAF analysis
     source.taf(file.path("code","01_data.R")) # format the data for the Bayesian State-Space Surplus Production model (BSPM)
-    source.taf(file.path("code","02b_model.R")) # run the diagnostic case model (~4 minutes runtime; single-threaded)
-    # source.taf("code/03a_output.R") # summarize output (medians) from the representative model
-    # source.taf("code/04a_report.R") # make some plots for the representative model
+    source.taf(file.path("code","02b_model.R")) # run the diagnostic case model (~120 minutes runtime; single-threaded)
+    source.taf(file.path("code","03b_output.R")) # summarize output (medians) from the model ensemble
+    source.taf(file.path("code","04a_report.R")) # make some plots for the model ensemble
